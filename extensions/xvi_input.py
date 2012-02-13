@@ -15,8 +15,12 @@ def xvi2svg(handle, fullsvg=True, strokewidth=3, XVIroot=False):
 
 	# methods
 	def str_tcl2py(name):
+		if tk_instance('info exists ' + name) == '0':
+			return ''
 		return tk_instance('lindex $%s' % (name))
 	def list_tcl2py(name):
+		if tk_instance('info exists ' + name) == '0':
+			return []
 		L = int(tk_instance('llength $%s' % (name)))
 		return [tk_instance('lindex $%s %d' % (name, i)) for i in range(L)]
 	def invert_str(x):
