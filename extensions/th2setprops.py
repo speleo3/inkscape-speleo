@@ -19,7 +19,29 @@ class Th2SetProps(inkex.Effect):
 		self.OptionParser.add_option("--dropstyle", type="inkbool", dest="dropstyle", default=False)
 
 	def effect(self):
+		if len(self.selected) == 0:
+			inkex.errormsg('warning: nothing selected')
+			sys.exit(1)
+
+		# th2ex prefs
+		th2pref_load_from_xml(self.document.getroot())
+
 		new_options = parse_options(self.options.options.decode('UTF-8'))
+
+		if self.options.dropstyle and 'th2style' not in self.doc_ids:
+			template = open_in_pythonpath('th2_template.svg')
+			doc_temp = inkex.etree.parse(template)
+			template.close()
+			defs_temp = doc_temp.find('defs')
+			defs_self = self.document.find(inkex.addNS('defs', 'svg'))
+			if defs_self is None:
+				doc_temp.getroot().remove(defs_temp)
+				self.document.getroot().insert(0, defs_temp)
+			else:
+				children = defs_temp.getchildren()
+				defs_temp.clear()
+				defs_self.extend(children)
+			self.getdocids()
 
 		for id, node in self.selected.iteritems():
 			# current props
@@ -50,23 +72,34 @@ class Th2SetProps(inkex.Effect):
 
 			if ':' in type:
 				type, subtype = type.split(':', 1)
+			else:
+				subtype = options.get('subtype', '')
 
 			# update symbols
 			if node.tag == svg_use:
-				href = role + '-' + type
-				if href in self.doc_ids:
-					node.set(xlink_href, '#' + href)
+				for href in [role + '-' + type + '_' + subtype, role + '-' + type]:
+					if href in self.doc_ids:
+						node.set(xlink_href, '#' + href)
+						break
 
 			# update path effects
 			elif node.tag == svg_path and role in ['line', '']:
-				node.set('class', 'line ' + type)
+				node.set('class', 'line ' + type + ' ' + subtype)
 				if self.options.dropstyle:
 					node.set('style', '')
-				href = 'LPE-' + type
-				if href in self.doc_ids:
-					node.set(inkscape_path_effect, '#' + href)
-					if not node.attrib.has_key(inkscape_original_d):
-						node.set(inkscape_original_d, node.get('d'))
+				for href in ['LPE-' + type + '_' + subtype, 'LPE-' + type]:
+					if href in self.doc_ids:
+						node.set(inkscape_path_effect, '#' + href)
+						if not node.attrib.has_key(inkscape_original_d):
+							node.set(inkscape_original_d, node.get('d'))
+						break
+				else:
+					if self.options.dropstyle and \
+							inkscape_path_effect in node.attrib:
+						del node.attrib[inkscape_path_effect]
+						if inkscape_original_d in node.attrib:
+							node.set('d', node.get(inkscape_original_d))
+							del node.attrib[inkscape_path_effect]
 
 e = Th2SetProps()
 e.affect()

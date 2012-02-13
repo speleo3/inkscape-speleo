@@ -3,6 +3,13 @@
   <_name>Therion 2D Input</_name>
   <id>speleo.input.th2</id>
   <dependency type="executable" location="extensions">th2_input.py</dependency>
+  <param name="basescale" type="float" min="0.001" max="1000" _gui-text="Base-Scale to Scale Factor">1.0</param>
+  <param name="howtostore" type="enum" _gui-text="How to store properties" gui-description="Title tag and inkscape:label attributes can be modified in the object properties dialog">
+    <item value="title">title tag (recommended)</item>
+    <item value="inkscape_label">inkscape:label attribute</item>
+    <item value="therion_attribs">therion:* attributes (deprecated)</item>
+  </param>
+  <param name="sublayers" type="boolean" _gui-text="Organize different Symbols in Sublayers">false</param>
   <input>
     <extension>.th2</extension>
     <mimetype>application/x-therion-th2</mimetype>

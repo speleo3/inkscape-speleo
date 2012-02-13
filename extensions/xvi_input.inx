@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<inkscape-extension>
+  <_name>XTherion Vector Image Input</_name>
+  <id>speleo.input.xvi</id>
+  <dependency type="executable" location="extensions">xvi_input.py</dependency>
+  <input>
+    <extension>.xvi</extension>
+    <mimetype>application/x-therion-xvi</mimetype>
+    <filetypename>XTherion vector image (*.xvi)</filetypename>
+  </input>
+  <script>
+    <command reldir="extensions" interpreter="python">xvi_input.py</command>
+  </script>
+</inkscape-extension>

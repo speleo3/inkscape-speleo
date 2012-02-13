@@ -5,6 +5,8 @@ Distributed under the terms of the GNU General Public License v2
 
 TODO
  * support line options between line data, for example by splitting lines and grouping
+ * scale input coordinates to given base-scale
+ * Place XVI correct!
 '''
 
 import sys, os, re
@@ -13,7 +15,11 @@ etree = inkex.etree
 import simplepath
 
 # some prefs
-_pref_sublayers = False # Do not use sublayers for now...
+oparser.add_option('--sublayers', action='store', type='inkbool', dest='sublayers', default=False)
+oparser.add_option('--basescale', action='store', type='float', dest='basescale', default=1.0)
+oparser.add_option('--howtostore', action='store', type='choice', dest='howtostore',
+		choices=('inkscape_label', 'title', 'therion_attribs'))
+th2pref_reload()
 
 id_count = 0
 
@@ -23,6 +29,9 @@ template.close()
 
 root = document.getroot()
 
+# save input prefs to file
+th2pref_store_to_xml(root)
+
 ids = root.xpath('/svg/defs/*[starts-with(@id, "point-")]/@id')
 point_symbols = [ id[6:] for id in ids ]
 
@@ -31,7 +40,7 @@ LPE_symbols = [ id[4:] for id in ids ]
 
 currentlayer = root.xpath('g[@id="layer-legend"]')[0]
 
-if _pref_sublayers:
+if th2pref.sublayers:
 	sublayers = {}
 	pointtype2layer = {
 	    'altitude': 'labe',
@@ -138,8 +147,10 @@ node.set('width', '%d' % (2 * spacing))
 currentlayer = root.xpath('g[@id="layer-scrap0"]')[0]
 
 # open th2 file
-filename = sys.argv[-1]
-f = file(filename, 'rU')
+filename = th2pref.argv[0]
+if not os.path.exists(filename):
+	filename = os.path.join(os.environ['PWD'], filename)
+f_enum = enumerate(open(filename, 'rU'))
 
 doc_x = 0
 doc_y = 0
@@ -148,10 +159,25 @@ scrap_transform = ''
 scrap_transform_inv = ''
 encoding = 'UTF-8'
 
-def flipY(a):
+def flipY_old(a):
 	for i in range(1, len(a), 2):
-		a[i] = str(float(a[i]) * -1)
+		a[i] = a[i][1:] if a[i][0] == '-' else '-' + a[i]
 	return a
+
+def strscale(x):
+	return str(floatscale(x))
+
+def floatscale(x):
+	# TODO scale input coordinates to given base-scale
+	return float(x) / th2pref.basescale
+
+def flipY_scaled(a):
+	scalefactor = 0.2
+	a[0::2] = ['%f' % ( floatscale(i)) for i in a[0::2]]
+	a[1::2] = ['%f' % (-floatscale(i)) for i in a[1::2]]
+	return a
+
+flipY = flipY_scaled
 
 def reverseP(p):
 	retval = []
@@ -178,18 +204,29 @@ def reverseD(d):
 	p = reverseP(p)
 	return simplepath.formatPath(p)
 
+line_nr = 0
 def f_readline():
-	line = unicode(f.readline(), encoding)
+	global line_nr
+	try:
+		line_nr, line = f_enum.next()
+	except StopIteration:
+		return ''
+	line = line.decode(encoding)
 	if line[-2:] == '\\\n':
 		line = line[:-2] + f_readline()
 	return line
+
+def errormsg(x):
+	print >> sys.stderr, '[line %d]' % (line_nr+1), x
 
 def parse(a):
 	function = parsedict.get(a[0])
 	if function:
 		function(a)
+	elif a[0].startswith('#'):
+		parse_LINE2COMMENT(a)
 	else:
-		sys.stderr.write('skipped: ' + a[0] + '\n')
+		errormsg('skipped: ' + a[0])
 
 def parse_encoding(a):
 	global encoding
@@ -208,25 +245,58 @@ def parse_XTHERION(a):
 	global doc_width, doc_x, doc_y
 	global scrap_transform, scrap_transform_inv
 	if a[1] == 'xth_me_image_insert':
-		m = re.match(r'\{([-.0-9]+) [01] [-.0-9]+\} \{?([-.0-9]+)(?: \{\}\})? (\S+)', ' '.join(a[2:]))
-		href = m.group(3)
-		if href[0] == '"':
-			href = href[1:-1]
-		if m:
+		href, XVIroot = '', False
+		try:
+			# xth_me_image_insert {xx yy fname iidx imgx}
+			# xx = {xx vsb igamma}
+			# yy = {yy XVIroot}
+			import Tkinter
+			tk_instance = Tkinter.Tcl().tk.eval
+			tk_instance('set xth_me_image {' + ' '.join(a[2:]) + '}')
+			href = tk_instance('lindex $xth_me_image 2')
+			x = tk_instance('lindex $xth_me_image 0 0')
+			y = tk_instance('expr (-1 * [lindex $xth_me_image 1 0])')
+			XVIroot = tk_instance('lindex $xth_me_image 1 1')
+			XVIroot = float(XVIroot) > 0.0 if len(XVIroot) else False
+		except:
+			errormsg('tk parsing failed, fallback to regex...')
+			# TODO: Warning: poor expression, might fail
+			m = re.match(r'\{([-.0-9]+) [01] [-.0-9]+\} \{?([-.0-9]+)(?: (?:\{\}|[-.0-9]+)\})? (\S+)', ' '.join(a[2:]))
+			if m:
+				href = m.group(3)
+				if href[0] == '"':
+					href = href[1:-1]
+				x = m.group(1)
+				y = str(-1 * float(m.group(2)))
+		if href.endswith('.xvi'):
+			try:
+				import xvi_input
+				img = xvi_input.xvi2svg(open(href), False, 2, XVIroot)
+				transform = img.get('transform', '')
+				img.set('transform', '%s scale(1,-1) translate(%s,%s)' % (transform, x, y))
+				img.set('transform-orig', '%s scale(1,-1) translate(%s,%s)' % (transform, x, y))
+				# set_props(img, 'XTHERION', 'xth_me_image_insert', {'href': href})
+				img.set(therion_type, 'xth_me_image_insert')
+				img.set(therion_options, format_options({'href': href,
+					'XVIroot': '1'}))
+				root.xpath('g[@id="layer-scan"]')[0].append(img)
+			except:
+				errormsg('xvi2svg failed')
+		elif href != '':
 			img = etree.Element('image')
 			img.set(xlink_href, href)
-			img.set('x', m.group(1))
-			img.set('y', str(-1 * float(m.group(2))))
+			img.set('x', x)
+			img.set('y', y)
 			img.set('transform', 'scale(1,-1)')
 			root.xpath('g[@id="layer-scan"]')[0].append(img)
 		else:
-			sys.stderr.write('skipped: ' + a[1] + '\n')
+			errormsg('skipped: ' + a[1])
 
 	if a[1] == 'xth_me_area_adjust':
-		doc_x = float(a[2])
-		doc_y = float(a[5])
-		doc_width = float(a[4]) - doc_x
-		doc_height = doc_y - float(a[3])
+		doc_x = floatscale(a[2])
+		doc_y = floatscale(a[5])
+		doc_width = floatscale(a[4]) - doc_x
+		doc_height = doc_y - floatscale(a[3])
 		scrap_transform = 'translate(%f,%f)' % (-doc_x, doc_y)
 		scrap_transform_inv = 'translate(%f,%f)' % (doc_x, -doc_y)
 
@@ -244,7 +314,7 @@ def parse_scrap(a):
 	e.set(therion_options, ' '.join(a[2:]))
 
 	global sublayers
-	if _pref_sublayers:
+	if th2pref.sublayers:
 		sublayers = {
 		'wall': etree.SubElement(e, 'g', {inkscape_groupmode: 'layer', inkscape_label: u'Walls'}),
 		'cont': etree.SubElement(e, 'g', {inkscape_groupmode: 'layer', inkscape_label: u'Contours'}),
@@ -353,22 +423,22 @@ def parse_line(a):
 				d += ' C'
 			else:
 				insensitive = True
-				sys.stderr.write('error: length = ' + str(len(a)))
+				errormsg('error: length = %d' % len(a))
 			d += ','.join(flipY(a))
 		else:
 			# TODO Create multiple subpath elements, grouped
 			insensitive = True
-			sys.stderr.write('skipped line option: ' + ' '.join(a) + '\n')
+			errormsg('skipped line option: ' + ' '.join(a))
 
 	if len(d) == 0:
-		print >> sys.stderr, 'warning: empty line'
+		errormsg('warning: empty line')
 		return
 
 	e = etree.Element('path')
 	e.set('class', 'line %s %s' % (type, subtype))
 
 	if insensitive:
-		sys.stderr.write('element not fully supported, will be read-only\n')
+		errormsg('element not fully supported, will be read-only')
 		e.set(sodipodi_insensitive, 'true')
 		desc = etree.SubElement(e, 'desc')
 		desc.text = lossless_repr
@@ -393,7 +463,21 @@ def parse_line(a):
 		e.set('d', d)
 	
 	id_count += 1
-	e.set('id', 'line_%s_%d' % (type, id_count))
+	e_id = 'line_%s_%d' % (type, id_count)
+	e.set('id', e_id)
+
+	if th2pref.textonpath and type == 'label':
+		e_text = etree.Element('text')
+		e_textPath = etree.SubElement(e_text, 'textPath', {
+			xlink_href: '#' + e_id,
+		})
+		fontsize = fontscale.get(options.get('scale'), '12')
+		if 'scale' in options:
+			del options['scale']
+		e_text.set('style', "font-size:%s" % (fontsize))
+		e_textPath.text = options['text']
+		del options['text']
+		getlayer('line', type).insert(0, e_text)
 
 	set_props(e, 'line', type_subtype, options)
 	getlayer('line', type).insert(0, e)
@@ -442,7 +526,8 @@ def parse_point(a):
 			del options['align']
 		if 'scale' in options:
 			del options['scale']
-		e.set('style', "font-size:%s;text-anchor:%s" % (fontsize, textanchor))
+		e.set('style', "font-size:%s;text-anchor:%s;text-align:%s" % (fontsize,
+			textanchor, textanchor))
 		e.set(xml_space, 'preserve')
 	elif type in point_symbols:
 		e = etree.Element('use')
@@ -454,7 +539,7 @@ def parse_point(a):
 			e.set('style', 'fill:' + point_colors[type])
 
 	# position and orientation
-	transform = 'translate(%s,%f)' % (a[1], float(a[2]) * -1)
+	transform = 'translate(%s,%s)' % tuple(flipY(a[1:3]))
 	if 'orientation' in options:
 		transform += ' rotate(%s)' % (options['orientation'])
 		del options['orientation']
@@ -493,7 +578,8 @@ while True:
 	parse(a)
 
 e = root.xpath('g[@id="layer-scan"]')[0]
-e.set('transform', scrap_transform + ' scale(1,-1)')
+e.set('transform', scrap_transform + ' scale(1,-1) scale(%f)' % (1./th2pref.basescale))
+e.set('transform-orig', scrap_transform + ' scale(1,-1) scale(%f)' % (1./th2pref.basescale))
 
 e = root.xpath('g[@id="layer-scrap0"]')[0]
 if len(e) > 0:

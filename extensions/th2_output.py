@@ -9,15 +9,13 @@ This program was inspired by http://www.cavediving.de/svg2th2.py
 from th2ex import *
 import simplepath, simpletransform, simplestyle, math, re
 
-# some prefs
-_pref_image_inkscape = False
-
 def parse_options_node(node):
 	options = node.get(therion_options, '')
 	return parse_options(options.split())
 
 def transformParams(mat, params):
 	new = []
+	# params = [float(i) * th2pref.basescale for i in params]
 	for i in range(0, len(params), 2):
 		if i+1 == len(params):
 			inkex.errormsg('params index skewd!!!')
@@ -94,6 +92,8 @@ class Th2Output(inkex.Effect):
 		self.OptionParser.add_option("--images",   type="inkbool", dest="images",   default=True)
 		self.OptionParser.add_option("--nolpe",    type="inkbool", dest="nolpe",    default=True)
 		self.OptionParser.add_option("--lay2scr",  type="inkbool", dest="lay2scr",  default=True)
+		if th2pref.textonpath:
+			self.textpath_dict = dict()
 
 	def i2d_affine(self, node):
 		m2 = simpletransform.parseTransform(node.get('transform'))
@@ -107,7 +107,16 @@ class Th2Output(inkex.Effect):
 			m1 = simpletransform.parseTransform(t1)
 			m2 = simpletransform.composeTransform(m1, m2)
 		m2 = simpletransform.composeTransform(self.r2d, m2)
+		m2 = simpletransform.composeTransform([[th2pref.basescale, 0.0, 0.0],
+			[0.0, th2pref.basescale, 0.0]], m2)
 		return m2
+
+	def get_style(self, node):
+		return simplestyle.parseStyle(node.get('style', ''))
+
+	def get_style_attr(self, node, style, key, d=''):
+		d = node.get(key, d)
+		return style.get(key, d)
 
 	def print_scrap_begin(self, id, test, options = {}):
 		if test:
@@ -120,11 +129,15 @@ class Th2Output(inkex.Effect):
 			print "endscrap\n"
 
 	def output(self):
-		doc_width = inkex.unittouu(self.document.getroot().get('width'))
-		doc_height = inkex.unittouu(self.document.getroot().get('height'))
+		root = self.document.getroot()
+		doc_width = inkex.unittouu(root.get('width'))
+		doc_height = inkex.unittouu(root.get('height'))
+
+		# load prefs from file
+		th2pref_load_from_xml(root)
 
 		self.r2d = [[1, 0, 0],[0, -1, doc_height]]
-		viewBox = self.document.getroot().get('viewBox')
+		viewBox = root.get('viewBox')
 		if viewBox:
 			viewBox = [float(i) for i in viewBox.split()]
 			m1 = [[doc_width / viewBox[2], 0, -viewBox[0]], [0, doc_height / viewBox[3], -viewBox[1]]]
@@ -141,25 +154,38 @@ class Th2Output(inkex.Effect):
 		print '''encoding  utf-8
 ##XTHERION## xth_me_area_adjust 0 0 %f %f
 ##XTHERION## xth_me_area_zoom_to 100
-''' % (doc_width, doc_height)
+''' % (doc_width * th2pref.basescale, doc_height * th2pref.basescale)
+
+		# text on path
+		if th2pref.textonpath:
+			textpaths = self.document.xpath('//svg:textPath', namespaces=inkex.NSS)
+			for node in textpaths:
+				href = node.get(xlink_href).split('#', 1)[-1]
+				options = {'text': self.get_point_text(node)}
+				self.guess_text_scale(node, self.get_style(node.getparent()), options, self.i2d_affine(node))
+				self.textpath_dict[href] = options
 
 		if self.options.images:
-			images = self.document.xpath('//svg:image', namespaces=inkex.NSS)
+			images = self.document.xpath('//svg:image', namespaces=inkex.NSS) + \
+					self.document.xpath('//svg:g[@therion:type="xth_me_image_insert"]', namespaces=inkex.NSS)
 			#for node in reversed(images):
 			for node in images:
 				params = [ inkex.unittouu(node.get('x', '0')), inkex.unittouu(node.get('y', '0')) ]
 				mat = self.i2d_affine(node)
-				href = node.get(xlink_href)
+				href = node.get(xlink_href, '')
+				if href == '': # xvi image (svg:g)
+					options = parse_options(node.get(therion_options, ''))
+					href = options.get('href', '')
 				paramsTrans = transformParams(mat, params)
 				mat = simpletransform.composeTransform(mat, [[1,0,params[0]],[0,1,params[1]]])
 				w = node.get('width', '100%')
 				h = node.get('height', '100%')
-				if _pref_image_inkscape:
+				if th2pref.image_inkscape:
 					print '##INKSCAPE## image %s %s %s %s' % (w, h, simpletransform.formatTransform(mat), href)
 					continue
 				if href.startswith('file://'):
 					href = href[7:]
-				print '##XTHERION## xth_me_image_insert {%f 1 1.0} {%f {}} "%s" 0 {}' % \
+				print '##XTHERION## xth_me_image_insert {%f 1 1.0} {%f 1} "%s" 0 {}' % \
 						(paramsTrans[0], paramsTrans[1], href)
 
 		self.print_scrap_begin('scrap1', not self.options.lay2scr)
@@ -173,12 +199,12 @@ class Th2Output(inkex.Effect):
 			layers = self.document.xpath('/svg:svg/svg:g[@inkscape:groupmode="layer"]', namespaces=inkex.NSS)
 			if len(layers) == 0:
 				inkex.errormsg("Document has no layers!\nFallback to single scrap")
-				layers = [ self.document.getroot() ]
+				layers = [ root ]
 			for layer in layers:
 				if layer.get(therion_role) == 'none':
 					continue
 				if self.options.layers == 'visible':
-					style = simplestyle.parseStyle(layer.get('style', ''))
+					style = self.get_style(layer)
 					if style.get('display') == 'none':
 						continue
 				self.output_scrap(layer)
@@ -198,7 +224,7 @@ class Th2Output(inkex.Effect):
 				continue
 
 			if self.options.layers == 'visible':
-				style = simplestyle.parseStyle(child.get('style', ''))
+				style = self.get_style(child)
 				if style.get('display') == 'none':
 					continue
 
@@ -247,6 +273,13 @@ class Th2Output(inkex.Effect):
 
 		# get therion attributes
 		role, type, options = get_props(node)
+
+		# text on path
+		if th2pref.textonpath:
+			node_id = node.get('id')
+			if node_id in self.textpath_dict:
+				type = 'label'
+				options.update(self.textpath_dict[node_id])
 
 		# get path data
 		d = node.get(inkscape_original_d)
@@ -310,7 +343,8 @@ class Th2Output(inkex.Effect):
 		if isinstance(node.text, basestring) and len(node.text.strip()) > 0:
 			text = node.text.replace('\n', ' ')
 		for child in node:
-			if child.tag in [ svg_tspan, svg_textPath ]:
+			if child.tag == svg_tspan or \
+					not th2pref.textonpath and child.tag == svg_textPath:
 				if len(text) > 0 and child.get(sodipodi_role, '') == 'line':
 					text += '<br>'
 				text += self.get_point_text(child)
@@ -324,6 +358,33 @@ class Th2Output(inkex.Effect):
 		'middle': ('', 'c'),
 		'end': ('l', 'l'),
 	}
+
+	def guess_text_align(self, node, style, options):
+		textanchor = self.get_style_attr(node, style, 'text-anchor', 'start')
+		if textanchor in self.align_rl:
+			align = options.get('align', 't')
+			if align[0] in ['t', 'b']:
+				align = align[0] + self.align_rl[textanchor][0]
+			else:
+				align = self.align_rl[textanchor][1]
+			options['align'] = align
+
+	def guess_text_scale(self, node, style, options, mat):
+		fontsize = self.get_style_attr(node, style, 'font-size', '12')
+		if fontsize[-1] == '%':
+			fontsize = float(fontsize[:-1]) / 100.0 * 12;
+		else:
+			fontsize = inkex.unittouu(fontsize)
+		if mat is not None:
+			fontsize *= descrim(mat)
+		if fontsize > 17:
+			options['scale'] = 'xl'
+		elif fontsize > 12:
+			options['scale'] = 'l'
+		elif fontsize <= 8:
+			options['scale'] = 'xs'
+		elif fontsize <= 9:
+			options['scale'] = 's'
 
 	def output_point(self, node):
 		mat = self.i2d_affine(node)
@@ -352,36 +413,13 @@ class Th2Output(inkex.Effect):
 			key = text_keys_output.get(type, 'text')
 			options[key] = self.get_point_text(node).strip()
 			if options[key] == "":
-				inkex.errormsg("dropping empty text element (point %s)" % (type))
+				# inkex.errormsg("dropping empty text element (point %s)" % (type))
 				return
 
 			if type not in ['station', 'dimensions']:
-				# guess text alignment
-				style = simplestyle.parseStyle(node.get('style', ''))
-				textanchor = style.get('text-anchor', node.get('text-anchor', 'start'))
-				if textanchor in self.align_rl:
-					align = options.get('align', 't')
-					if align[0] in ['t', 'b']:
-						align = align[0] + self.align_rl[textanchor][0]
-					else:
-						align = self.align_rl[textanchor][1]
-					options['align'] = align
-
-				# guess font scale
-				fontsize = style.get('font-size', node.get('font-size', '12'))
-				if fontsize[-1] == '%':
-					fontsize = float(fontsize[:-1]) / 100.0 * 12;
-				else:
-					fontsize = inkex.unittouu(fontsize)
-				fontsize *= descrim(mat)
-				if fontsize > 17:
-					options['scale'] = 'xl'
-				elif fontsize > 12:
-					options['scale'] = 'l'
-				elif fontsize <= 8:
-					options['scale'] = 'xs'
-				elif fontsize <= 9:
-					options['scale'] = 's'
+				style = self.get_style(node)
+				self.guess_text_align(node, style, options)
+				self.guess_text_scale(node, style, options, mat)
 
 			if type == 'altitude' and options[key].isdigit():
 				options[key] = "[fix " + options[key] + "]"

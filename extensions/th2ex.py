@@ -17,11 +17,14 @@ Elements with role annotation "none" are excluded from export.
 Text alignment guess for export is not perfect, but covers the most use cases.
 '''
 
-import sys, os, math, re
+import sys, os, math, re, optparse
 
 # some prefs
-_pref_use_inkscape_label = True   # only considered for setting, not getting
-_pref_use_therion_attribs = False # only considered for setting, not getting
+class th2pref:
+	howtostore = 'inkscape_label'
+	textonpath = True
+	image_inkscape = False
+	basescale = 1.0
 
 # first try to assure that the inkscape extensions dir in in PYTHONPATH
 # obsolete for inkscape-0.47
@@ -41,11 +44,31 @@ except:
 		sys.path.append('/Applications/Inkscape.app/Contents/Resources/extensions')
 	import inkex
 
+# command line options and hook to th2pref
+oparser = optparse.OptionParser(option_class=inkex.InkOption)
+oparser.defaults = th2pref.__dict__
+def th2pref_reload():
+	_values, th2pref.argv = oparser.parse_args()
+	oparser.set_defaults(**_values.__dict__)
+
+# load prefs from file
+def th2pref_load_from_xml(root):
+	x = root.get(therion_basescale)
+	if x is not None:
+		th2pref.basescale = float(x)
+	th2pref.howtostore = root.get(therion_howtostore, th2pref.howtostore)
+
+# store prefs
+def th2pref_store_to_xml(root):
+	root.set(therion_basescale, '%.4f' % th2pref.basescale)
+	root.set(therion_howtostore, th2pref.howtostore)
+
 # prepare names with namespace
 inkex.NSS['therion'] = 'http://therion.speleo.sk/therion'
 svg_svg              = inkex.addNS('svg', 'svg')
 svg_use              = inkex.addNS('use', 'svg')
 svg_circle           = inkex.addNS('circle', 'svg')
+svg_rect             = inkex.addNS('rect', 'svg')
 svg_path             = inkex.addNS('path', 'svg')
 svg_line             = inkex.addNS('line', 'svg')
 svg_polyline         = inkex.addNS('polyline', 'svg')
@@ -54,9 +77,12 @@ svg_text             = inkex.addNS('text','svg')
 svg_textPath         = inkex.addNS('textPath','svg')
 svg_tspan            = inkex.addNS('tspan','svg')
 svg_g                = inkex.addNS('g', 'svg')
+svg_title            = inkex.addNS('title', 'svg')
 therion_role         = inkex.addNS('role', 'therion')
 therion_type         = inkex.addNS('type', 'therion')
 therion_options      = inkex.addNS('options', 'therion')
+therion_basescale    = inkex.addNS('basescale', 'therion')
+therion_howtostore   = inkex.addNS('howtostore', 'therion')
 xlink_href           = inkex.addNS('href', 'xlink')
 xml_space            = inkex.addNS('space', 'xml')
 inkscape_groupmode   = inkex.addNS('groupmode', 'inkscape')
@@ -67,6 +93,20 @@ sodipodi_cx          = inkex.addNS('cx', 'sodipodi')
 sodipodi_cy          = inkex.addNS('cy', 'sodipodi')
 sodipodi_role        = inkex.addNS('role','sodipodi')
 sodipodi_insensitive = inkex.addNS('insensitive', 'sodipodi')
+
+def title_node(parent):
+	title = parent.find(svg_title)
+	if title is None:
+		title = inkex.etree.SubElement(parent, svg_title)
+		title.text = ""
+	return title
+
+def get_style(node):
+	return simplestyle.parseStyle(node.get('style', ''))
+
+def get_style_attr(node, style, key, d=''):
+	d = node.get(key, d)
+	return style.get(key, d)
 
 ##########################################
 # station name stuff
@@ -84,7 +124,7 @@ def name_therion2survex(name, prefix=''):
 ##########################################
 # options stuff
 
-two_arg_keys = ['attr', 'context']
+two_arg_keys = ['attr', 'context', 'author']
 needquote = re.compile(r'[^-._@a-z0-9]', re.I)
 
 def is_numeric(s):
@@ -222,38 +262,53 @@ def set_props(e, role, type, options={}):
 	'''
 	Set both, inkscape:label and therion:... attributes
 	'''
+	assert role != 'scrap', 'Cannot use set_props for scraps'
 	options_str = format_options(options)
-	if _pref_use_therion_attribs:
+	if th2pref.howtostore != 'therion_attribs':
+		for key in [therion_role, therion_type, therion_options]:
+			if key in e.attrib:
+				del e.attrib[key]
+	if role == '':
+		role = '_unknown_'
+	if type == '':
+		type = 'u:unknown'
+	if th2pref.howtostore == 'inkscape_label':
+		e.set(inkscape_label, "%s %s %s" % (role, type, options_str))
+	elif th2pref.howtostore == 'title':
+		title_node(e).text = "%s %s %s" % (role, type, options_str)
+	elif th2pref.howtostore == 'therion_attribs':
 		e.set(therion_role, role)
 		e.set(therion_type, type)
 		e.set(therion_options, options_str)
 	else:
-		for key in [therion_role, therion_type, therion_options]:
-			if key in e.attrib:
-				del e.attrib[key]
-	if _pref_use_inkscape_label:
-		if role == '':
-			role = '_unknown_'
-		if type == '':
-			type = 'u:unknown'
-		e.set(inkscape_label, "%s %s %s" % (role, type, options_str))
+		raise Exception, 'unknown th2pref.howtostore'
 
 def get_props(e):
 	'''
 	First parse inkscape:label, second therion:... attributes (so the latter
 	has preference)
 	'''
-	role, type, options = '', '', ''
-	label = e.get(inkscape_label, '').split(None, 2)
+	assert e.get(therion_role) != 'scrap', 'Cannot use get_props for scraps'
+	role, type, options, label = '', '', '', []
+	if th2pref.howtostore == 'inkscape_label':
+		label = e.get(inkscape_label, '').split(None, 2)
+	elif th2pref.howtostore == 'title':
+		title = title_node(e).text
+		if title is None:
+			title = ''
+		label = title.split(None, 2)
+	elif th2pref.howtostore == 'therion_attribs':
+		label = [e.get(therion_role, ''),
+				e.get(therion_type, ''),
+				e.get(therion_options, '')]
+	else:
+		raise Exception, 'unknown th2pref.howtostore'
 	try:
 		role = label[0]
 		type = label[1]
 		options = label[2]
-	except:
+	except IndexError:
 		pass
-	role = e.get(therion_role, role)
-	type = e.get(therion_type, type)
-	options = e.get(therion_options, options)
 	options = parse_options(options)
 	if role == '':
 		if maybe_point(e):
@@ -267,9 +322,6 @@ def get_props(e):
 			type = 'label' # fallback for unannotated files
 		else:
 			type = 'u:unknown'
-	if type == 'station' and 'name' not in options and len(label) == 1:
-		# fallback for old survex 3D import: label holds station name
-		options['name'] = label[0]
 	return [role, type, options]
 
 def get_props_dict(e):
