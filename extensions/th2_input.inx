@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<inkscape-extension>
+  <_name>Therion 2D Input</_name>
+  <id>speleo.input.th2</id>
+  <dependency type="executable" location="extensions">th2_input.py</dependency>
+  <input>
+    <extension>.th2</extension>
+    <mimetype>application/x-therion-th2</mimetype>
+    <filetypename>Therion 2D (*.th2)</filetypename>
+  </input>
+  <script>
+    <command reldir="extensions" interpreter="python">th2_input.py</command>
+  </script>
+</inkscape-extension>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<inkscape-extension>
+  <_name>Set Line Type</_name>
+  <id>speleo.th2setline</id>
+  <dependency type="executable" location="extensions">inkex.py</dependency>
+  <dependency type="executable" location="extensions">th2setprops.py</dependency>
+  <param name="role" gui-hidden="true" type="string">line</param>
+  <param name="type" type="enum" _gui-text="Type">
+    <item>arrow</item>
+    <item>border</item>
+    <item>ceiling-meander</item>
+    <item>ceiling-step</item>
+    <item>chimney</item>
+    <item>contour</item>
+    <item>floor-meander</item>
+    <item>floor-step</item>
+    <item>flowstone</item>
+    <item>gradient</item>
+    <item>label</item>
+    <item>map-connection</item>
+    <item>moonmilk</item>
+    <item>overhang</item>
+    <item>pit</item>
+    <item>rock-border</item>
+    <item>rock-edge</item>
+    <item>section</item>
+    <item>slope</item>
+    <item>survey</item>
+    <item>water-flow</item>
+    <item>wall</item>
+  </param>
+  <param name="options" type="string" _gui-text="Options" />
+  <param name="merge" type="boolean" _gui-text="Merge with existing Options">true</param>
+  <effect>
+    <object-type>all</object-type>
+    <effects-menu>
+      <submenu _name="Therion" />
+    </effects-menu>
+  </effect>
+  <script>
+    <command reldir="extensions" interpreter="python">th2setprops.py</command>
+  </script>
+</inkscape-extension>

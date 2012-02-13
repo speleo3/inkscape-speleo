@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<inkscape-extension>
+  <_name>Set Point Type</_name>
+  <id>speleo.th2setpoint</id>
+  <dependency type="executable" location="extensions">inkex.py</dependency>
+  <dependency type="executable" location="extensions">th2setprops.py</dependency>
+  <param name="role" gui-hidden="true" type="string">point</param>
+  <param name="type" type="enum" _gui-text="Type">
+<item>air-draught</item>
+<item>altitude</item>
+<item>anastomosis</item>
+<item>anchor</item>
+<item>aragonite</item>
+<item>archeo-material</item>
+<item>bedrock</item>
+<item>blocks</item>
+<item>breakdown-choke</item>
+<item>bridge</item>
+<item>camp</item>
+<item>cave-pearl</item>
+<item>clay</item>
+<item>continuation</item>
+<item>crystal</item>
+<item>curtain</item>
+<item>debris</item>
+<item>dig</item>
+<item>disk</item>
+<item>entrance</item>
+<item>fixed-ladder</item>
+<item>flowstone-choke</item>
+<item>flowstone</item>
+<item>flute</item>
+<item>gradient</item>
+<item>guano</item>
+<item>gypsum-flower</item>
+<item>gypsum</item>
+<item>height</item>
+<item>helictite</item>
+<item>ice</item>
+<item>karren</item>
+<item>low-end</item>
+<item>moonmilk</item>
+<item>narrow-end</item>
+<item>no-equipment</item>
+<item>paleo-material</item>
+<item>passage-height</item>
+<item>pebbles</item>
+<item>pillar</item>
+<item>popcorn</item>
+<item>raft</item>
+<item>rimstone-dam</item>
+<item>rimstone-pool</item>
+<item>root</item>
+<item>rope-ladder</item>
+<item>rope</item>
+<item>sand</item>
+<item>scallop</item>
+<item>sink</item>
+<item>snow</item>
+<item>soda-straw</item>
+<item>spring</item>
+<item>stalactite</item>
+<item>stalagmite</item>
+<item>steps</item>
+<item>traverse</item>
+<item>vegetable-debris</item>
+<item>wall-calcite</item>
+<item>water-flow</item>
+<item>water</item>
+  </param>
+  <param name="options" type="string" _gui-text="Options" />
+  <param name="merge" type="boolean" _gui-text="Merge with existing Options">true</param>
+  <effect>
+    <object-type>all</object-type>
+    <effects-menu>
+      <submenu _name="Therion" />
+    </effects-menu>
+  </effect>
+  <script>
+    <command reldir="extensions" interpreter="python">th2setprops.py</command>
+  </script>
+</inkscape-extension>
