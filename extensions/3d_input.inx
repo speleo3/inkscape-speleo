@@ -45,6 +45,10 @@ continuous control over the scale (bearing likewise).
     <item value="3">Triangles (as Clones)</item>
   </param>
   <param name="filter" type="string" _gui-text="Filter Prefix"></param>
+  <param name="surveys" type="enum" _gui-text="Surveys">
+    <item value="create">create/use</item>
+    <item value="ignore">ignore</item>
+  </param>
   <param name="annotate" type="boolean" _gui-text="Annotate Clones for Therion Export">true</param>
   <param name="stationnames" type="boolean" _gui-text="Draw Station Names">true</param>
   <param name="scalebar" type="boolean" _gui-text="Draw Scalebar">true</param>

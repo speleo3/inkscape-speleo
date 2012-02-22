@@ -35,6 +35,7 @@ Changelog:
 '''
 
 import sys, math, os
+from struct import unpack
 
 args = {
 	'scale': 100,
@@ -51,12 +52,15 @@ args = {
 	'use_therion_attribs': 0,
 
 	'filter': '',
+	'surveys': 'create',
 }
 
 infile = ''
 
 # from th2ex
 def name_survex2therion(name):
+	if args['surveys'] == 'ignore':
+		return name
 	x = name.split('.')
 	if len(x) == 1:
 		return name
@@ -126,31 +130,20 @@ curr_label = ''
 labels = {}
 
 def read_xyz():
-	x = read_int(4, 1)
-	y = read_int(4, 1)
-	z = read_int(4, 1)
+	x, y, z = unpack('<iii', f.read(12))
 	if args['bearing']:
-		global _cos, _sin
 		[ x, y ] = [ x * _cos - y * _sin, x * _sin + _cos * y ]
 	if args['view'] > 0:
 		[ y, z ] = [ z, y ]
 	return [ x, -y, z ]
 
-def read_int(len, sign):
-	int = 0
-	for i in range(len):
-		int |= read_byte() << (8 * i)
-	if sign and (int >> (8 * len - 1)):
-		int -= (1 << 8 * len)
-	return int
-
 def read_len():
-	len = read_byte()
-	if len == 0xfe:
-		len += read_int(2, 0)
-	elif len == 0xff:
-		len = read_int(4, 0)
-	return len
+	length = read_byte()
+	if length == 0xfe:
+		length += unpack('<H', f.read(2))[0]
+	elif length == 0xff:
+		length += unpack('<I', f.read(4))[0]
+	return length
 
 def read_label():
 	len = read_len()
