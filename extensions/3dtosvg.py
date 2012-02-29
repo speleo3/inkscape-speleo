@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-help = '''
+'''
 Copyright (C) 2008 Thomas Holder, http://sf.net/users/speleo3/
 Distributed under the terms of the GNU General Public License v2
 
@@ -68,7 +68,7 @@ def name_survex2therion(name):
 
 def die(msg):
 	sys.stderr.write(msg + "\n")
-	sys.stderr.write(help)
+	sys.stderr.write(__doc__)
 	sys.exit(1)
 
 sys.argv.pop(0)
@@ -105,6 +105,8 @@ if args['view'] == 2:
 		infile = infile[:-3] + '_extend.3d'
 	args['bearing'] = 0
 
+if not os.path.exists(infile):
+	infile = os.path.join(os.environ['PWD'], infile)
 f = open(infile, 'rb')
 
 line = f.readline() # File ID

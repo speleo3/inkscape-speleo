@@ -147,9 +147,8 @@ node.set('width', '%d' % (2 * spacing))
 currentlayer = root.xpath('g[@id="layer-scrap0"]')[0]
 
 # open th2 file
-filename = th2pref.argv[0]
-if not os.path.exists(filename):
-	filename = os.path.join(os.environ['PWD'], filename)
+filename = find_in_pwd(th2pref.argv[0])
+dirname = os.path.dirname(filename)
 f_enum = enumerate(open(filename, 'rU'))
 
 doc_x = 0
@@ -268,6 +267,11 @@ def parse_XTHERION(a):
 					href = href[1:-1]
 				x = m.group(1)
 				y = str(-1 * float(m.group(2)))
+		if href != '':
+			try:
+				href = find_in_pwd(href, [dirname])
+			except IOError:
+				errormsg('image not found: ' + repr(href[:128]))
 		if href.endswith('.xvi'):
 			try:
 				import xvi_input

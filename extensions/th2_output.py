@@ -210,6 +210,9 @@ class Th2Output(inkex.Effect):
 				if href == '': # xvi image (svg:g)
 					options = parse_options(node.get(therion_options, ''))
 					href = options.get('href', '')
+				elif href.startswith('data:'):
+					inkex.errormsg('Embedded images not supported!')
+					continue
 				paramsTrans = transformParams(mat, params)
 				mat = simpletransform.composeTransform(mat, [[1,0,params[0]],[0,1,params[1]]])
 				w = node.get('width', '100%')

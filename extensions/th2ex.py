@@ -404,6 +404,13 @@ def inverse(mat):
 ######################################
 # IO stuff
 
+def find_in_pwd(filename, path=[]):
+	for dirname in ['', os.environ['PWD']] + path:
+		candidate = os.path.join(dirname, filename)
+		if os.path.exists(candidate):
+			return candidate
+	raise IOError("Can't find file '" + filename + "'")
+
 def find_in_pythonpath(filename):
 	for dirname in sys.path:
 		candidate = os.path.join(dirname, filename)

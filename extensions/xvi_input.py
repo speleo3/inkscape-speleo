@@ -88,7 +88,7 @@ def xvi2svg(handle, fullsvg=True, strokewidth=3, XVIroot=False):
 
 if __name__ == '__main__':
 	if len(sys.argv) > 1:
-		handle = open(sys.argv[-1])
+		handle = open(th2ex.find_in_pwd(sys.argv[-1]))
 	else:
 		handle = sys.stdin
 	root = xvi2svg(handle)
