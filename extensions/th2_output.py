@@ -25,6 +25,35 @@ def transformParams(mat, params):
 		new.append(mat[1][0]*params[i]+mat[1][1]*params[i+1]+mat[1][2])
 	return new
 
+def computeBBoxText(aList, mat=[[1,0,0],[0,1,0]]):
+	'''
+	Very rough estimate of text bbox.
+
+	See also simpletransform.computeBBox
+	'''
+	import cubicsuperpath
+	from simpletransform import parseTransform, composeTransform, \
+			applyTransformToPath, boxunion, roughBBox
+	bbox = None
+	for node in aList:
+		m = parseTransform(node.get('transform'))
+		m = composeTransform(mat, m)
+		d = None
+		if node.tag in [ inkex.addNS('text','svg'), 'text',
+				inkex.addNS('tspan','svg'), 'tspan' ]:
+			x = node.get('x', '0').split()
+			y = node.get('y', '0').split()
+			if len(x) == 1 and len(y) > 1:
+				x = x * len(y)
+			elif len(y) == 1 and len(x) > 1:
+				y = y * len(x)
+			d = 'M' + ' '.join('%f' % inkex.unittouu(c) for xy in zip(x, y) for c in xy)
+			p = cubicsuperpath.parsePath(d)
+			applyTransformToPath(m, p)
+			bbox = boxunion(roughBBox(p), bbox)
+		bbox = boxunion(computeBBoxText(node, m), bbox)
+	return bbox
+
 def bbox_center(bbox):
 	return [ (bbox[0] + bbox[1])*0.5, (bbox[2] + bbox[3])*0.5 ]
 
@@ -39,8 +68,13 @@ def g_center(node):
 	if backup_transform is not None:
 		del node.attrib['transform']
 	bbox = simpletransform.computeBBox(node)
+	if bbox is None:
+		# fallback, because computeBBox does not consider text
+		bbox = computeBBoxText(node)
 	if backup_transform is not None:
 		node.set('transform', backup_transform)
+	if bbox is None:
+		return [ 0, 0 ]
 	return bbox_center(bbox)
 
 def orientation(mat):
