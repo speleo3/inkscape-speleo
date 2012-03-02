@@ -256,6 +256,7 @@ def maybe_line(node):
 	return node.tag == svg_path or \
 			node.tag == svg_line or \
 			node.tag == svg_polyline or \
+			node.tag == svg_rect or \
 			node.tag == svg_polygon
 
 def set_props(e, role, type, options={}):

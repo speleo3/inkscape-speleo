@@ -328,6 +328,10 @@ class Th2Output(inkex.Effect):
 				d += ' z'
 		if not d and node.attrib.has_key('x1'):
 			d = 'M' + node.get('x1') + ',' + node.get('y1') + 'L' + node.get('x2') + ',' + node.get('y2')
+		if not d and 'width' in node.attrib and 'height' in node.attrib:
+			width = node.get('width')
+			height = node.get('height')
+			d = 'M' + node.get('x', '0') + ',' + node.get('y', '0') + 'h' + width + 'v' + height + 'h-' + width + 'z'
 		if not d:
 			return
 		p = simplepath.parsePath(d)
