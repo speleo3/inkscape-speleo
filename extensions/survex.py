@@ -1,7 +1,7 @@
 '''
 Library to handle Survex 3D files (*.3d)
 
-Copyright (C) 2008-2011 Thomas Holder, http://sf.net/users/speleo3/
+Copyright (C) 2008-2012 Thomas Holder, http://sf.net/users/speleo3/
 Distributed under the terms of the GNU General Public License v2
 
 Example usage:
@@ -175,7 +175,7 @@ class Survex3D(object):
             # assume iterable with stations
             for station in filename:
                 self.xyz2sta[station.xyz] = station
-            self._reindex()
+            self.reindex()
 
     def clear(self):
         '''Remove all stations'''
@@ -186,7 +186,8 @@ class Survex3D(object):
         self._prev = None
         self._curr_label = ''
 
-    def _reindex(self):
+    def reindex(self):
+        '''Update label to station mapping'''
         self.lab2sta = {}
         for station in self:
             for label in station.labels:
