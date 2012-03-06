@@ -64,6 +64,22 @@ class Station(object):
         '''Euclidean distance to other station'''
         return sum((a-b)**2 for (a,b) in zip(self.xyz, other.xyz))**0.5
 
+    def distance_vertical(self, other):
+        '''Signed altitude difference to other station (if other is below
+        self, distance is negative)'''
+        return other.z - self.z
+
+    def distance_horizontal(self, other):
+        '''Horizontal distance to other station'''
+        return ((self.x - other.x)**2 + (self.y - other.y)**2)**0.5
+
+    def bearing(self, other):
+        '''Compass direction to other station in degrees, 0.0 if other is
+        north of self'''
+        from math import atan2, degrees
+        b = degrees(atan2(other.x - self.x, other.y - self.y))
+        return b % 360.0
+
     @property
     def connected(self):
         '''Iterator over connected stations'''
@@ -76,6 +92,13 @@ class Station(object):
         if len(self.labels) == 0:
             return '<unnamed station>'
         return self.labels[0]
+
+    @property
+    def x(self): return self.xyz[0]
+    @property
+    def y(self): return self.xyz[1]
+    @property
+    def z(self): return self.xyz[2]
 
     def is_surface(self):
         return bool(self.flag & 0x01)
@@ -236,6 +259,17 @@ class Survex3D(object):
             [max(station.xyz[i] for station in self) for i in range(3)],
         ]
 
+    def length(self):
+        '''Total length of survey shots (warning: does not consider duplicate
+        or splay flags)'''
+        return sum(s1.distance(s2) for (s1, s2) in self.iterlegs())
+
+    def depth(self):
+        '''Vertical range of all stations in this survey'''
+        zmax = max(station.z for station in self)
+        zmin = min(station.z for station in self)
+        return zmax - zmin
+
     def filter(self, prefix):
         '''
         Iterator over stations that have a label starting with prefix.
@@ -294,6 +328,38 @@ class Survex3D(object):
     def shortestpath(self, key1, key2):
         '''Shortest Path between two stations (see Station.shortestpath)'''
         return self[key1].shortestpath(self[key2])
+
+    def neareststations(self, other):
+        '''
+        Finds the two nearest stations between two surveys.
+        Returns a tuple of (distance, station1, station2).
+
+        If "numpy" is not available this might be very slow.
+        '''
+        common = set(self.xyz2sta).intersection(other.xyz2sta)
+        if len(common) > 0:
+            raise ValueError('self and other must not have stations in common')
+
+        try:
+            from numpy import array
+        except ImportError:
+            print 'Warning: no numpy available, calculation might be very slow'
+            return min((s1.distance(s2), s1, s2) for s1 in self for s2 in other)
+
+        X = array(list(self.xyz2sta), int)
+        Y = array(list(other.xyz2sta), int)
+
+        # calculate rows of the distance matrix as trade-off between speed
+        # and memory (full distance matrix at once would be fastest, but can
+        # blow your memory for large surveys)
+        im, jm, m = 0, 0, 1e300
+        for i in xrange(len(X)):
+            d_sq = ((Y - X[i])**2).sum(1)
+            j = d_sq.argmin()
+            if d_sq[j] < m:
+                im, jm, m = i, j, d_sq[j]
+
+        return m**0.5, self[tuple(X[im])], other[tuple(Y[jm])]
 
     def load(self, filename):
         '''
