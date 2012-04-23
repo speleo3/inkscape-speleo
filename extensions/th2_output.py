@@ -25,70 +25,11 @@ def transformParams(mat, params):
 		new.append(mat[1][0]*params[i]+mat[1][1]*params[i+1]+mat[1][2])
 	return new
 
-def computeBBoxText(aList, mat=[[1,0,0],[0,1,0]]):
-	'''
-	Very rough estimate of text bbox.
-
-	See also simpletransform.computeBBox
-	'''
-	import cubicsuperpath
-	from simpletransform import parseTransform, composeTransform, \
-			applyTransformToPath, boxunion, roughBBox
-	bbox = None
-	for node in aList:
-		m = parseTransform(node.get('transform'))
-		m = composeTransform(mat, m)
-		d = None
-		if node.tag in [ inkex.addNS('text','svg'), 'text',
-				inkex.addNS('tspan','svg'), 'tspan' ]:
-			x = node.get('x', '0').split()
-			y = node.get('y', '0').split()
-			if len(x) == 1 and len(y) > 1:
-				x = x * len(y)
-			elif len(y) == 1 and len(x) > 1:
-				y = y * len(x)
-			d = 'M' + ' '.join('%f' % inkex.unittouu(c) for xy in zip(x, y) for c in xy)
-			p = cubicsuperpath.parsePath(d)
-			applyTransformToPath(m, p)
-			bbox = boxunion(roughBBox(p), bbox)
-		bbox = boxunion(computeBBoxText(node, m), bbox)
-	return bbox
-
-def bbox_center(bbox):
-	return [ (bbox[0] + bbox[1])*0.5, (bbox[2] + bbox[3])*0.5 ]
-
-def path_center(node):
-	d = node.get('d')
-	p = simpletransform.cubicsuperpath.parsePath(d)
-	bbox = simpletransform.roughBBox(p)
-	return bbox_center(bbox)
-	
-def g_center(node):
-	backup_transform = node.get('transform')
-	if backup_transform is not None:
-		del node.attrib['transform']
-	bbox = simpletransform.computeBBox(node)
-	if bbox is None:
-		# fallback, because computeBBox does not consider text
-		bbox = computeBBoxText(node)
-	if backup_transform is not None:
-		node.set('transform', backup_transform)
-	if bbox is None:
-		return [ 0, 0 ]
-	return bbox_center(bbox)
-
 def orientation(mat):
+	'''Orientation of a (0.0, 1.0) vector after rotation with "mat"'''
 	try:
-		# matrix may be skewed, so averaging multiple possibilities;
-		# without skew, one atan2 would be sufficient!
-		at0 = math.atan2(mat[0][1], mat[0][0])
-		at1 = math.atan2(mat[1][0], mat[0][0])
-		at2 = math.atan2(mat[0][1], -mat[1][1])
-		at3 = math.atan2(mat[1][0], -mat[1][1])
-		deg = math.degrees(-1.0 * (at0 + at1 + at2 + at3) / 4.0)
-		if deg < 0:
-			deg += 360
-		return deg
+		deg = -math.degrees(math.atan2(mat[0][1], -mat[1][1]))
+		return deg % 360.0
 	except:
 		return 0.0
 
@@ -116,34 +57,17 @@ class Th2Line:
 		print "  " + "\n  ".join(self.points)
 		print "endline\n"
 
-class Th2Output(inkex.Effect):
+class Th2Output(Th2Effect):
 	def __init__(self):
 		inkex.Effect.__init__(self)
 		self.OptionParser.add_option("--scale",    type="int",     dest="scale",    default=100)
 		self.OptionParser.add_option("--dpi",      type="int",     dest="dpi",      default=90)
-		self.OptionParser.add_option("--linetype", type="string",  dest="linetype", default="wall")
 		self.OptionParser.add_option("--layers",   type="string",  dest="layers",   default="all")
 		self.OptionParser.add_option("--images",   type="inkbool", dest="images",   default=True)
 		self.OptionParser.add_option("--nolpe",    type="inkbool", dest="nolpe",    default=True)
 		self.OptionParser.add_option("--lay2scr",  type="inkbool", dest="lay2scr",  default=True)
 		if th2pref.textonpath:
 			self.textpath_dict = dict()
-
-	def i2d_affine(self, node):
-		m2 = simpletransform.parseTransform(node.get('transform'))
-		while True:
-			node = node.getparent()
-			if node is None:
-				break
-			t1 = node.get('transform')
-			if not t1:
-				continue
-			m1 = simpletransform.parseTransform(t1)
-			m2 = simpletransform.composeTransform(m1, m2)
-		m2 = simpletransform.composeTransform(self.r2d, m2)
-		m2 = simpletransform.composeTransform([[th2pref.basescale, 0.0, 0.0],
-			[0.0, th2pref.basescale, 0.0]], m2)
-		return m2
 
 	def get_style(self, node):
 		return simplestyle.parseStyle(node.get('style', ''))
@@ -173,8 +97,7 @@ class Th2Output(inkex.Effect):
 		self.r2d = [[1, 0, 0],[0, -1, doc_height]]
 		viewBox = root.get('viewBox')
 		if viewBox:
-			viewBox = [float(i) for i in viewBox.split()]
-			m1 = [[doc_width / viewBox[2], 0, -viewBox[0]], [0, doc_height / viewBox[3], -viewBox[1]]]
+			m1 = parseViewBox(viewBox, doc_width, doc_height)
 			self.r2d = simpletransform.composeTransform(self.r2d, m1)
 
 		self.classes = {}
@@ -334,7 +257,7 @@ class Th2Output(inkex.Effect):
 			d = 'M' + node.get('x', '0') + ',' + node.get('y', '0') + 'h' + width + 'v' + height + 'h-' + width + 'z'
 		if not d:
 			return
-		p = simplepath.parsePath(d)
+		p = parsePath(d)
 
 		# check on read-only path
 		if node.get(sodipodi_insensitive, 'false') == 'true':
@@ -431,19 +354,7 @@ class Th2Output(inkex.Effect):
 		mat = self.i2d_affine(node)
 
 		# get x/y
-		if node.attrib.has_key('cx'):
-			params = [ inkex.unittouu(node.get('cx')), inkex.unittouu(node.get('cy', '0')) ]
-		elif node.attrib.has_key('x'):
-			params = [ inkex.unittouu(node.get('x')), inkex.unittouu(node.get('y', '0')) ]
-		elif node.attrib.has_key(sodipodi_cx):
-			params = [ inkex.unittouu(node.get(sodipodi_cx)),
-				inkex.unittouu(node.get(sodipodi_cy, '0')) ]
-		elif node.tag == svg_path:
-			params = path_center(node)
-		elif node.tag == svg_g:
-			params = g_center(node)
-		else:
-			params = [ 0, 0 ]
+		params = self.node_center(node)
 		params = transformParams(mat, params)
 
 		# get therion attributes
@@ -476,3 +387,5 @@ class Th2Output(inkex.Effect):
 if __name__ == '__main__':
 	e = Th2Output()
 	e.affect()
+
+# vi:noexpandtab:sw=4

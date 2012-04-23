@@ -25,6 +25,7 @@ class th2pref:
 	textonpath = True
 	image_inkscape = False
 	basescale = 1.0
+	xyascenter = True
 
 # first try to assure that the inkscape extensions dir in in PYTHONPATH
 # obsolete for inkscape-0.47
@@ -78,6 +79,9 @@ svg_textPath         = inkex.addNS('textPath','svg')
 svg_tspan            = inkex.addNS('tspan','svg')
 svg_g                = inkex.addNS('g', 'svg')
 svg_title            = inkex.addNS('title', 'svg')
+svg_ellipse          = inkex.addNS('ellipse', 'svg')
+svg_image            = inkex.addNS('image', 'svg')
+svg_symbol           = inkex.addNS('symbol', 'svg')
 therion_role         = inkex.addNS('role', 'therion')
 therion_type         = inkex.addNS('type', 'therion')
 therion_options      = inkex.addNS('options', 'therion')
@@ -401,6 +405,26 @@ def inverse(mat):
 		d[1][2] = -mat[0][2] * d[0][1] - mat[1][2] * d[1][1]
 	return d
 
+def parsePath(d):
+	'''
+	Parse line and replace quadratic bezier segments and arcs by
+	cubic bezier segments.
+	'''
+	import simplepath
+	p = simplepath.parsePath(d)
+	if any(cmd not in 'MLCZ' for (cmd,params) in p):
+		import cubicsuperpath
+		csp = cubicsuperpath.CubicSuperPath(p)
+		p = cubicsuperpath.unCubicSuperPath(csp)
+	return p
+
+def parseViewBox(viewBox, width, height):
+	'''
+	Returns the 2x3 transformation matrix that a viewBox defines
+	'''
+	if isinstance(viewBox, str):
+		viewBox = [float(i) for i in viewBox.split()]
+	return [[float(width) / viewBox[2], 0, -viewBox[0]], [0, float(height) / viewBox[3], -viewBox[1]]]
 
 ######################################
 # IO stuff
@@ -434,3 +458,172 @@ try:
 except:
 	import sys
 	inkex.errormsg = lambda msg: sys.stderr.write((str(msg) + "\n").encode("UTF-8"))
+
+######################################
+# inkex (and similar) fixed or enhanced functions
+
+class Th2Effect(inkex.Effect):
+
+	bbox_cache = {}
+	i2d_cache = {}
+
+	def i2d_affine(self, node, use_cache=True):
+		'''
+		Get the "item to document" transformation matrix.
+
+		Note: use_cache showed 20% speed improvement for a big SVG document
+		'''
+		if use_cache and node in self.i2d_cache:
+			return self.i2d_cache[node]
+
+		import simpletransform
+		m2 = simpletransform.parseTransform(node.get('transform'))
+
+		parent = node.getparent()
+		if parent is not None:
+			m1 = self.i2d_affine(parent, use_cache)
+			m2 = simpletransform.composeTransform(m1, m2)
+		else:
+			m2 = simpletransform.composeTransform(self.r2d, m2)
+			m2 = simpletransform.composeTransform([[th2pref.basescale, 0.0, 0.0],
+				[0.0, th2pref.basescale, 0.0]], m2)
+
+		self.i2d_cache[node] = m2
+		return m2
+
+	def node_center(self, node):
+		'''
+		Get the bounding box center, or for some particular cases x/y (like
+		for text to support alignment). Does not take the "transform" attibute
+		into account.
+		'''
+		# Text and Clones
+		if th2pref.xyascenter and node.tag in [ svg_text, 'text', svg_use, 'use' ]:
+			return map(inkex.unittouu, [node.get('x', '0'), node.get('y', '0')])
+		# Circles
+		if 'cx' in node.attrib:
+			return map(inkex.unittouu, [node.get('cx'), node.get('cy', '0')])
+		if sodipodi_cx in node.attrib:
+			return map(inkex.unittouu, [node.get(sodipodi_cx), node.get(sodipodi_cy, '0')])
+		# Others
+		bbox = self.compute_bbox(node, False)
+		if bbox is None:
+			return [0, 0]
+		return [(bbox[0] + bbox[1]) * 0.5, (bbox[2] + bbox[3]) * 0.5]
+
+	def compute_bbox(self, node, transform=True, use_cache=False):
+		'''
+		Compute the bounding box of a element in its parent coordinate system,
+		or in its own coordinate system if "transform" is False.
+
+		Uses a cache to not compute the bounding box multiple times for
+		elements like referenced symbols.
+
+		Returns [xmin, xmax, ymin, ymax]
+
+		Enhanced version of simpletransform.computeBBox()
+
+		Warning: Evaluates "transform" attribute for symbol tags, which is
+		wrong according to SVG spec, but matches Inkscape's behaviour.
+		'''
+		import cubicsuperpath
+		from simpletransform import boxunion, parseTransform, applyTransformToPath, formatTransform
+		try:
+			from simpletransform import refinedBBox
+		except:
+			from simpletransform import roughBBox as refinedBBox
+
+		d = None
+		recurse = False
+		node_bbox = None
+
+		if transform:
+			transform = node.get('transform', '')
+		else:
+			transform = ''
+
+		if use_cache and node in self.bbox_cache:
+			node_bbox = self.bbox_cache[node]
+		elif node.tag in [ svg_use, 'use' ]:
+			x, y = float(node.get('x', 0)), float(node.get('y', 0))
+			refid = node.get(xlink_href)
+			refnode = self.getElementById(refid[1:])
+
+			if refnode is None:
+				return None
+
+			if 'width' in node.attrib and 'height' in node.attrib and 'viewBox' in refnode.attrib:
+				mat = parseViewBox(refnode.get('viewBox'), node.get('width'), node.get('height'))
+				transform += ' ' + formatTransform(mat)
+
+			refbbox = self.compute_bbox(refnode, True, True)
+			node_bbox = [refbbox[0] + x, refbbox[1] + x, refbbox[2] + y, refbbox[3] + y]
+
+		elif node.get('d'):
+			d = node.get('d')
+		elif node.get('points'):
+			d = 'M' + node.get('points')
+		elif node.tag in [ svg_rect, 'rect', svg_image, 'image' ]:
+			d = 'M' + node.get('x', '0') + ',' + node.get('y', '0') + \
+				'h' + node.get('width') + 'v' + node.get('height') + \
+				'h-' + node.get('width')
+		elif node.tag in [ svg_line, 'line' ]:
+			d = 'M' + node.get('x1') + ',' + node.get('y1') + \
+				' ' + node.get('x2') + ',' + node.get('y2')
+		elif node.tag in [ svg_circle, 'circle', svg_ellipse, 'ellipse' ]:
+			rx = node.get('r')
+			if rx is not None:
+				ry = rx
+			else:
+				rx = node.get('rx')
+				ry = node.get('ry')
+			rx, ry = float(rx), float(ry)
+			cx = float(node.get('cx', '0'))
+			cy = float(node.get('cy', '0'))
+			node_bbox = [cx - rx, cx + rx, cy - ry, cy + ry]
+			'''
+			a = 0.555
+			d = 'M %f %f C' % (cx-rx, cy) + ' '.join('%f' % c for c in [
+				cx-rx,   cy-ry*a, cx-rx*a, cy-ry,   cx,    cy-ry,
+				cx+rx*a, cy-ry,   cx+rx,   cy-ry*a, cx+rx, cy,
+				cx+rx,   cy+ry*a, cx+rx*a, cy+ry,   cx,    cy+ry,
+				cx-rx*a, cy+ry,   cx-rx,   cy+ry*a, cx-rx, cy,
+				])
+			'''
+		elif node.tag in [ svg_text, 'text', svg_tspan, 'tspan' ]:
+			# very rough estimate of text bounding box
+			x = node.get('x', '0').split()
+			y = node.get('y', '0').split()
+			if len(x) == 1 and len(y) > 1:
+				x = x * len(y)
+			elif len(y) == 1 and len(x) > 1:
+				y = y * len(x)
+			d = 'M' + ' '.join('%f' % inkex.unittouu(c) for xy in zip(x, y) for c in xy)
+			recurse = True
+		elif node.tag in [ svg_g, 'g', svg_symbol, 'symbol', svg_svg, 'svg' ]:
+			recurse = True
+
+		if d is not None:
+			p = cubicsuperpath.parsePath(d)
+			node_bbox = refinedBBox(p)
+
+		if recurse:
+			for child in node:
+				child_bbox = self.compute_bbox(child, True, use_cache)
+				node_bbox = boxunion(child_bbox, node_bbox)
+
+		self.bbox_cache[node] = node_bbox
+
+		if transform.strip() != '':
+			mat = parseTransform(transform)
+			p = [[[	[node_bbox[0], node_bbox[2]],
+					[node_bbox[0], node_bbox[3]],
+					[node_bbox[1], node_bbox[2]],
+					[node_bbox[1], node_bbox[3]]]]]
+			applyTransformToPath(mat, p)
+			x, y = zip(*p[0][0])
+			node_bbox = [min(x), max(x), min(y), max(y)]
+
+		return node_bbox
+
+# vi:noexpandtab:sw=4
