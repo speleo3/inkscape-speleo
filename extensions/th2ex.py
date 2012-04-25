@@ -508,6 +508,7 @@ class Th2Effect(inkex.Effect):
 		# Others
 		bbox = self.compute_bbox(node, False)
 		if bbox is None:
+			inkex.errormsg('Warning: bbox is None, id=' + node.get('id', 'NONE'))
 			return [0, 0]
 		return [(bbox[0] + bbox[1]) * 0.5, (bbox[2] + bbox[3]) * 0.5]
 
@@ -557,7 +558,8 @@ class Th2Effect(inkex.Effect):
 				transform += ' ' + formatTransform(mat)
 
 			refbbox = self.compute_bbox(refnode, True, True)
-			node_bbox = [refbbox[0] + x, refbbox[1] + x, refbbox[2] + y, refbbox[3] + y]
+			if refbbox is not None:
+				node_bbox = [refbbox[0] + x, refbbox[1] + x, refbbox[2] + y, refbbox[3] + y]
 
 		elif node.get('d'):
 			d = node.get('d')
@@ -614,7 +616,7 @@ class Th2Effect(inkex.Effect):
 
 		self.bbox_cache[node] = node_bbox
 
-		if transform.strip() != '':
+		if transform.strip() != '' and node_bbox != None:
 			mat = parseTransform(transform)
 			p = [[[	[node_bbox[0], node_bbox[2]],
 					[node_bbox[0], node_bbox[3]],
