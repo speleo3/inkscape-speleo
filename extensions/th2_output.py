@@ -66,6 +66,7 @@ class Th2Output(Th2Effect):
 		self.OptionParser.add_option("--images",   type="inkbool", dest="images",   default=True)
 		self.OptionParser.add_option("--nolpe",    type="inkbool", dest="nolpe",    default=True)
 		self.OptionParser.add_option("--lay2scr",  type="inkbool", dest="lay2scr",  default=True)
+		self.OptionParser.add_option("--xyascenter", type="inkbool", dest="xyascenter", default=True)
 		if th2pref.textonpath:
 			self.textpath_dict = dict()
 
@@ -93,6 +94,7 @@ class Th2Output(Th2Effect):
 
 		# load prefs from file
 		th2pref_load_from_xml(root)
+		th2pref.xyascenter = self.options.xyascenter
 
 		self.r2d = [[1, 0, 0],[0, -1, doc_height]]
 		viewBox = root.get('viewBox')
