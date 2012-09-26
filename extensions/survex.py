@@ -94,6 +94,15 @@ class Station(object):
         return self.labels[0]
 
     @property
+    def therionlabel(self):
+        '''Therion style label, x.y.z becomes z@y.x'''
+        a = self.label.split('.')
+        if len(a) == 1:
+            return a[0]
+        a.reverse()
+        return a[0] + '@' + '.'.join(a[1:])
+
+    @property
     def x(self): return self.xyz[0]
     @property
     def y(self): return self.xyz[1]
