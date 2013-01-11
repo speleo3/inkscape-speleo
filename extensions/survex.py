@@ -36,7 +36,16 @@ Example usage:
     >>> survey['p40a'].is_surface()
     True
 
+    sort stations by date
+    >>> x = sorted(survey, key=lambda s: s.date)
+    >>> x[0].date
+    DateNone
+    >>> x[-1].date
+    Date(2012, 8, 29)
+
 '''
+
+import datetime
 
 class Station(object):
     '''
@@ -49,6 +58,7 @@ class Station(object):
         self.connected_from = []
         self.connected_to = []
         self.flag = 0
+        self.date = DateNone
 
     def __repr__(self):
         return '<%s %s%s>' % (self.__class__.__name__,
@@ -217,6 +227,7 @@ class Survex3D(object):
         self.passages = [] # passages with LRUD data
         self._prev = None
         self._curr_label = ''
+        self._curr_date = DateNone
 
     def reindex(self):
         '''Update label to station mapping'''
@@ -292,6 +303,7 @@ class Survex3D(object):
         station = self.xyz2sta.get(xyz)
         if station is None:
             station = self.xyz2sta[xyz] = Station(xyz)
+            station.date = self._curr_date
         return station
 
     def iterstations(self):
@@ -345,18 +357,31 @@ class Survex3D(object):
 
         If "numpy" is not available this might be very slow.
         '''
-        common = set(self.xyz2sta).intersection(other.xyz2sta)
-        if len(common) > 0:
+        X = list(self.xyz2sta)
+        Y = list(other.xyz2sta)
+
+        if set(X).intersection(Y):
             raise ValueError('self and other must not have stations in common')
 
+        try:
+            from scipy import inf, spatial
+        except ImportError:
+            return self._neareststations_no_scipy(other, X, Y)
+
+        tree = spatial.cKDTree(X)
+        d, i = tree.query(Y)
+
+        j = d.argmin()
+        return d[j], self[X[i[j]]], other[Y[j]]
+
+    def _neareststations_no_scipy(self, other, X, Y):
         try:
             from numpy import array
         except ImportError:
             print 'Warning: no numpy available, calculation might be very slow'
             return min((s1.distance(s2), s1, s2) for s1 in self for s2 in other)
 
-        X = array(list(self.xyz2sta), int)
-        Y = array(list(other.xyz2sta), int)
+        Y = array(Y, int)
 
         # calculate rows of the distance matrix as trade-off between speed
         # and memory (full distance matrix at once would be fastest, but can
@@ -435,24 +460,24 @@ class Survex3D(object):
             elif byte <= 0x20:
                 # DATE
                 if ff_version < 7:
-                    skip_bytes(4)
+                    self._curr_date = Date.fromseconds(*unpack('<L', f.read(4)))
                 else:
-                    skip_bytes(2)
+                    self._curr_date = Date.fromdays(*unpack('<H', f.read(2)))
             elif byte <= 0x21:
                 # DATE
                 if ff_version < 7:
-                    skip_bytes(8)
+                    self._curr_date = Date.fromseconds(*unpack('<LL', f.read(8)))
                 else:
-                    skip_bytes(3)
+                    self._curr_date = Date.fromdaysspan(*unpack('<HB', f.read(3)))
             elif byte <= 0x22:
                 # Error info
                 skip_bytes(5 * 4)
             elif byte <= 0x23:
                 # DATE
-                skip_bytes(4)
+                self._curr_date = Date.fromdays(*unpack('<HH', f.read(4)))
             elif byte <= 0x24:
                 # DATE
-                continue
+                self._curr_date = DateNone
             elif byte <= 0x2f:
                 # Reserved
                 continue
@@ -482,6 +507,35 @@ class Survex3D(object):
             elif byte <= 0xff:
                 # Reserved
                 continue
+
+class Date(datetime.date):
+    '''
+    Survey date range
+    '''
+    @classmethod
+    def fromdays(cls, date1, date2=None):
+        self = cls.fromordinal(693596 + date1)
+        self.end = cls.fromdays(date2) if date2 else self
+        return self
+
+    @classmethod
+    def fromdaysspan(cls, date1, datespan):
+        return cls.fromdays(date1, date1 + datespan)
+
+    @classmethod
+    def fromseconds(cls, date1, date2=None):
+        self = cls.fromtimestamp(date1)
+        self.end = cls.fromtimestamp(date2) if date2 else self
+        return self
+
+class DateNone(Date):
+    '''
+    Singleton for missing date information.
+    '''
+    __nonzero__ = lambda s: False
+    __repr__ = lambda s: s.__class__.__name__
+    __str__ = __repr__
+Date.end = DateNone = DateNone(1, 1, 1)
 
 def natkey(s):
     '''
