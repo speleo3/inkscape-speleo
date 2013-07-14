@@ -106,9 +106,12 @@ def title_node(parent):
 	return title
 
 def get_style(node):
+	import simplestyle
 	return simplestyle.parseStyle(node.get('style', ''))
 
 def get_style_attr(node, style, key, d=''):
+	if style is None:
+		style = get_style(node)
 	d = node.get(key, d)
 	return style.get(key, d)
 
@@ -263,9 +266,15 @@ def maybe_line(node):
 			node.tag == svg_rect or \
 			node.tag == svg_polygon
 
+def is_closed_line(node):
+	if node.tag == svg_polygon:
+		return True
+	d = node.get('d', '')
+	return d.rstrip()[-1:].lower() == 'z'
+
 def set_props(e, role, type, options={}):
 	'''
-	Set both, inkscape:label and therion:... attributes
+	Annotate SVG element with role, type and options.
 	'''
 	assert role != 'scrap', 'Cannot use set_props for scraps'
 	options_str = format_options(options)
@@ -273,14 +282,14 @@ def set_props(e, role, type, options={}):
 		for key in [therion_role, therion_type, therion_options]:
 			if key in e.attrib:
 				del e.attrib[key]
-	if role == '':
-		role = '_unknown_'
-	if type == '':
-		type = 'u:unknown'
-	if th2pref.howtostore == 'inkscape_label':
-		e.set(inkscape_label, "%s %s %s" % (role, type, options_str))
-	elif th2pref.howtostore == 'title':
-		title_node(e).text = "%s %s %s" % (role, type, options_str)
+	if th2pref.howtostore in ['inkscape_label', 'title']:
+		if role == '': role = '_unknown_'
+		if type == '': type = 'u:unknown'
+		label = "%s %s %s" % (role, type, options_str)
+		if th2pref.howtostore == 'inkscape_label':
+			e.set(inkscape_label, label)
+		else:
+			title_node(e).text = label
 	elif th2pref.howtostore == 'therion_attribs':
 		e.set(therion_role, role)
 		e.set(therion_type, type)
@@ -290,8 +299,7 @@ def set_props(e, role, type, options={}):
 
 def get_props(e):
 	'''
-	First parse inkscape:label, second therion:... attributes (so the latter
-	has preference)
+	Get list of (str role, str type, dict options) from annotated SVG element.
 	'''
 	assert e.get(therion_role) != 'scrap', 'Cannot use get_props for scraps'
 	role, type, options, label = '', '', '', []
@@ -321,10 +329,15 @@ def get_props(e):
 		elif maybe_line(e):
 			role = 'line'
 	if type == '':
+		# fallback values
 		if role == 'line':
-			type = 'wall' # fallback for unannotated files
+			fill = get_style_attr(e, None, 'fill', 'none')
+			if fill != 'none' and is_closed_line(e):
+				role = fill2role.get(fill.lower(), 'u:area')
+			else:
+				type = 'wall'
 		elif role == 'point' and e.tag == svg_text:
-			type = 'label' # fallback for unannotated files
+			type = 'label'
 		else:
 			type = 'u:unknown'
 	return [role, type, options]
@@ -382,6 +395,13 @@ text_keys_output = {
 }
 text_keys_output.update(text_keys)
 
+# line fill to role mapping
+fill2role = {
+	'blue': 'u:water',
+	'#0000ff': 'u:water',
+	'yellow': 'u:sand',
+	'#ffff00': 'u:sand',
+}
 
 ##########################################
 # geom stuff
