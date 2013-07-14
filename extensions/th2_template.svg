@@ -365,6 +365,9 @@ path.line.u.RED { stroke: red }
 		}
 		path.line.border {
 			stroke:#9c9;
+			stroke-width:0.4;
+			marker-start:none;
+			marker-end:none;
 		}
 		path.line.rock-border {
 			stroke:black;
