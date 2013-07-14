@@ -230,6 +230,26 @@ class Th2Output(Th2Effect):
 				return [True, desc[0].text.rstrip()]
 		return [False, node_options]
 
+	def get_d(self, node):
+		d = node.get(inkscape_original_d)
+		if not d or not self.options.nolpe:
+			d = node.get('d')
+		if not d:
+			if node.tag == svg_g:
+				# TODO: i2d_affine of children
+				d = ' M 0,0 '.join(self.get_d(child) for child in reversed(node))
+			elif node.attrib.has_key('points'):
+				d = 'M' + node.get('points')
+				if node.tag == svg_polygon:
+					d += ' z'
+			elif node.attrib.has_key('x1'):
+				d = 'M' + node.get('x1') + ',' + node.get('y1') + 'L' + node.get('x2') + ',' + node.get('y2')
+			elif 'width' in node.attrib and 'height' in node.attrib:
+				width = node.get('width')
+				height = node.get('height')
+				d = 'M' + node.get('x', '0') + ',' + node.get('y', '0') + 'h' + width + 'v' + height + 'h-' + width + 'z'
+		return d or ''
+
 	def output_line(self, node):
 		mat = self.i2d_affine(node)
 
@@ -244,20 +264,9 @@ class Th2Output(Th2Effect):
 				options.update(self.textpath_dict[node_id])
 
 		# get path data
-		d = node.get(inkscape_original_d)
-		if not d or not self.options.nolpe:
-			d = node.get('d')
-		if not d and node.attrib.has_key('points'):
-			d = 'M' + node.get('points')
-			if node.tag == svg_polygon:
-				d += ' z'
-		if not d and node.attrib.has_key('x1'):
-			d = 'M' + node.get('x1') + ',' + node.get('y1') + 'L' + node.get('x2') + ',' + node.get('y2')
-		if not d and 'width' in node.attrib and 'height' in node.attrib:
-			width = node.get('width')
-			height = node.get('height')
-			d = 'M' + node.get('x', '0') + ',' + node.get('y', '0') + 'h' + width + 'v' + height + 'h-' + width + 'z'
+		d = self.get_d(node)
 		if not d:
+			inkex.errormsg('no path data for element %s' % (node))
 			return
 		p = parsePath(d)
 
@@ -390,4 +399,4 @@ if __name__ == '__main__':
 	e = Th2Output()
 	e.affect()
 
-# vi:noexpandtab:sw=4
+# vi:noexpandtab:sw=4:ts=4
