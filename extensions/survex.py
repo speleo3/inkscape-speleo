@@ -252,7 +252,7 @@ class Survex3D(object):
     def _move(self, xyz):
         self._prev = self._get_or_new(xyz)
 
-    def _line(self, xyz):
+    def _line(self, xyz, flag=0):
         assert self._prev != None
         station = self._get_or_new(xyz)
         station.connect(self._prev)
@@ -412,6 +412,7 @@ class Survex3D(object):
 
         self.title = unicode(f.readline().rstrip(), 'latin1') # Survex title
         self.timestamp = f.readline().rstrip() # Timestamp
+        self.flags = ord(f.read(1))
 
         def read_xyz():
             return unpack('<iii', f.read(12))
@@ -429,9 +430,99 @@ class Survex3D(object):
             if length > 0:
                 self._curr_label += skip_bytes(length)
 
+        def read_len_v8():
+            byte = ord(f.read(1))
+            if byte != 0xFF:
+                return byte
+            return unpack('<I', f.read(4))[0]
+
+        def read_label_v8():
+            byte = ord(f.read(1))
+            if byte != 0x00:
+                ndel = byte >> 4
+                nadd = byte & 0x0F
+            else:
+                ndel = read_len_v8()
+                nadd = read_len_v8()
+            oldlen = len(self._curr_label)
+            self._curr_label = self._curr_label[:oldlen - ndel] + skip_bytes(nadd)
+
         def skip_bytes(n):
             return f.read(n)
 
+        if ff_version >= 8:
+            style = -1
+
+            while True:
+                byte = f.read(1)
+                if byte == '':
+                    break
+
+                byte = ord(byte)
+
+                if byte <= 0x05:
+                    # STYLE_*
+                    if byte == 0x00 and style == 0x00:
+                        break
+                    style = byte
+                elif byte <= 0x0e:
+                    # Reserved
+                    continue
+                elif byte == 0x0f:
+                    # MOVE
+                    xyz = read_xyz()
+                    self._move(xyz)
+                elif byte == 0x10:
+                    # DATE
+                    self._curr_date = DateNone
+                elif byte == 0x11:
+                    # DATE
+                    self._curr_date = Date.fromdays(*unpack('<H', f.read(2)))
+                elif byte == 0x12:
+                    # DATE
+                    self._curr_date = Date.fromdaysspan(*unpack('<HB', f.read(3)))
+                elif byte == 0x13:
+                    # DATE
+                    self._curr_date = Date.fromdays(*unpack('<HH', f.read(4)))
+                elif byte <= 0x1e:
+                    # Reserved
+                    continue
+                elif byte == 0x1f:
+                    # Error info
+                    skip_bytes(5 * 4)
+                elif byte <= 0x2f:
+                    # Reserved
+                    continue
+                elif byte <= 0x31:
+                    # XSECT
+                    read_label_v8()
+                    lrud = unpack('<hhhh', f.read(8))
+                    self._lrud(lrud, byte & 0x01)
+                elif byte <= 0x33:
+                    # XSECT
+                    read_label_v8()
+                    lrud = unpack('<iiii', f.read(16))
+                    self._lrud(lrud, byte & 0x01)
+                elif byte <= 0x3f:
+                    # Reserved
+                    continue
+                elif byte <= 0x7f:
+                    # LINE
+                    flag = byte & 0x3f
+                    if not (flag & 0x20):
+                        read_label_v8()
+                    xyz = read_xyz()
+                    self._line(xyz, flag)
+                elif byte <= 0xff:
+                    # LABEL
+                    flag = byte & 0x7f
+                    read_label_v8()
+                    xyz = read_xyz()
+                    self._label(xyz, byte & 0x7f)
+
+            return
+
+        # ff_version < 8
         while True:
             byte = f.read(1)
             if byte == '':
