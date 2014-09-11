@@ -5,7 +5,6 @@ Distributed under the terms of the GNU General Public License v2
 
 TODO
  * support line options between line data, for example by splitting lines and grouping
- * scale input coordinates to given base-scale
  * Place XVI correct!
 '''
 

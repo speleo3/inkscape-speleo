@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# vi: noexpandtab:sw=4:ts=4
 '''
 Copyright (C) 2008 Thomas Holder, http://sf.net/users/speleo3/
 Distributed under the terms of the GNU General Public License v2
@@ -153,6 +154,24 @@ def read_label():
 		global curr_label
 		curr_label += skip_bytes(len)
 
+def read_len_v8():
+	byte = read_byte()
+	if byte != 0xFF:
+		return byte
+	return unpack('<I', f.read(4))[0]
+
+def read_label_v8():
+	global curr_label
+	byte = read_byte()
+	if byte != 0x00:
+		ndel = byte >> 4
+		nadd = byte & 0x0F
+	else:
+		ndel = read_len_v8()
+		nadd = read_len_v8()
+	oldlen = len(curr_label)
+	curr_label = curr_label[:oldlen - ndel] + skip_bytes(nadd)
+
 def skip_bytes(n):
 	return f.read(n)
 
@@ -162,8 +181,88 @@ def read_byte():
 		return -1
 	return ord(byte)
 
-while 1:
-	byte = read_byte()
+def _label(xyz, flags):
+	if filter_len == 0:
+		labels[curr_label] = xyz[0:2]
+	elif curr_label.startswith(args['filter']):
+		tmp_label = curr_label[filter_len:]
+		labels[tmp_label] = xyz[0:2]
+
+if ff_version >= 8:
+	flags = read_byte()
+
+	style = -1
+
+	while True:
+		byte = f.read(1)
+		if byte == '':
+			break
+
+		byte = ord(byte)
+
+		if byte <= 0x05:
+			# STYLE_*
+			if byte == 0x00 and style == 0x00:
+				break
+			style = byte
+		elif byte <= 0x0e:
+			# Reserved
+			continue
+		elif byte == 0x0f:
+			# MOVE
+			xyz = read_xyz()
+			coords.append('M')
+			coords.extend(xyz)
+		elif byte == 0x10:
+			# DATE
+			pass
+		elif byte == 0x11:
+			# DATE
+			skip_bytes(2)
+		elif byte == 0x12:
+			# DATE
+			skip_bytes(3)
+		elif byte == 0x13:
+			# DATE
+			skip_bytes(4)
+		elif byte <= 0x1e:
+			# Reserved
+			continue
+		elif byte == 0x1f:
+			# Error info
+			skip_bytes(5 * 4)
+		elif byte <= 0x2f:
+			# Reserved
+			continue
+		elif byte <= 0x31:
+			# XSECT
+			read_label_v8()
+			skip_bytes(4 * 2)
+		elif byte <= 0x33:
+			# XSECT
+			read_label_v8()
+			skip_bytes(4 * 4)
+		elif byte <= 0x3f:
+			# Reserved
+			continue
+		elif byte <= 0x7f:
+			# LINE
+			flag = byte & 0x3f
+			if not (flag & 0x20):
+				read_label_v8()
+			xyz = read_xyz()
+			coords.append('L')
+			coords.extend(xyz)
+		elif byte <= 0xff:
+			# LABEL
+			flag = byte & 0x7f
+			read_label_v8()
+			xyz = read_xyz()
+			_label(xyz, byte & 0x7f)
+
+while ff_version < 8:
+	skip_bytes(1) # flags
+
 	if byte == -1:
 		break
 	
@@ -224,11 +323,7 @@ while 1:
 		# LABEL
 		read_label()
 		xyz = read_xyz()
-		if filter_len == 0:
-			labels[curr_label] = xyz[0:2]
-		elif curr_label.startswith(args['filter']):
-			tmp_label = curr_label[filter_len:]
-			labels[tmp_label] = xyz[0:2]
+		_label(xyz, 0x0)
 	elif byte <= 0xbf:
 		# LINE
 		read_label()

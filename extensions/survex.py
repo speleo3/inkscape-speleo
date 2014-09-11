@@ -412,7 +412,7 @@ class Survex3D(object):
 
         self.title = unicode(f.readline().rstrip(), 'latin1') # Survex title
         self.timestamp = f.readline().rstrip() # Timestamp
-        self.flags = ord(f.read(1))
+        self.flags = 0x0
 
         def read_xyz():
             return unpack('<iii', f.read(12))
@@ -451,6 +451,8 @@ class Survex3D(object):
             return f.read(n)
 
         if ff_version >= 8:
+            self.flags = ord(f.read(1))
+
             style = -1
 
             while True:
