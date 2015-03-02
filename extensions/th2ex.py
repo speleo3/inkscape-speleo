@@ -484,6 +484,11 @@ except:
 
 class Th2Effect(inkex.Effect):
 
+	try:
+		inkex.Effect.unittouu
+	except AttributeError:
+		unittouu = inkex.unittouu
+
 	bbox_cache = {}
 	i2d_cache = {}
 
@@ -519,12 +524,12 @@ class Th2Effect(inkex.Effect):
 		'''
 		# Text and Clones
 		if th2pref.xyascenter and node.tag in [ svg_text, 'text', svg_use, 'use' ]:
-			return map(inkex.unittouu, [node.get('x', '0'), node.get('y', '0')])
+			return map(self.unittouu, [node.get('x', '0'), node.get('y', '0')])
 		# Circles
 		if 'cx' in node.attrib:
-			return map(inkex.unittouu, [node.get('cx'), node.get('cy', '0')])
+			return map(self.unittouu, [node.get('cx'), node.get('cy', '0')])
 		if sodipodi_cx in node.attrib:
-			return map(inkex.unittouu, [node.get(sodipodi_cx), node.get(sodipodi_cy, '0')])
+			return map(self.unittouu, [node.get(sodipodi_cx), node.get(sodipodi_cy, '0')])
 		# Others
 		bbox = self.compute_bbox(node, False)
 		if bbox is None:
@@ -620,7 +625,7 @@ class Th2Effect(inkex.Effect):
 				x = x * len(y)
 			elif len(y) == 1 and len(x) > 1:
 				y = y * len(x)
-			d = 'M' + ' '.join('%f' % inkex.unittouu(c) for xy in zip(x, y) for c in xy)
+			d = 'M' + ' '.join('%f' % self.unittouu(c) for xy in zip(x, y) for c in xy)
 			recurse = True
 		elif node.tag in [ svg_g, 'g', svg_symbol, 'symbol', svg_svg, 'svg' ]:
 			recurse = True

@@ -12,7 +12,7 @@ except:
 	import inkex
 import simpletransform
 
-def i2d_affine(node):
+def i2d_affine(self, node):
     m2 = simpletransform.parseTransform(node.get('transform'))
     while True:
         node = node.getparent()
@@ -22,8 +22,8 @@ def i2d_affine(node):
         t1 = node.get('transform')
         if viewBox:
             viewBox = [float(i) for i in viewBox.split()]
-            doc_width = inkex.unittouu(node.get('width', viewBox[2]))
-            doc_height = inkex.unittouu(node.get('height', viewBox[3]))
+            doc_width = self.unittouu(node.get('width', viewBox[2]))
+            doc_height = self.unittouu(node.get('height', viewBox[3]))
             m1 = [[doc_width / viewBox[2], 0, -viewBox[0]], [0, doc_height / viewBox[3], -viewBox[1]]]
         elif t1:
             m1 = simpletransform.parseTransform(t1)
@@ -112,6 +112,12 @@ class Scalebar:
 		return inkex.etree.tostring(self.g)
 
 class InsertScalebar(inkex.Effect):
+
+	try:
+		inkex.Effect.unittouu
+	except AttributeError:
+		unittouu = inkex.unittouu
+
 	def __init__(self):
 		inkex.Effect.__init__(self)
 		self.OptionParser.add_option("--scale",
@@ -142,13 +148,13 @@ class InsertScalebar(inkex.Effect):
 		if height[-1] == '%':
 			height = 1052.36 # assume default A4 height
 		else:
-			height = inkex.unittouu(height)
+			height = self.unittouu(height)
 		y = height - xy[1]
 		return (xy[0], y)
 	
 	def effect(self):
 		layer = self.get_current_layer()
-		affine = inverse(i2d_affine(layer))
+		affine = inverse(i2d_affine(self, layer))
 		transform = simpletransform.formatTransform(affine) + \
 			' translate' + str(self.view_center)
 

@@ -89,8 +89,8 @@ class Th2Output(Th2Effect):
 
 	def output(self):
 		root = self.document.getroot()
-		doc_width = inkex.unittouu(root.get('width'))
-		doc_height = inkex.unittouu(root.get('height'))
+		doc_width = self.unittouu(root.get('width'))
+		doc_height = self.unittouu(root.get('height'))
 
 		# load prefs from file
 		th2pref_load_from_xml(root)
@@ -129,7 +129,7 @@ class Th2Output(Th2Effect):
 					self.document.xpath('//svg:g[@therion:type="xth_me_image_insert"]', namespaces=inkex.NSS)
 			#for node in reversed(images):
 			for node in images:
-				params = [ inkex.unittouu(node.get('x', '0')), inkex.unittouu(node.get('y', '0')) ]
+				params = [ self.unittouu(node.get('x', '0')), self.unittouu(node.get('y', '0')) ]
 				mat = self.i2d_affine(node)
 				href = node.get(xlink_href, '')
 				if href == '': # xvi image (svg:g)
@@ -349,7 +349,7 @@ class Th2Output(Th2Effect):
 		if fontsize[-1] == '%':
 			fontsize = float(fontsize[:-1]) / 100.0 * 12;
 		else:
-			fontsize = inkex.unittouu(fontsize)
+			fontsize = self.unittouu(fontsize)
 		if mat is not None:
 			fontsize *= descrim(mat)
 		if fontsize > 17:
