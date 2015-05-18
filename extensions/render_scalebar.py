@@ -49,7 +49,7 @@ def inverse(mat):
     return d
 
 class Scalebar:
-	def __init__(self, scale, dpi = 90):
+	def __init__(self, scale, dpi = 90, text = "Scale"):
 		mag = int(math.log10(scale))
 
 		if mag < 2:
@@ -99,11 +99,12 @@ class Scalebar:
 				node.text += units
 			self.g.append(node)
 
-		node = inkex.etree.Element('text')
-		node.set('y', '-5')
-		node.set('style', 'text-anchor:start')
-		node.text = u"Maßstab 1:" + str(scale)
-		self.g.append(node)
+		if len(text):
+			node = inkex.etree.Element('text')
+			node.set('y', '-5')
+			node.set('style', 'text-anchor:start')
+			node.text = unicode(str(text), "utf-8") + " 1:" + str(scale)
+			self.g.append(node)
 	
 	def get_tree(self):
 		return self.g
@@ -128,6 +129,10 @@ class InsertScalebar(inkex.Effect):
 						action="store", type="int",
 						dest="dpi", default=90,
 						help="DPI")
+		self.OptionParser.add_option("--text",
+				action="store", type="string", 
+				dest="text", default="")
+
 	
 	def get_current_layer(self):
 		layer = self.current_layer
@@ -158,7 +163,7 @@ class InsertScalebar(inkex.Effect):
 		transform = simpletransform.formatTransform(affine) + \
 			' translate' + str(self.view_center)
 
-		g = Scalebar(self.options.scale, self.options.dpi).get_tree()
+		g = Scalebar(self.options.scale, self.options.dpi, self.options.text).get_tree()
 		g.set('transform', transform)
 		layer.append(g)
 
