@@ -49,7 +49,7 @@ def inverse(mat):
     return d
 
 class Scalebar:
-	def __init__(self, scale, dpi = 90, text = "Scale"):
+	def __init__(self, scale, dpi = 90, text = "Scale", docunit = 1.0):
 		mag = int(math.log10(scale))
 
 		if mag < 2:
@@ -71,9 +71,9 @@ class Scalebar:
 		else:
 			step = 5
 
-		steplength = dpi / 2.54 / scale * step * 10 ** mag
+		steplength = dpi / 2.54 / scale * step * 10 ** mag / docunit;
 
-		d = "m%f,0 h-%f v7 h%f z " % (2 * steplength, steplength, steplength) * 3
+		d = "m%f,0 h-%f v%f h%f z " % (2 * steplength, steplength, 7 / docunit, steplength) * 3
 		d = d.replace(' ', ' m-%f,0 ' % steplength, 1)
 
 		self.g = inkex.etree.Element('g')
@@ -86,14 +86,15 @@ class Scalebar:
 		self.g.append(node)
 
 		node = inkex.etree.Element('path')
-		node.set('d', 'M0,0 h%f M0,7 h%f' % (steplength * 5, steplength * 5))
-		node.set('style', 'fill:none;stroke:black;stroke-width:0.5')
+		node.set('d', 'M0,0 h%f M0,%f h%f' % (steplength * 5, 7 / docunit, steplength * 5))
+		node.set('style', 'fill:none;stroke:black;stroke-width:' + str(0.5 / docunit))
 		self.g.append(node)
 
 		for i in range(6):
 			node = inkex.etree.Element('text')
-			node.set('x', str(steplength * i))
-			node.set('y', '18')
+			node.set('x', str(steplength * i * docunit))
+			node.set('y', str(18))
+			node.set('transform', 'scale(' + str(1 / docunit) + ')')
 			node.text = str(step * i * factor)
 			if i == 5:
 				node.text += units
@@ -101,8 +102,9 @@ class Scalebar:
 
 		if len(text):
 			node = inkex.etree.Element('text')
-			node.set('y', '-5')
+			node.set('y', str(-5 / docunit))
 			node.set('style', 'text-anchor:start')
+			node.set('transform', 'scale(' + str(1 / docunit) + ')')
 			node.text = unicode(str(text), "utf-8") + " 1:" + str(scale)
 			self.g.append(node)
 	
@@ -163,7 +165,7 @@ class InsertScalebar(inkex.Effect):
 		transform = simpletransform.formatTransform(affine) + \
 			' translate' + str(self.view_center)
 
-		g = Scalebar(self.options.scale, self.options.dpi, self.options.text).get_tree()
+		g = Scalebar(self.options.scale, self.options.dpi, self.options.text, self.uutounit(1, 'px')).get_tree()
 		g.set('transform', transform)
 		layer.append(g)
 
