@@ -99,7 +99,7 @@ class Th2SetProps(inkex.Effect):
 						del node.attrib[inkscape_path_effect]
 						if inkscape_original_d in node.attrib:
 							node.set('d', node.get(inkscape_original_d))
-							del node.attrib[inkscape_path_effect]
+							del node.attrib[inkscape_original_d]
 
 e = Th2SetProps()
 e.affect()
