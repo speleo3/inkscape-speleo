@@ -329,6 +329,7 @@ def get_props(e):
 		elif maybe_line(e):
 			role = 'line'
 	if type == '':
+		type = 'u:unknown'
 		# fallback values
 		if role == 'line':
 			fill = get_style_attr(e, None, 'fill', 'none')
@@ -336,10 +337,14 @@ def get_props(e):
 				role = fill2role.get(fill.lower(), 'u:area')
 			else:
 				type = 'wall'
-		elif role == 'point' and e.tag == svg_text:
-			type = 'label'
-		else:
-			type = 'u:unknown'
+		elif role == 'point':
+			if e.tag == svg_text:
+				type = 'label'
+			elif e.tag == svg_use:
+				# guess from reference id
+				m = re.match(r'#point-(.*)', e.get(xlink_href, ''))
+				if m is not None:
+					type = m.group(1)
 	return [role, type, options]
 
 def get_props_dict(e):
@@ -658,4 +663,4 @@ class Th2Effect(inkex.Effect):
 
 		return node_bbox
 
-# vi:noexpandtab:sw=4
+# vi:noexpandtab:sw=4:ts=4
