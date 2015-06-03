@@ -489,6 +489,11 @@ class Th2Effect(inkex.Effect):
 	except AttributeError:
 		unittouu = inkex.unittouu
 
+	def getDocumentUnit(self):
+		'''Overload inkex.Effect.getDocumentUnit to restore the
+		original inkex.unittouu behavior'''
+		return 'px'
+
 	bbox_cache = {}
 	i2d_cache = {}
 
