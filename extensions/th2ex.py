@@ -455,7 +455,7 @@ def parseViewBox(viewBox, width, height):
 # IO stuff
 
 def find_in_pwd(filename, path=[]):
-	for dirname in ['', os.environ['PWD']] + path:
+	for dirname in ['', os.getcwd()] + path:
 		candidate = os.path.join(dirname, filename)
 		if os.path.exists(candidate):
 			return candidate
