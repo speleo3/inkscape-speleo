@@ -20,6 +20,7 @@
     <item value="10000">1:10000</item>
     <item value="25000">1:25000</item>
   </param>
+  <param name="text" type="string" _gui-text="Text">Scale</param>
   <effect>
     <object-type>all</object-type>
     <effects-menu>
