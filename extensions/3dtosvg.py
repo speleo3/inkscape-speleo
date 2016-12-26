@@ -35,6 +35,8 @@ Changelog:
  * 2011-01-23: New args use_inkscape_label, use_therion_attribs
 '''
 
+from __future__ import print_function
+
 import sys, math, os
 from struct import unpack
 
@@ -111,15 +113,15 @@ if not os.path.exists(infile):
 f = open(infile, 'rb')
 
 line = f.readline() # File ID
-if not line.startswith('Survex 3D Image File'):
+if not line.startswith(b'Survex 3D Image File'):
 	die("not a Survex 3D File, aborting")
 
 line = f.readline() # File format version
-assert line[0] == 'v'
+assert line.startswith(b'v')
 ff_version = int(line[1:])
 
-line = unicode(f.readline(), 'latin1') # Survex title
-if line.rstrip().endswith(' (extended)'):
+line = f.readline() # Survex title
+if line.rstrip().endswith(b' (extended)'):
 	args['view'] = 2
 	args['bearing'] = 0
 
@@ -148,11 +150,18 @@ def read_len():
 		length += unpack('<I', f.read(4))[0]
 	return length
 
+if sys.version_info[0] > 2:
+	def _read_label(n):
+		return f.read(n).decode('ascii')
+else:
+	def _read_label(n):
+		return f.read(n)
+
 def read_label():
 	len = read_len()
 	if len > 0:
 		global curr_label
-		curr_label += skip_bytes(len)
+		curr_label += _read_label(len)
 
 def read_len_v8():
 	byte = read_byte()
@@ -170,7 +179,7 @@ def read_label_v8():
 		ndel = read_len_v8()
 		nadd = read_len_v8()
 	oldlen = len(curr_label)
-	curr_label = curr_label[:oldlen - ndel] + skip_bytes(nadd)
+	curr_label = curr_label[:oldlen - ndel] + _read_label(nadd)
 
 def skip_bytes(n):
 	return f.read(n)
@@ -261,7 +270,7 @@ if ff_version >= 8:
 			_label(xyz, byte & 0x7f)
 
 while ff_version < 8:
-	skip_bytes(1) # flags
+	byte = read_byte()
 
 	if byte == -1:
 		break
@@ -363,7 +372,7 @@ marker = {
 style = [
 	'fill:none',
 	'stroke:#900',
-	'stroke-width:' + str(args['scale'] / 50),
+	'stroke-width:' + str(max(0.1, args['scale'] / 50)),
 	'stroke-linecap:round',
 	'stroke-linejoin:round',
 	'marker-start:' + marker,
@@ -372,47 +381,47 @@ style = [
 ]
 
 def print_path():
-	print '<path style="%s"' % (';'.join(style))
+	print('<path style="%s"' % (';'.join(style)))
 	if args['use_therion_attribs']:
-		print '  therion:type="survey"'
+		print('  therion:type="survey"')
 	if args['use_inkscape_label']:
-		print '  inkscape:label="line survey"'
+		print('  inkscape:label="line survey"')
 	sys.stdout.write('d="')
 	for i in range(0, len(coords), 4):
 		sys.stdout.write(coords[i] + " " +
 			str(coords[i + 1] - min_x) + "," +
 			str(coords[i + 2] - min_y) + " ")
 	sys.stdout.write('"');
-	print ' />'
+	print(' />')
 
 def print_points():
 	prev = [ -1, -1 ]
-	for label,xy in labels.iteritems():
+	for label,xy in labels.items():
 		if xy == prev:
 			continue
 		label = name_survex2therion(label)
-		print '<use transform="translate(%f,%f)" xlink:href="#point-station"' \
-			% (xy[0] - min_x, xy[1] - min_y)
+		print('<use transform="translate(%f,%f)" xlink:href="#point-station"' \
+			% (xy[0] - min_x, xy[1] - min_y))
 		if args['use_therion_attribs']:
-			print '  therion:role="point" therion:type="station"'
+			print('  therion:role="point" therion:type="station"')
 		if args['use_inkscape_label']:
-			print '  inkscape:label="point station -name %s" />' % (label)
+			print('  inkscape:label="point station -name %s" />' % (label))
 		else:
-			print '  inkscape:label="%s" />' % (label)
+			print('  inkscape:label="%s" />' % (label))
 		prev = xy
 
 def print_stationnames():
-	for label,xy in labels.iteritems():
+	for label,xy in labels.items():
 		label = label.rsplit('.', 1)[-1]
-		print '<text transform="translate(%f,%f) scale(%f) translate(4,2)"' \
-			% (xy[0] - min_x, xy[1] - min_y, args['scale'] / 50)
+		print('<text transform="translate(%f,%f) scale(%f) translate(4,2)"' \
+			% (xy[0] - min_x, xy[1] - min_y, args['scale'] / 50))
 		if args['use_therion_attribs']:
-			print '  therion:role="point" therion:type="station-name"'
+			print('  therion:role="point" therion:type="station-name"')
 		if args['use_inkscape_label']:
-			print '  inkscape:label="point station-name"'
-		print '  >%s</text>' % (label)
+			print('  inkscape:label="point station-name"')
+		print('  >%s</text>' % (label))
 
-print """<?xml version="1.0" encoding="UTF-8"?>
+print("""<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg"
 	xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
 	xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
@@ -454,7 +463,7 @@ print """<?xml version="1.0" encoding="UTF-8"?>
 		scale,
 		args['scale'],
 		infile,
-	)
+	))
 
 print_path()
 if args['markers'] == 3:
@@ -462,14 +471,14 @@ if args['markers'] == 3:
 if args['stationnames']:
 	print_stationnames()
 
-print '</g>'
+print('</g>')
 
 if args['scalebar']:
 	try:
 		from render_scalebar import Scalebar
 		scalebar = Scalebar(args['scale'], args['dpi'])
-		print scalebar.get_xml()
+		print(scalebar.get_xml())
 	except:
-		print "<text>Scalebar import failed</text>";
+		print("<text>Scalebar import failed</text>");
 
-print "</svg>"
+print("</svg>")

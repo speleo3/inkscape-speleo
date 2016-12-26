@@ -11,16 +11,16 @@ Example usage:
     >>> survey = Survex3D('all.3d')
 
     number of stations
-    >>> print len(survey)
+    >>> print(len(survey))
     18066
 
     number of stations with prefix 143.
     >>> stations143 = list(survey.filter('143.'))
-    >>> print len(stations143)
+    >>> print(len(stations143))
     383
 
     number of legs
-    >>> print len(list(survey.iterlegs()))
+    >>> print(len(list(survey.iterlegs())))
     18218
 
     all labels of station p40a
@@ -29,7 +29,7 @@ Example usage:
 
     length of shortest path from p40a to p41a in meters
     >>> length, path = survey.shortestpath('p40a', 'p41a')
-    >>> print length / 100.0
+    >>> print(length / 100.0)
     1610.49206552
 
     station properties
@@ -45,7 +45,21 @@ Example usage:
 
 '''
 
+from __future__ import absolute_import
+from __future__ import print_function
+
 import datetime
+import sys
+
+if sys.version_info[0] > 2:
+    basestring = (bytes, str)
+
+
+def autodecode(bytestring):
+    if b'\xc3' in bytestring:
+        return bytestring.decode('utf-8')
+    return bytestring.decode('latin1')
+
 
 class Station(object):
     '''
@@ -142,7 +156,7 @@ class Station(object):
         http://en.wikipedia.org/w/index.php?title=A*_search_algorithm&oldid=289896415
         '''
         def reconstruct_path(current_node):
-            if came_from.has_key(current_node):
+            if current_node in came_from:
                 p = reconstruct_path(came_from[current_node])
                 p.append(current_node)
                 return p
@@ -159,9 +173,9 @@ class Station(object):
             if x == other:
                 path = reconstruct_path(other)
                 if verbose > 0:
-                    print 'Found path over %d stations' % (len(path))
+                    print('Found path over %d stations' % (len(path)))
                 if verbose > 1:
-                    print ' - '.join(s.label for s in path)
+                    print(' - '.join(s.label for s in path))
                 return g_score[other], path
             closedset.add(x)
             for y in x.connected:
@@ -179,14 +193,14 @@ class Station(object):
                     came_from[y] = x
                     g_score[y] = tentative_g_score
                     f_score[y] = tentative_g_score + h_score[y]
-                    for i in xrange(len(openset)):
-                        if f_score[y] < f_score[openset[i]]:
+                    for i, o_i in enumerate(openset):
+                        if f_score[y] < f_score[o_i]:
                             openset.insert(i, y)
                             break
                     else:
                         openset.append(y)
         if verbose:
-            print 'No path from %s to %s' % (self.label, other.label)
+            print('No path from %s to %s' % (self.label, other.label))
         return -1, []
 
 class Survex3D(object):
@@ -240,7 +254,9 @@ class Survex3D(object):
         return len(self.xyz2sta)
 
     def __repr__(self):
-        return '<%s "%s" %d stations>' % (self.__class__.__name__, self.title, len(self))
+        r = '<%s "%s" %d stations>' % (self.__class__.__name__, self.title,
+                                       len(self))
+        return r if sys.version_info[0] > 2 else r.encode('utf-8')
 
     def __getitem__(self, key):
         if isinstance(key, str):
@@ -308,7 +324,7 @@ class Survex3D(object):
 
     def iterstations(self):
         '''Iterator over all stations'''
-        return self.xyz2sta.itervalues()
+        return iter(self.xyz2sta.values())
  
     __iter__ = iterstations
 
@@ -336,15 +352,15 @@ class Survex3D(object):
         '''
         for label in self.sortedlabels():
             station = self[label]
-            print '%6d %6d %6d ' % station.xyz, label
+            print(('%6d %6d %6d  ' % station.xyz) + label)
 
     def print_lrud(self):
         '''Print LRUD data'''
         for xsect in self.passages:
             if xsect is None:
-                print 'END'
+                print('END')
             else:
-                print xsect[0], xsect[1]
+                print(xsect[0], xsect[1])
 
     def shortestpath(self, key1, key2):
         '''Shortest Path between two stations (see Station.shortestpath)'''
@@ -378,7 +394,7 @@ class Survex3D(object):
         try:
             from numpy import array
         except ImportError:
-            print 'Warning: no numpy available, calculation might be very slow'
+            print('Warning: no numpy available, calculation might be very slow')
             return min((s1.distance(s2), s1, s2) for s1 in self for s2 in other)
 
         Y = array(Y, int)
@@ -387,8 +403,8 @@ class Survex3D(object):
         # and memory (full distance matrix at once would be fastest, but can
         # blow your memory for large surveys)
         im, jm, m = 0, 0, 1e300
-        for i in xrange(len(X)):
-            d_sq = ((Y - X[i])**2).sum(1)
+        for i, X_i in enumerate(X):
+            d_sq = ((Y - X_i)**2).sum(1)
             j = d_sq.argmin()
             if d_sq[j] < m:
                 im, jm, m = i, j, d_sq[j]
@@ -403,14 +419,22 @@ class Survex3D(object):
 
         f = open(filename, 'rb')
         line = f.readline() # File ID
-        if not line.startswith('Survex 3D Image File'):
+        if not line.startswith(b'Survex 3D Image File'):
             raise IOError('not a Survex 3D File, aborting')
 
         line = f.readline() # File format version
-        assert line[0] == 'v'
+        assert line.startswith(b'v')
         ff_version = int(line[1:])
 
-        self.title = unicode(f.readline().rstrip(), 'latin1') # Survex title
+        # Assorted string metadata
+        metadata = f.readline().rstrip().split(b'\x00') + [b''] * 10
+
+        # Survey title
+        self.title = autodecode(metadata[0])
+
+        # Coordinate system
+        self.cs = autodecode(metadata[1])
+
         self.timestamp = f.readline().rstrip() # Timestamp
         self.flags = 0x0
 
@@ -425,10 +449,17 @@ class Survex3D(object):
                 length += unpack('<I', f.read(4))[0]
             return length
 
+        if sys.version_info[0] > 2:
+            def _read_label(n):
+                return f.read(n).decode('ascii')
+        else:
+            def _read_label(n):
+                return f.read(n)
+
         def read_label():
             length = read_len()
             if length > 0:
-                self._curr_label += skip_bytes(length)
+                self._curr_label += _read_label(length)
 
         def read_len_v8():
             byte = ord(f.read(1))
@@ -445,7 +476,7 @@ class Survex3D(object):
                 ndel = read_len_v8()
                 nadd = read_len_v8()
             oldlen = len(self._curr_label)
-            self._curr_label = self._curr_label[:oldlen - ndel] + skip_bytes(nadd)
+            self._curr_label = self._curr_label[:oldlen - ndel] + _read_label(nadd)
 
         def skip_bytes(n):
             return f.read(n)
@@ -457,7 +488,7 @@ class Survex3D(object):
 
             while True:
                 byte = f.read(1)
-                if byte == '':
+                if not byte:
                     break
 
                 byte = ord(byte)
@@ -527,7 +558,7 @@ class Survex3D(object):
         # ff_version < 8
         while True:
             byte = f.read(1)
-            if byte == '':
+            if not byte:
                 break
 
             byte = ord(byte)
@@ -640,14 +671,21 @@ def natkey(s):
     ['1', '1a', '2', '10']
     '''
     L = len(s)
-    if L == 0:
-        return tuple()
-    r, i, d = [], 0, s[0].isdigit()
+    r, i, d = [], 0, False
     for j in range(L):
         if d != s[j].isdigit():
             r.append(int(s[i:j]) if d else s[i:j].lower())
             i, d = j, not d
     r.append(int(s[i:]) if d else s[i:].lower())
     return r
+
+
+if __name__ == '__main__':
+    # quick test
+    for filename in sys.argv[1:]:
+        s = Survex3D(filename)
+        print(s)
+        print(s.length())
+        print(list(s.sortedlabels())[:5])
 
 # vi:expandtab:smarttab
