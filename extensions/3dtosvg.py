@@ -13,7 +13,6 @@ Usage: python 3dtosvg.py [OPTIONS] FILE.3d
   --bearing=[0-359]  Bearing in degrees north (default 0)
   --markers=[0-2]    0: No station markers, 1: Display stations as small
                      circles (default), 2: ditto as triangles
-  --dpi=ARG          Resolution in DPI (default 90)
   --extend-cmd=ARG   The "extend" program is part of Survex and required
                      for --view=2. If it is not found inside PATH, you may
                      specify the absolute path for the binary with ARG.
@@ -45,7 +44,6 @@ args = {
 	'view': 0,
 	'bearing': 0,
 	'markers': 1,
-	'dpi': 90,
 	'extend-cmd': 'extend',
 	'scalebar': 1,
 	'stationnames': 0,
@@ -362,7 +360,7 @@ for i in range(4, len(coords), 4):
 width = max_x - min_x;
 height = max_y - min_y
 
-scale = args['dpi'] / 2.54 / args['scale']
+scale = 1.0 / args['scale']
 
 marker = {
 	1: 'url(#StationCircle)',
@@ -427,11 +425,20 @@ print("""<?xml version="1.0" encoding="UTF-8"?>
 	xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
 	xmlns:xlink="http://www.w3.org/1999/xlink"
 	xmlns:therion="http://therion.speleo.sk/therion"
-	width="%f"
-	height="%f">
+	style="overflow:visible"
+	viewBox="0 0 %d %d"
+	width="%fcm"
+	height="%fcm">
 <sodipodi:namedview
 	inkscape:document-units="mm"
-	units="mm" />
+	units="cm">
+	<inkscape:grid
+		type="xygrid"
+		units="cm"
+		spacingx="10"
+		spacingy="10"
+		empspacing="10" />
+</sodipodi:namedview>
 <defs>
 	<symbol id="point-station-0">
 		<path
@@ -454,13 +461,14 @@ print("""<?xml version="1.0" encoding="UTF-8"?>
 </defs>
 <g
 	style="font-size:10"
-	transform="scale(%f)">
+	>
 	<!-- imported with scale 1:%d from %s -->
 """ % (
+		width,
+		height,
 		width * scale,
 		height * scale,
 		1.0 / scale,
-		scale,
 		args['scale'],
 		infile,
 	))
@@ -476,7 +484,7 @@ print('</g>')
 if args['scalebar']:
 	try:
 		from render_scalebar import Scalebar
-		scalebar = Scalebar(args['scale'], args['dpi'])
+		scalebar = Scalebar(args['scale'], 3 * 25.4, docunit=scale * 10 * 3)
 		print(scalebar.get_xml())
 	except:
 		print("<text>Scalebar import failed</text>");

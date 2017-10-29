@@ -49,7 +49,7 @@ def inverse(mat):
     return d
 
 class Scalebar:
-	def __init__(self, scale, dpi = 90, text = "Scale", docunit = 1.0):
+	def __init__(self, scale, dpi = 96, text = "Scale", docunit = 1.0):
 		mag = int(math.log10(scale))
 
 		if mag < 2:
@@ -102,7 +102,7 @@ class Scalebar:
 
 		if len(text):
 			node = inkex.etree.Element('text')
-			node.set('y', str(-5 / docunit))
+			node.set('y', str(-5))
 			node.set('style', 'text-anchor:start')
 			node.set('transform', 'scale(' + str(1 / docunit) + ')')
 			node.text = unicode(str(text), "utf-8") + " 1:" + str(scale)
@@ -129,7 +129,7 @@ class InsertScalebar(inkex.Effect):
 						help="Scale")
 		self.OptionParser.add_option("--dpi",
 						action="store", type="int",
-						dest="dpi", default=90,
+						dest="dpi", default=96,
 						help="DPI")
 		self.OptionParser.add_option("--text",
 				action="store", type="string", 
