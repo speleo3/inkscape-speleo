@@ -295,6 +295,9 @@
 	<inkscape:path-effect effect="skeletal" id="LPE-wall_sand" copytype="repeated_stretched" prop_scale="1" pattern="M 0,0 H 8 M 2,3 H 2.1 M 4,2 H 4.1 M 6,3 H 6.1 M 8,2 h 0.1" normal_offset="0.5" prop_units="true" />
     <!-- CSS -->
 	<style type="text/css" xml:space="preserve" id="th2style">
+		symbol, marker {
+			overflow: visible;
+		}
 		path {
 			fill:none;
 			stroke:black;
