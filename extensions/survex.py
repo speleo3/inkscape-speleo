@@ -415,9 +415,11 @@ class Survex3D(object):
         '''
         Load 3d file
         '''
+        self.read_stream(open(filename, 'rb'))
+
+    def read_stream(self, f):
         from struct import unpack
 
-        f = open(filename, 'rb')
         line = f.readline() # File ID
         if not line.startswith(b'Survex 3D Image File'):
             raise IOError('not a Survex 3D File, aborting')
