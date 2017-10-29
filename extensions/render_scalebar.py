@@ -101,11 +101,13 @@ class Scalebar:
 			self.g.append(node)
 
 		if len(text):
+			if isinstance(text, bytes):
+				text = text.decode('utf-8')
 			node = inkex.etree.Element('text')
 			node.set('y', str(-5))
 			node.set('style', 'text-anchor:start')
 			node.set('transform', 'scale(' + str(1 / docunit) + ')')
-			node.text = unicode(str(text), "utf-8") + " 1:" + str(scale)
+			node.text = text + " 1:" + str(scale)
 			self.g.append(node)
 	
 	def get_tree(self):

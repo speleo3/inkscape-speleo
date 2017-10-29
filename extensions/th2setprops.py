@@ -90,7 +90,7 @@ class Th2SetProps(inkex.Effect):
 				for href in ['LPE-' + type + '_' + subtype, 'LPE-' + type]:
 					if href in self.doc_ids:
 						node.set(inkscape_path_effect, '#' + href)
-						if not node.attrib.has_key(inkscape_original_d):
+						if inkscape_original_d not in node.attrib:
 							node.set(inkscape_original_d, node.get('d'))
 						break
 				else:

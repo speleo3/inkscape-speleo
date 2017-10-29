@@ -8,6 +8,9 @@ TODO
  * Place XVI correct!
 '''
 
+from __future__ import print_function
+from __future__ import absolute_import
+
 import sys, os, re
 from th2ex import *
 etree = inkex.etree
@@ -206,7 +209,7 @@ line_nr = 0
 def f_readline():
 	global line_nr
 	try:
-		line_nr, line = f_enum.next()
+		line_nr, line = next(f_enum)
 	except StopIteration:
 		return ''
 	line = line.decode(encoding)
@@ -215,7 +218,7 @@ def f_readline():
 	return line
 
 def errormsg(x):
-	print >> sys.stderr, '[line %d]' % (line_nr+1), x
+	print('[line %d]' % (line_nr+1), x, file=sys.stderr)
 
 def parse(a):
 	function = parsedict.get(a[0])
@@ -248,7 +251,10 @@ def parse_XTHERION(a):
 			# xth_me_image_insert {xx yy fname iidx imgx}
 			# xx = {xx vsb igamma}
 			# yy = {yy XVIroot}
-			import Tkinter
+			if sys.version_info[0] < 3:
+				import Tkinter
+			else:
+				import tkinter as Tkinter
 			tk_instance = Tkinter.Tcl().tk.eval
 			tk_instance('set xth_me_image {' + ' '.join(a[2:]) + '}')
 			href = tk_instance('lindex $xth_me_image 2')

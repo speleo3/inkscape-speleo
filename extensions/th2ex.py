@@ -17,6 +17,14 @@ Elements with role annotation "none" are excluded from export.
 Text alignment guess for export is not perfect, but covers the most use cases.
 '''
 
+from __future__ import print_function
+from __future__ import absolute_import
+
+try:
+	basestring
+except NameError:
+	basestring = str
+
 import sys, os, math, re, optparse
 
 # some prefs
@@ -36,7 +44,10 @@ except:
 	if programfiles:
 		sys.path.append(programfiles + '\\Inkscape\\share\\extensions')
 	try:
-		import commands
+		if sys.version_info[0] < 3:
+			import commands
+		else:
+			import subprocess as commands
 		statusoutput = commands.getstatusoutput('inkscape -x')
 		assert statusoutput[0] == 0
 		sys.path.append(statusoutput[1])
@@ -295,7 +306,7 @@ def set_props(e, role, type, options={}):
 		e.set(therion_type, type)
 		e.set(therion_options, options_str)
 	else:
-		raise Exception, 'unknown th2pref.howtostore'
+		raise Exception('unknown th2pref.howtostore')
 
 def get_props(e):
 	'''
@@ -315,7 +326,7 @@ def get_props(e):
 				e.get(therion_type, ''),
 				e.get(therion_options, '')]
 	else:
-		raise Exception, 'unknown th2pref.howtostore'
+		raise Exception('unknown th2pref.howtostore')
 	try:
 		role = label[0]
 		type = label[1]
@@ -472,7 +483,7 @@ def open_in_pythonpath(filename):
 	return open(find_in_pythonpath(filename))
 
 def print_utf8(x, file=sys.stdout):
-	print >> file, x.encode('UTF-8')
+	print(x.encode('UTF-8'), file=file)
 
 
 ######################################
@@ -534,12 +545,12 @@ class Th2Effect(inkex.Effect):
 		'''
 		# Text and Clones
 		if th2pref.xyascenter and node.tag in [ svg_text, 'text', svg_use, 'use' ]:
-			return map(self.unittouu, [node.get('x', '0'), node.get('y', '0')])
+			return [self.unittouu(node.get(key, '0')) for key in ('x', 'y')]
 		# Circles
 		if 'cx' in node.attrib:
-			return map(self.unittouu, [node.get('cx'), node.get('cy', '0')])
+			return [self.unittouu(node.get(key, '0')) for key in ('cx', 'cy')]
 		if sodipodi_cx in node.attrib:
-			return map(self.unittouu, [node.get(sodipodi_cx), node.get(sodipodi_cy, '0')])
+			return [self.unittouu(node.get(key, '0')) for key in (sodipodi_cx, sodipodi_cy)]
 		# Others
 		bbox = self.compute_bbox(node, False)
 		if bbox is None:

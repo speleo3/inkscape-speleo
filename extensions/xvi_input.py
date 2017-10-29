@@ -4,7 +4,17 @@ Convert XVI file to SVG
 WORK IN PROGRESS
 '''
 
-import sys, th2ex, Tkinter
+from __future__ import print_function
+from __future__ import absolute_import
+
+import sys
+import th2ex
+
+if sys.version_info[0] < 3:
+	import Tkinter
+else:
+	import tkinter as Tkinter
+
 etree = th2ex.inkex.etree
 
 def xvi2svg(handle, fullsvg=True, strokewidth=3, XVIroot=False):
@@ -92,4 +102,4 @@ if __name__ == '__main__':
 	else:
 		handle = sys.stdin
 	root = xvi2svg(handle)
-	print etree.tostring(root)
+	print(etree.tostring(root))

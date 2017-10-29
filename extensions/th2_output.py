@@ -6,6 +6,9 @@ Distributed under the terms of the GNU General Public License v2
 This program was inspired by http://www.cavediving.de/svg2th2.py
 '''
 
+from __future__ import print_function
+from __future__ import absolute_import
+
 from th2ex import *
 import simplepath, simpletransform, simplestyle, math, re
 
@@ -54,8 +57,8 @@ class Th2Line:
 		self.options['close'] = 'on'
 	def output(self):
 		print_utf8("line %s %s" % (self.type, format_options(self.options)))
-		print "  " + "\n  ".join(self.points)
-		print "endline\n"
+		print("  " + "\n  ".join(self.points))
+		print("endline\n")
 
 class Th2Output(Th2Effect):
 	def __init__(self):
@@ -79,13 +82,13 @@ class Th2Output(Th2Effect):
 
 	def print_scrap_begin(self, id, test, options = {}):
 		if test:
-			if not options.has_key('scale') and self.options.scale > 0:
+			if 'scale' not in options and self.options.scale > 0:
 				options['scale'] = '[0 0 %d 0 0 0 %d 0 inch]' % (self.options.dpi, self.options.scale)
 			print_utf8('\nscrap %s %s\n' % (id, format_options(options)))
 
 	def print_scrap_end(self, test):
 		if test:
-			print "endscrap\n"
+			print("endscrap\n")
 
 	def output(self):
 		root = self.document.getroot()
@@ -110,10 +113,10 @@ class Th2Output(Th2Effect):
 				for x in pattern.finditer(stylenode.text):
 					self.classes[x.group(1)] = simplestyle.parseStyle(x.group(2).strip())
 
-		print '''encoding  utf-8
+		print('''encoding  utf-8
 ##XTHERION## xth_me_area_adjust 0 0 %f %f
 ##XTHERION## xth_me_area_zoom_to 100
-''' % (doc_width * th2pref.basescale, doc_height * th2pref.basescale)
+''' % (doc_width * th2pref.basescale, doc_height * th2pref.basescale))
 
 		# text on path
 		if th2pref.textonpath:
@@ -143,12 +146,12 @@ class Th2Output(Th2Effect):
 				w = node.get('width', '100%')
 				h = node.get('height', '100%')
 				if th2pref.image_inkscape:
-					print '##INKSCAPE## image %s %s %s %s' % (w, h, simpletransform.formatTransform(mat), href)
+					print('##INKSCAPE## image %s %s %s %s' % (w, h, simpletransform.formatTransform(mat), href))
 					continue
 				if href.startswith('file://'):
 					href = href[7:]
-				print '##XTHERION## xth_me_image_insert {%f 1 1.0} {%f 1} "%s" 0 {}' % \
-						(paramsTrans[0], paramsTrans[1], href)
+				print('##XTHERION## xth_me_image_insert {%f 1 1.0} {%f 1} "%s" 0 {}' % \
+						(paramsTrans[0], paramsTrans[1], href))
 
 		self.print_scrap_begin('scrap1', not self.options.lay2scr)
 
@@ -238,11 +241,11 @@ class Th2Output(Th2Effect):
 			if node.tag == svg_g:
 				# TODO: i2d_affine of children
 				d = ' M 0,0 '.join(self.get_d(child) for child in reversed(node))
-			elif node.attrib.has_key('points'):
+			elif 'points' in node.attrib:
 				d = 'M' + node.get('points')
 				if node.tag == svg_polygon:
 					d += ' z'
-			elif node.attrib.has_key('x1'):
+			elif 'x1' in node.attrib:
 				d = 'M' + node.get('x1') + ',' + node.get('y1') + 'L' + node.get('x2') + ',' + node.get('y2')
 			elif 'width' in node.attrib and 'height' in node.attrib:
 				width = node.get('width')
@@ -281,7 +284,7 @@ class Th2Output(Th2Effect):
 				print_utf8("line %s %s" % (type, format_options(options)))
 				# TODO transformParams?
 				print_utf8(ret)
-				print "endline\n"
+				print("endline\n")
 				return
 			node_options = ret
 		else:
@@ -311,7 +314,7 @@ class Th2Output(Th2Effect):
 		if len(desc) > 0:
 			print_utf8(desc[0].text.rstrip())
 		a = line.split()
-		print 'end' + a[0] + '\n'
+		print('end' + a[0] + '\n')
 
 	def get_point_text(self, node):
 		text = ''
