@@ -3,9 +3,6 @@
   <name>Therion 2D Output</name>
   <id>speleo.output.th2</id>
   <dependency type="executable" location="extensions">th2_output.py</dependency>
-  <dependency type="executable" location="extensions">inkex.py</dependency>
-  <dependency type="executable" location="extensions">simplepath.py</dependency>
-  <dependency type="executable" location="extensions">simpletransform.py</dependency>
   <param name="scale" type="enum" _gui-text="Scale"
   	gui-description="Therion uses real world units, so it needs to know how the drawing is scaled">
     <item value="0">(undefined)</item>

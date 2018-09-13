@@ -2,7 +2,6 @@
 <inkscape-extension>
   <_name>Set Point Type</_name>
   <id>speleo.th2setpoint</id>
-  <dependency type="executable" location="extensions">inkex.py</dependency>
   <dependency type="executable" location="extensions">th2setprops.py</dependency>
   <param name="role" gui-hidden="true" type="string">point</param>
   <param name="type" type="enum" _gui-text="Type">
