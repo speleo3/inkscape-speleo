@@ -251,19 +251,21 @@ def parse_XTHERION(a):
 			# xth_me_image_insert {xx yy fname iidx imgx}
 			# xx = {xx vsb igamma}
 			# yy = {yy XVIroot}
+			me_image_str = ' '.join(a[2:])
 			if sys.version_info[0] < 3:
 				import Tkinter
+				me_image_str = me_image_str.encode('utf-8')
 			else:
 				import tkinter as Tkinter
 			tk_instance = Tkinter.Tcl().tk.eval
-			tk_instance('set xth_me_image {' + ' '.join(a[2:]) + '}')
+			tk_instance('set xth_me_image {' + me_image_str + '}')
 			href = tk_instance('lindex $xth_me_image 2')
 			x = tk_instance('lindex $xth_me_image 0 0')
 			y = tk_instance('expr (-1 * [lindex $xth_me_image 1 0])')
 			XVIroot = tk_instance('lindex $xth_me_image 1 1')
 			XVIroot = float(XVIroot) > 0.0 if len(XVIroot) else False
-		except:
-			errormsg('tk parsing failed, fallback to regex...')
+		except BaseException as e:
+			errormsg('tk parsing failed, fallback to regex (%s)' % str(e))
 			# TODO: Warning: poor expression, might fail
 			m = re.match(r'\{([-.0-9]+) [01] [-.0-9]+\} \{?([-.0-9]+)(?: (?:\{\}|[-.0-9]+)\})? (\S+)', ' '.join(a[2:]))
 			if m:
@@ -484,8 +486,9 @@ def parse_line(a):
 		if 'scale' in options:
 			del options['scale']
 		e_text.set('style', "font-size:%s" % (fontsize))
-		e_textPath.text = options['text']
-		del options['text']
+		e_textPath.text = options.pop('text', '')
+		if not e_textPath.text:
+		    errormsg('line label without text')
 		getlayer('line', type).insert(0, e_text)
 
 	set_props(e, 'line', type_subtype, options)
@@ -597,3 +600,5 @@ else:
 	root.remove(e)
 
 document.write(sys.stdout)
+
+# vi:noexpandtab:sw=4:ts=4
