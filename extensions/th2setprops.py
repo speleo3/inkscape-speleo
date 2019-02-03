@@ -18,6 +18,10 @@ class Th2SetProps(inkex.Effect):
 		self.OptionParser.add_option("--merge", type="inkbool", dest="merge", default=True)
 		self.OptionParser.add_option("--dropstyle", type="inkbool", dest="dropstyle", default=False)
 
+	def update_options(self, options):
+		'''Subclasses can update options here'''
+		pass
+
 	def effect(self):
 		if len(self.selected) == 0:
 			inkex.errormsg('warning: nothing selected')
@@ -43,7 +47,10 @@ class Th2SetProps(inkex.Effect):
 				defs_self.extend(children)
 			self.getdocids()
 
-		for id, node in self.selected.iteritems():
+		# iterate over elements in selection order
+		for id in self.options.ids:
+			node = self.selected[id]
+
 			# current props
 			role, type, options = get_props(node)
 			
@@ -68,6 +75,7 @@ class Th2SetProps(inkex.Effect):
 				inkex.errormsg('warning: empty type')
 				type = 'wall'
 
+			self.update_options(options)
 			set_props(node, role, type, options)
 
 			if ':' in type:
@@ -101,6 +109,8 @@ class Th2SetProps(inkex.Effect):
 							node.set('d', node.get(inkscape_original_d))
 							del node.attrib[inkscape_original_d]
 
-e = Th2SetProps()
-e.affect()
+if __name__ == '__main__':
+	e = Th2SetProps()
+	e.affect()
 
+# vi:noexpandtab:ts=4

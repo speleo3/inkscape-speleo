@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<inkscape-extension>
+  <_name>Set Station Names</_name>
+  <id>speleo.th2enumeratestations</id>
+
+  <param name="role" gui-hidden="true" type="string">point</param>
+  <param name="type" gui-hidden="true" type="string">station</param>
+
+  <param name="stationname" type="string"
+    _gui-text="First station name"
+    _gui-description="If multiple stations are selected, increment name for every station. Field can be empty if plugin is run a second time."
+    >1@my.cave</param>
+
+  <effect>
+    <object-type>all</object-type>
+    <effects-menu>
+      <submenu _name="Therion" />
+    </effects-menu>
+  </effect>
+  <script>
+    <command reldir="extensions" interpreter="python">th2enumeratestations.py</command>
+  </script>
+</inkscape-extension>
