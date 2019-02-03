@@ -9,7 +9,7 @@ Annotate SVG elements for therion export.
 from th2ex import *
 import re
 
-class Th2SetProps(inkex.Effect):
+class Th2SetProps(Th2Effect):
 	def __init__(self):
 		inkex.Effect.__init__(self)
 		self.OptionParser.add_option("--role", type="string", dest="role", default="")
@@ -76,7 +76,8 @@ class Th2SetProps(inkex.Effect):
 				type = 'wall'
 
 			self.update_options(options)
-			set_props(node, role, type, options)
+
+			type_ = type
 
 			if ':' in type:
 				type, subtype = type.split(':', 1)
@@ -84,11 +85,28 @@ class Th2SetProps(inkex.Effect):
 				subtype = options.get('subtype', '')
 
 			# update symbols
-			if node.tag == svg_use:
+			if role == 'point':
 				for href in [role + '-' + type + '_' + subtype, role + '-' + type]:
 					if href in self.doc_ids:
-						node.set(xlink_href, '#' + href)
 						break
+				else:
+					href = None
+
+				# convert arbitrary shape to clone (only with dropstyle=True)
+				if href and node.tag != svg_use and self.options.dropstyle:
+					bbox = self.compute_bbox(node, False)
+					if bbox is not None:
+						parent = node.getparent()
+						parent.remove(node)
+						node = inkex.etree.SubElement(parent, svg_use, {
+							"x": str((bbox[0] + bbox[1]) / 2.0),
+							"y": str((bbox[2] + bbox[3]) / 2.0),
+							"id": id,
+						})
+						self.selected[id] = node
+
+				if href and node.tag == svg_use:
+					node.set(xlink_href, '#' + href)
 
 			# update path effects
 			elif node.tag == svg_path and role in ['line', '']:
@@ -108,6 +126,8 @@ class Th2SetProps(inkex.Effect):
 						if inkscape_original_d in node.attrib:
 							node.set('d', node.get(inkscape_original_d))
 							del node.attrib[inkscape_original_d]
+
+			set_props(node, role, type_, options)
 
 if __name__ == '__main__':
 	e = Th2SetProps()
