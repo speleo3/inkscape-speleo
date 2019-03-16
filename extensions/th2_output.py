@@ -206,6 +206,8 @@ class Th2Output(Th2Effect):
 		id = layer.get(inkscape_label)
 		if not id:
 			id = layer.get('id')
+		if not id:
+			id = 'scrapX'
 		id = id.replace(' ','_')
 		options = parse_options_node(layer)
 		self.print_scrap_begin(id, self.options.lay2scr, options)

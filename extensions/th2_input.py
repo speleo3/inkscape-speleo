@@ -34,13 +34,13 @@ root = document.getroot()
 # save input prefs to file
 th2pref_store_to_xml(root)
 
-ids = root.xpath('/svg/defs/*[starts-with(@id, "point-")]/@id')
+ids = root.xpath('/svg:svg/svg:defs/*[starts-with(@id, "point-")]/@id', namespaces=inkex.NSS)
 point_symbols = [ id[6:] for id in ids ]
 
-ids = root.xpath('/svg/defs/*[starts-with(@id, "LPE-")]/@id')
+ids = root.xpath('/svg:svg/svg:defs/*[starts-with(@id, "LPE-")]/@id', namespaces=inkex.NSS)
 LPE_symbols = [ id[4:] for id in ids ]
 
-currentlayer = root.xpath('g[@id="layer-legend"]')[0]
+currentlayer = root.xpath('svg:g[@id="layer-legend"]', namespaces=inkex.NSS)[0]
 
 if th2pref.sublayers:
 	sublayers = {}
@@ -146,7 +146,7 @@ node.set('height', '%d' % (x))
 node.set('width', '%d' % (2 * spacing))
 
 # currentlayer = root
-currentlayer = root.xpath('g[@id="layer-scrap0"]')[0]
+currentlayer = root.xpath('svg:g[@id="layer-scrap0"]', namespaces=inkex.NSS)[0]
 
 # open th2 file
 filename = find_in_pwd(th2pref.argv[0])
@@ -241,7 +241,7 @@ def parse_INKSCAPE(a):
 		img.set('height', a[3])
 		img.set('transform', a[4])
 		img.set(xlink_href, ' '.join(a[5:]))
-		root.xpath('g[@id="layer-scan"]')[0].append(img)
+		root.xpath('svg:g[@id="layer-scan"]', namespaces=inkex.NSS)[0].append(img)
 
 def parse_XTHERION(a):
 	global doc_width, doc_x, doc_y
@@ -291,7 +291,7 @@ def parse_XTHERION(a):
 				img.set(therion_type, 'xth_me_image_insert')
 				img.set(therion_options, format_options({'href': href,
 					'XVIroot': '1'}))
-				root.xpath('g[@id="layer-scan"]')[0].append(img)
+				root.xpath('svg:g[@id="layer-scan"]', namespaces=inkex.NSS)[0].append(img)
 			except:
 				errormsg('xvi2svg failed')
 		elif href != '':
@@ -300,7 +300,7 @@ def parse_XTHERION(a):
 			img.set('x', x)
 			img.set('y', y)
 			img.set('transform', 'scale(1,-1)')
-			root.xpath('g[@id="layer-scan"]')[0].append(img)
+			root.xpath('svg:g[@id="layer-scan"]', namespaces=inkex.NSS)[0].append(img)
 		else:
 			errormsg('skipped: ' + a[1])
 
@@ -590,11 +590,11 @@ while True:
 	
 	parse(a)
 
-e = root.xpath('g[@id="layer-scan"]')[0]
+e = root.xpath('svg:g[@id="layer-scan"]', namespaces=inkex.NSS)[0]
 e.set('transform', scrap_transform + ' scale(1,-1) scale(%f)' % (1./th2pref.basescale))
 e.set('transform-orig', scrap_transform + ' scale(1,-1) scale(%f)' % (1./th2pref.basescale))
 
-e = root.xpath('g[@id="layer-scrap0"]')[0]
+e = root.xpath('svg:g[@id="layer-scrap0"]', namespaces=inkex.NSS)[0]
 if len(e) > 0:
 	e.set('transform', scrap_transform)
 else:

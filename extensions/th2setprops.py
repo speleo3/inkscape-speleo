@@ -41,7 +41,7 @@ class Th2SetProps(Th2Effect):
 			template = open_in_pythonpath('th2_template.svg')
 			doc_temp = inkex.etree.parse(template)
 			template.close()
-			defs_temp = doc_temp.find('defs')
+			defs_temp = doc_temp.find(inkex.addNS('defs', 'svg'))
 			defs_self = self.document.find(inkex.addNS('defs', 'svg'))
 			if defs_self is None:
 				doc_temp.getroot().remove(defs_temp)
