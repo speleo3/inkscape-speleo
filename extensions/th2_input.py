@@ -151,7 +151,7 @@ currentlayer = root.xpath('g[@id="layer-scrap0"]')[0]
 # open th2 file
 filename = find_in_pwd(th2pref.argv[0])
 dirname = os.path.dirname(filename)
-f_enum = enumerate(open(filename, 'rU'))
+f_enum = enumerate(open(filename, 'rb'))
 
 doc_x = 0
 doc_y = 0
@@ -213,9 +213,10 @@ def f_readline():
 	except StopIteration:
 		return ''
 	line = line.decode(encoding)
-	if line[-2:] == '\\\n':
-		line = line[:-2] + f_readline()
-	return line
+	line.rstrip('\r\n')
+	if line.endswith('\\'):
+		line = line[:-1] + f_readline()
+	return line + '\n'
 
 def errormsg(x):
 	print('[line %d]' % (line_nr+1), x, file=sys.stderr)
@@ -599,6 +600,7 @@ if len(e) > 0:
 else:
 	root.remove(e)
 
-document.write(sys.stdout)
+out = sys.stdout.buffer if PY3 else sys.stdout
+document.write(out)
 
 # vi:noexpandtab:sw=4:ts=4

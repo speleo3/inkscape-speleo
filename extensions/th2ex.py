@@ -27,13 +27,20 @@ except NameError:
 
 import sys, os, math, re, optparse
 
+PY3 = sys.version_info[0] > 2
+
+
 # some prefs
 class th2pref:
-	howtostore = 'inkscape_label'
-	textonpath = True
-	image_inkscape = False
-	basescale = 1.0
-	xyascenter = True
+	def __init__(self):
+		self.howtostore = 'inkscape_label'
+		self.textonpath = True
+		self.image_inkscape = False
+		self.basescale = 1.0
+		self.xyascenter = True
+
+# fix Python 3 mappingproxy issue
+th2pref = th2pref()
 
 # first try to assure that the inkscape extensions dir in in PYTHONPATH
 # obsolete for inkscape-0.47
@@ -244,7 +251,7 @@ def format_options(options):
 	Format options dictionary as therion options string.
 	'''
 	ret = ''
-	for key,value in options.iteritems():
+	for key,value in options.items():
 		if len(ret) > 0:
 			ret += ' '
 		for two_arg_key in two_arg_keys:
@@ -484,6 +491,9 @@ def open_in_pythonpath(filename):
 
 def print_utf8(x, file=sys.stdout):
 	print(x.encode('UTF-8'), file=file)
+
+if PY3:
+	print_utf8 = print
 
 
 ######################################

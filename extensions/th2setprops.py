@@ -9,6 +9,11 @@ Annotate SVG elements for therion export.
 from th2ex import *
 import re
 
+def asunicode(s):
+	if isinstance(s, bytes):
+		return s.decode('utf-8')
+	return s
+
 class Th2SetProps(Th2Effect):
 	def __init__(self):
 		inkex.Effect.__init__(self)
@@ -30,7 +35,7 @@ class Th2SetProps(Th2Effect):
 		# th2ex prefs
 		th2pref_load_from_xml(self.document.getroot())
 
-		new_options = parse_options(self.options.options.decode('UTF-8'))
+		new_options = parse_options(asunicode(self.options.options))
 
 		if self.options.dropstyle and 'th2style' not in self.doc_ids:
 			template = open_in_pythonpath('th2_template.svg')
