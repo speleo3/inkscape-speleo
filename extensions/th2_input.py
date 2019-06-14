@@ -151,7 +151,8 @@ currentlayer = root.xpath('svg:g[@id="layer-scrap0"]', namespaces=inkex.NSS)[0]
 # open th2 file
 filename = find_in_pwd(th2pref.argv[0])
 dirname = os.path.dirname(filename)
-f_enum = enumerate(open(filename, 'rb'))
+f_handle = open(filename, 'rb')
+f_enum = enumerate(f_handle)
 
 doc_x = 0
 doc_y = 0
@@ -283,7 +284,8 @@ def parse_XTHERION(a):
 		if href.endswith('.xvi'):
 			try:
 				import xvi_input
-				img = xvi_input.xvi2svg(open(href), False, 2, XVIroot)
+				with open(href) as handle:
+					img = xvi_input.xvi2svg(handle, False, 2, XVIroot)
 				transform = img.get('transform', '')
 				img.set('transform', '%s scale(1,-1) translate(%s,%s)' % (transform, x, y))
 				img.set('transform-orig', '%s scale(1,-1) translate(%s,%s)' % (transform, x, y))
@@ -391,7 +393,7 @@ def parse_BLOCK2TEXT(a):
 		a = line.split()
 		if len(a) > 0 and a[0] == 'end%s' % (role):
 			break
-		if desc.text == None:
+		if desc.text is None:
 			desc.text = line
 		else:
 			desc.text += line
@@ -589,6 +591,8 @@ while True:
 		continue
 	
 	parse(a)
+
+f_handle.close()
 
 e = root.xpath('svg:g[@id="layer-scan"]', namespaces=inkex.NSS)[0]
 e.set('transform', scrap_transform + ' scale(1,-1) scale(%f)' % (1./th2pref.basescale))

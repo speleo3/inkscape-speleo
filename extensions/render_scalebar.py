@@ -145,7 +145,7 @@ class InsertScalebar(inkex.Effect):
 			if groupmode == 'layer':
 				break
 			parent = layer.getparent()
-			if parent == None:
+			if parent is None:
 				break
 			layer = parent
 		return layer
@@ -175,3 +175,4 @@ if __name__ == '__main__':
 	e = InsertScalebar()
 	e.affect()
 
+#vi:noexpandtab:ts=4:sw=4:sw=4
