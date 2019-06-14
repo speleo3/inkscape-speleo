@@ -357,6 +357,7 @@ class Th2Output(Th2Effect):
 			fontsize = self.unittouu(fontsize)
 		if mat is not None:
 			fontsize *= descrim(mat)
+		fontsize /= th2pref.basescale
 		if fontsize > 17:
 			options['scale'] = 'xl'
 		elif fontsize > 12:
