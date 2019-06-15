@@ -19,6 +19,14 @@
     <item value="10000">1:10000</item>
     <item value="25000">1:25000</item>
   </param>
+  <param name="projection" type="enum" _gui-text="Projection"
+      gui-description="Projection of scraps, if not already defined">
+    <item value="">(undefined)</item>
+    <item value="none">none</item>
+    <item value="plan">plan</item>
+    <item value="elevation">elevation</item>
+    <item value="extended">extended</item>
+  </param>
   <param name="layers" type="enum" _gui-text="Layers"
   	gui-description="Which layers should actually be exported">
     <item value="visible">Visible Layers</item>
