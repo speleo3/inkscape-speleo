@@ -159,20 +159,58 @@ def is_numeric(s):
 		return False
 	return True
 
+
+def splitquoted(ustr):
+	'''
+	Unicode safe shlex.split() drop-in.
+	'''
+	import shlex
+
+	if sys.version_info[0] > 2:
+		assert not isinstance(ustr, bytes)
+		return(shlex.split(ustr))
+	elif isinstance(ustr, bytes):
+		return(shlex.split(ustr))
+
+	import re
+
+	def myencode(ustr):
+		return re.sub(
+			u'[#\x7F-\U000FFFFF]',  #
+			lambda m: u'#%05X' % ord(m.group(0)),
+			ustr,
+			flags=re.U).encode('ascii')
+
+	def mydecode(bstr):
+		return re.sub(
+			u'#([0-9A-F]{5})',  #
+			lambda m: unichr(int(m.group(1), 16)),
+			bstr.decode('ascii'))
+
+	return [mydecode(b) for b in shlex.split(myencode(ustr))]
+
+
+def quote(value):
+	'''
+	Add quotes around value, if needed
+	'''
+	if needquote.search(value) is None:
+		return value
+	return '"' + value.replace('\\', '\\\\').replace('"', '\\"') + '"'
+
+
 def parse_options_new(a):
 	'''
 	Parses therion options string or sequence of strings.
 	New: Uses shlex class (quote parsing).
 
 	Known issues:
-	 * shlex does not support unicode (so not usable so far!)
 	 * detection of zero-arg-keys is heuristical
 	'''
-	import shlex
 	options = {}
 	if not isinstance(a, basestring):
 		a = ' '.join(a)
-	a = shlex.split(a)
+	a = splitquoted(a)
 	n = len(a)
 	i = 0
 	while i < n:
@@ -188,9 +226,10 @@ def parse_options_new(a):
 		else:
 			i += 1
 			if key in two_arg_keys:
-				key += '-' + a[i]
+				value = quote(a[i]) + ' ' + quote(a[i + 1])
 				i += 1
-			value = a[i]
+			else:
+				value = a[i]
 			if value[0] == '[':
 				while value[-1:] != ']':
 					i += 1
@@ -243,7 +282,7 @@ def parse_options_old(a):
 		i += 1
 	return options
 
-parse_options = parse_options_old
+parse_options = parse_options_new
 
 # TODO this fails for -text "[foo bar]" (will be -text [foo bar], no quotes)
 def format_options(options):
@@ -264,12 +303,21 @@ def format_options(options):
 			continue
 		if not isinstance(value, basestring):
 			ret += ' ' + str(value)
+		elif key in two_arg_keys:
+			try:
+				assert len(splitquoted(value)) == 2
+			except AssertionError:
+				inkex.errormsg('error: -{} needs two argument value, got {}'.format(key, repr(value)))
+				ret += ' ' + quote(value) + ' <missing>'
+			else:
+				ret += ' ' + value
 		elif len(value) == 0:
 			inkex.errormsg('error: empty value: -' + key);
-		elif value[0] == '[' or needquote.search(value) is None:
+			ret += ' '
+		elif value.startswith('[') and value.endswith(']'):
 			ret += ' ' + value
 		else:
-			ret += ' "' + value.replace('"', '\\"') + '"'
+			ret += ' ' + quote(value)
 	return ret
 
 def maybe_point(node):
