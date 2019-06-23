@@ -14,7 +14,7 @@ import simplepath, simpletransform, simplestyle, math, re
 
 def parse_options_node(node):
 	options = node.get(therion_options, '')
-	return parse_options(options.split())
+	return parse_options(options)
 
 def transformParams(mat, params):
 	new = []
@@ -72,6 +72,7 @@ class Th2Output(Th2Effect):
 		self.OptionParser.add_option("--xyascenter", type="inkbool", dest="xyascenter", default=True)
 		self.OptionParser.add_option("--projection", type="string",  dest="projection", default="")
 		self.OptionParser.add_option("--author",   type="string",  dest="author",   default="")
+		self.OptionParser.add_option("--options",  type="string",  dest="options",  default="")
 		if th2pref.textonpath:
 			self.textpath_dict = dict()
 
@@ -90,6 +91,7 @@ class Th2Output(Th2Effect):
 				options['projection'] = self.options.projection
 			if 'author' not in options and self.options.author:
 				options['author'] = as_unicode(self.options.author)
+			options.update(parse_options(as_unicode(self.options.options)))
 			print_utf8('\nscrap %s %s\n' % (id, format_options(options)))
 
 	def print_scrap_end(self, test):
