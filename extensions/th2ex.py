@@ -30,6 +30,10 @@ import sys, os, math, re, optparse
 PY3 = sys.version_info[0] > 2
 
 
+def as_unicode(s):
+	return s.decode('utf-8') if isinstance(s, bytes) else s
+
+
 # some prefs
 class th2pref:
 	def __init__(self):

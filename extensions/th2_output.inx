@@ -27,6 +27,8 @@
     <item value="elevation">elevation</item>
     <item value="extended">extended</item>
   </param>
+  <param name="author" type="string" _gui-text="Author"
+      gui-description="&lt;date&gt; &lt;person&gt; (e.g.: 1992 &quot;John Doe&quot;)" />
   <param name="layers" type="enum" _gui-text="Layers"
   	gui-description="Which layers should actually be exported">
     <item value="visible">Visible Layers</item>

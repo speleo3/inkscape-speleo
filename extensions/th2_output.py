@@ -71,6 +71,7 @@ class Th2Output(Th2Effect):
 		self.OptionParser.add_option("--lay2scr",  type="inkbool", dest="lay2scr",  default=True)
 		self.OptionParser.add_option("--xyascenter", type="inkbool", dest="xyascenter", default=True)
 		self.OptionParser.add_option("--projection", type="string",  dest="projection", default="")
+		self.OptionParser.add_option("--author",   type="string",  dest="author",   default="")
 		if th2pref.textonpath:
 			self.textpath_dict = dict()
 
@@ -87,6 +88,8 @@ class Th2Output(Th2Effect):
 				options['scale'] = '[0 0 %d 0 0 0 %d 0 inch]' % (self.options.dpi, self.options.scale)
 			if 'projection' not in options and self.options.projection:
 				options['projection'] = self.options.projection
+			if 'author' not in options and self.options.author:
+				options['author'] = as_unicode(self.options.author)
 			print_utf8('\nscrap %s %s\n' % (id, format_options(options)))
 
 	def print_scrap_end(self, test):
