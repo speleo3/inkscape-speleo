@@ -26,6 +26,10 @@ except NameError:
 	basestring = str
 
 import sys, os, math, re, optparse
+import inkex
+import warnings
+
+warnings.simplefilter("ignore", DeprecationWarning)
 
 PY3 = sys.version_info[0] > 2
 
@@ -45,27 +49,6 @@ class th2pref:
 
 # fix Python 3 mappingproxy issue
 th2pref = th2pref()
-
-# first try to assure that the inkscape extensions dir in in PYTHONPATH
-# obsolete for inkscape-0.47
-try:
-	import inkex
-except:
-	programfiles = os.getenv('PROGRAMFILES')
-	if programfiles:
-		sys.path.append(programfiles + '\\Inkscape\\share\\extensions')
-	try:
-		if sys.version_info[0] < 3:
-			import commands
-		else:
-			import subprocess as commands
-		statusoutput = commands.getstatusoutput('inkscape -x')
-		assert statusoutput[0] == 0
-		sys.path.append(statusoutput[1])
-	except:
-		sys.path.append('/usr/share/inkscape/extensions')
-		sys.path.append('/Applications/Inkscape.app/Contents/Resources/extensions')
-	import inkex
 
 # command line options and hook to th2pref
 oparser = optparse.OptionParser(option_class=inkex.InkOption)
