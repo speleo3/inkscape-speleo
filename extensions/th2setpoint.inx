@@ -5,80 +5,80 @@
   <dependency type="executable" location="extensions">th2setprops.py</dependency>
   <param name="role" gui-hidden="true" type="string">point</param>
   <param name="type" type="enum" _gui-text="Type">
-<item>air-draught</item>
-<item>altitude</item>
-<item>anastomosis</item>
-<item>anchor</item>
-<item>aragonite</item>
-<item>archeo-material</item>
-<item>bedrock</item>
-<item>blocks</item>
-<item>breakdown-choke</item>
-<item>bridge</item>
-<item>camp</item>
-<item>cave-pearl</item>
-<item>clay</item>
-<item>clay-choke</item>
-<item>clay-tree</item>
-<item>continuation</item>
-<item>crystal</item>
-<item>curtain</item>
-<item>debris</item>
-<item>dig</item>
-<item>disk</item>
-<item>entrance</item>
-<item>fixed-ladder</item>
-<item>flowstone-choke</item>
-<item>flowstone</item>
-<item>flute</item>
-<item>gradient</item>
-<item>guano</item>
-<item>gypsum-flower</item>
-<item>gypsum</item>
-<item>handrail</item>
-<item>height</item>
-<item>helictite</item>
-<item>ice</item>
-<item>ice-pillar</item>
-<item>ice-stalactite</item>
-<item>ice-stalagmite</item>
-<item>karren</item>
-<item>low-end</item>
-<item>moonmilk</item>
-<item>narrow-end</item>
-<item>no-equipment</item>
-<item>paleo-material</item>
-<item>passage-height</item>
-<item>pebbles</item>
-<item>pillar</item>
-<item>pillars</item>
-<item>popcorn</item>
-<item>raft</item>
-<item>raft-cone</item>
-<item>rimstone-dam</item>
-<item>rimstone-pool</item>
-<item>root</item>
-<item>rope-ladder</item>
-<item>rope</item>
-<item>sand</item>
-<item>scallop</item>
-<item>sink</item>
-<item>snow</item>
-<item>soda-straw</item>
-<item>spring</item>
-<item>stalactite</item>
-<item>stalactites</item>
-<item>stalagmite</item>
-<item>stalagmites</item>
-<item>station</item>
-<item>station-name</item>
-<item>steps</item>
-<item>traverse</item>
-<item>vegetable-debris</item>
-<item>via-ferrata</item>
-<item>wall-calcite</item>
-<item>water-flow</item>
-<item>water</item>
+<item value="air-draught">air-draught</item>
+<item value="altitude">altitude</item>
+<item value="anastomosis">anastomosis</item>
+<item value="anchor">anchor</item>
+<item value="aragonite">aragonite</item>
+<item value="archeo-material">archeo-material</item>
+<item value="bedrock">bedrock</item>
+<item value="blocks">blocks</item>
+<item value="breakdown-choke">breakdown-choke</item>
+<item value="bridge">bridge</item>
+<item value="camp">camp</item>
+<item value="cave-pearl">cave-pearl</item>
+<item value="clay">clay</item>
+<item value="clay-choke">clay-choke</item>
+<item value="clay-tree">clay-tree</item>
+<item value="continuation">continuation</item>
+<item value="crystal">crystal</item>
+<item value="curtain">curtain</item>
+<item value="debris">debris</item>
+<item value="dig">dig</item>
+<item value="disk">disk</item>
+<item value="entrance">entrance</item>
+<item value="fixed-ladder">fixed-ladder</item>
+<item value="flowstone-choke">flowstone-choke</item>
+<item value="flowstone">flowstone</item>
+<item value="flute">flute</item>
+<item value="gradient">gradient</item>
+<item value="guano">guano</item>
+<item value="gypsum-flower">gypsum-flower</item>
+<item value="gypsum">gypsum</item>
+<item value="handrail">handrail</item>
+<item value="height">height</item>
+<item value="helictite">helictite</item>
+<item value="ice">ice</item>
+<item value="ice-pillar">ice-pillar</item>
+<item value="ice-stalactite">ice-stalactite</item>
+<item value="ice-stalagmite">ice-stalagmite</item>
+<item value="karren">karren</item>
+<item value="low-end">low-end</item>
+<item value="moonmilk">moonmilk</item>
+<item value="narrow-end">narrow-end</item>
+<item value="no-equipment">no-equipment</item>
+<item value="paleo-material">paleo-material</item>
+<item value="passage-height">passage-height</item>
+<item value="pebbles">pebbles</item>
+<item value="pillar">pillar</item>
+<item value="pillars">pillars</item>
+<item value="popcorn">popcorn</item>
+<item value="raft">raft</item>
+<item value="raft-cone">raft-cone</item>
+<item value="rimstone-dam">rimstone-dam</item>
+<item value="rimstone-pool">rimstone-pool</item>
+<item value="root">root</item>
+<item value="rope-ladder">rope-ladder</item>
+<item value="rope">rope</item>
+<item value="sand">sand</item>
+<item value="scallop">scallop</item>
+<item value="sink">sink</item>
+<item value="snow">snow</item>
+<item value="soda-straw">soda-straw</item>
+<item value="spring">spring</item>
+<item value="stalactite">stalactite</item>
+<item value="stalactites">stalactites</item>
+<item value="stalagmite">stalagmite</item>
+<item value="stalagmites">stalagmites</item>
+<item value="station">station</item>
+<item value="station-name">station-name</item>
+<item value="steps">steps</item>
+<item value="traverse">traverse</item>
+<item value="vegetable-debris">vegetable-debris</item>
+<item value="via-ferrata">via-ferrata</item>
+<item value="wall-calcite">wall-calcite</item>
+<item value="water-flow">water-flow</item>
+<item value="water">water</item>
   </param>
   <param name="options" type="string" _gui-text="Options" />
   <param name="merge" type="boolean" _gui-text="Merge with existing Options">true</param>

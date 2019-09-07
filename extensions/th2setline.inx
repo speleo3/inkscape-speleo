@@ -5,28 +5,28 @@
   <dependency type="executable" location="extensions">th2setprops.py</dependency>
   <param name="role" gui-hidden="true" type="string">line</param>
   <param name="type" type="enum" _gui-text="Type">
-    <item>arrow</item>
-    <item>border</item>
-    <item>ceiling-meander</item>
-    <item>ceiling-step</item>
-    <item>chimney</item>
-    <item>contour</item>
-    <item>floor-meander</item>
-    <item>floor-step</item>
-    <item>flowstone</item>
-    <item>gradient</item>
-    <item>label</item>
-    <item>map-connection</item>
-    <item>moonmilk</item>
-    <item>overhang</item>
-    <item>pit</item>
-    <item>rock-border</item>
-    <item>rock-edge</item>
-    <item>section</item>
-    <item>slope</item>
-    <item>survey</item>
-    <item>water-flow</item>
-    <item>wall</item>
+    <item value="arrow">arrow</item>
+    <item value="border">border</item>
+    <item value="ceiling-meander">ceiling-meander</item>
+    <item value="ceiling-step">ceiling-step</item>
+    <item value="chimney">chimney</item>
+    <item value="contour">contour</item>
+    <item value="floor-meander">floor-meander</item>
+    <item value="floor-step">floor-step</item>
+    <item value="flowstone">flowstone</item>
+    <item value="gradient">gradient</item>
+    <item value="label">label</item>
+    <item value="map-connection">map-connection</item>
+    <item value="moonmilk">moonmilk</item>
+    <item value="overhang">overhang</item>
+    <item value="pit">pit</item>
+    <item value="rock-border">rock-border</item>
+    <item value="rock-edge">rock-edge</item>
+    <item value="section">section</item>
+    <item value="slope">slope</item>
+    <item value="survey">survey</item>
+    <item value="water-flow">water-flow</item>
+    <item value="wall">wall</item>
   </param>
   <param name="options" type="string" _gui-text="Options" />
   <param name="merge" type="boolean" _gui-text="Merge with existing Options">true</param>
