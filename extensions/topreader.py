@@ -22,6 +22,8 @@ import os
 import sys
 import struct
 import time
+import collections
+import math
 
 COLOURS = (
     'black',
@@ -48,6 +50,26 @@ def distmm(mm):
 def adegrees(angle, divisor=0xFFFF):
     '''convert angle from internal units to degrees'''
     return float(angle) / divisor * 360.0
+
+
+def posdeg(deg):
+    '''positive angle
+    :param deg: angle in degrees
+    :return: angle in [0, 360)'''
+    return deg % 360
+
+
+def avgdeg(deg):
+    '''average angle
+    :param deg: list of angles in degrees
+    :return: mean angle in [-180, 180]
+    '''
+    N = len(deg)
+    if N == 0:
+        return 0.0
+    mss = sum(math.sin(math.radians(a)) for a in deg) / N
+    msc = sum(math.cos(math.radians(a)) for a in deg) / N
+    return math.degrees(math.atan2(mss, msc))
 
 
 def _make_Point(x, y):
@@ -266,6 +288,8 @@ def dump_svx(top,
 
     nstrip = len(prefixstrip) if allhaveprefixstrip else 0
 
+    sname = lambda n: n.replace('.', '_')
+
     for s in top['shots']:
         # ignore "1.0  .. 0.0 0.0 0.0" line
         if not s[KEY_TAPE] and not s['to']:
@@ -279,10 +303,12 @@ def dump_svx(top,
             file.write('*date {0.tm_year}.{0.tm_mon:02}.{0.tm_mday:02}'.format(trip['date']))
             file.write(end * 2)
 
-        from_ = prefixadd + s['from'][nstrip:]
-        to = (prefixadd + s['to'][nstrip:]) if s['to'] else '..'
+        from_ = prefixadd + sname(s['from'][nstrip:])
+        to = (prefixadd + sname(s['to'][nstrip:])) if s['to'] else '..'
 
         fmt = '{0}\t{1}\t{' + KEY_TAPE + ':6.3f} {compass:5.1f} {clino:5.1f}'
+        if not s[KEY_TAPE]:
+            fmt = '*equate {0} {1}'
         file.write(fmt.format(from_, to, **s))
 
         if s.get('comment'):
@@ -309,46 +335,144 @@ def dump_svg(top, hidesideview=False, file=sys.stdout, showbbox=True):
             max(pnt[KEY_Y] for poly in polys for pnt in poly['coord']),
         ]
 
-    def write_shots(top, sideview=False):
-        import math
+    def reverse_shot(s):
+        return {
+            'from': s['to'],
+            'to': s['from'],
+            'compass': s['compass'] + 180.0,
+            'clino': -s['clino'],
+            KEY_TAPE: s[KEY_TAPE],
+        }
 
-        suppresswarnings = sideview
-        frompoints = {}
-        legs = []
-        splays = []
+    def average_shots(shots):
+        '''Average duplicate legs and return a new set of new legs. Ignores
+        splay shots.
+        '''
+        duplicates = collections.defaultdict(list)
+        order = []
 
-        for s in top['shots']:
-            # ignore "1.0  .. 0.0 0.0 0.0" line
-            if not s[KEY_TAPE] and not s['to']:
+        for s in shots:
+            if not s['to']:
                 continue
 
+            if (s['to'], s['from']) in duplicates:
+                s = reverse_shot(s)
+
+            key = (s['from'], s['to'])
+            dups = duplicates[key]
+
+            if not dups:
+                order.append(key)
+
+            dups.append(s)
+
+        for key in order:
+            dups = duplicates[key]
+
+            yield {
+                'from': key[0],
+                'to': key[1],
+                'compass': avgdeg([s['compass'] for s in dups]),
+                'clino': sum(s['clino'] for s in dups) / len(dups),
+                KEY_TAPE: sum(s[KEY_TAPE] for s in dups) / len(dups),
+            }
+
+    leg_shots = list(average_shots(top['shots']))
+
+    def write_shots(shots, sideview=False):
+        suppresswarnings = sideview
+        frompoints = {}
+        compass_from = collections.defaultdict(list)
+        compass_to = collections.defaultdict(list)
+        legs = []
+        splays = []
+        defer = []
+
+        for s in top['shots']:
+            frompoints[s['from']] = (0, 0)
+            break
+
+        def process_shot(s, do_splays):
+            is_splay = not s['to']
+
+            if do_splays != is_splay:
+                return True
+
+            # ignore "1.0  .. 0.0 0.0 0.0" line
+            if not s[KEY_TAPE] and is_splay:
+                return True
+
+            if s['from'] not in frompoints:
+                if s['to'] not in frompoints:
+                    return False
+                s = reverse_shot(s)
+
             length_proj = s[KEY_TAPE] * math.cos(math.radians(s['clino']))
+
             if sideview:
-                delta_x = length_proj
+                compass_delta = 1.0
+
+                if not is_splay:
+                    compass_from[s['from']].append(s['compass'])
+                    compass_to[s['to']].append(s['compass'])
+                else:
+                    compass_out = compass_from.get(s['from'])
+                    compass_in = compass_to.get(s['from'], compass_out)
+
+                    if compass_in is None:
+                        compass_out = []
+                        compass_in = []
+                    elif compass_out is None:
+                        compass_out = compass_in
+
+                    compass_in = avgdeg(compass_in)
+                    compass_out = avgdeg(compass_out)
+
+                    compass_in += 180
+                    compass_splay_rel = posdeg(s['compass'] - compass_in)
+                    compass_out_rel = posdeg(compass_out - compass_in)
+
+                    if compass_splay_rel > compass_out_rel:
+                        compass_splay_rel = 360 - compass_splay_rel
+                        compass_out_rel = 360 - compass_out_rel
+
+                    if compass_out_rel:
+                        compass_delta = compass_splay_rel / compass_out_rel * 2 - 1
+                        # I would expect sin transformation, but looks like PocketTopo doesn't do that
+                        # compass_delta = math.sin(math.radians(compass_delta * 90))
+
+                delta_x = length_proj * compass_delta
                 delta_y = s[KEY_TAPE] * math.sin(math.radians(s['clino']))
             else:
                 delta_x = length_proj * math.sin(math.radians(s['compass']))
                 delta_y = length_proj * math.cos(math.radians(s['compass']))
 
-            pnt_from = frompoints.get(s['from'])
-            pnt_to = frompoints.get(s['to'])
+            pnt_from = frompoints[s['from']]
+            pnt_to = (pnt_from[0] + delta_x, pnt_from[1] - delta_y)
 
-            if pnt_from is None and pnt_to is None:
-                pnt_from = (0, 0)
-                if frompoints and not suppresswarnings:
-                    print('unconnected subsurvey: {from} -> {to}'.format(**s), file=sys.stderr)
-
-            if pnt_from is None:
-                pnt_from = (pnt_to[0] - delta_x, pnt_to[1] + delta_y)
-            else:
-                pnt_to = (pnt_from[0] + delta_x, pnt_from[1] - delta_y)
-
-            frompoints[s['from']] = pnt_from
-            if s['to']:
+            if not is_splay:
                 frompoints[s['to']] = pnt_to
                 legs.append((pnt_from, pnt_to))
             else:
                 splays.append((pnt_from, pnt_to))
+
+            return True
+
+        for s in leg_shots:
+            if not process_shot(s, False):
+                defer.append(s)
+
+        while defer:
+            for s in defer:
+                if process_shot(s, False):
+                    defer.remove(s)
+                    break
+            else:
+                print('{} unconnected subsurveys'.format(len(defer)))
+                break
+
+        for s in top['shots']:
+            process_shot(s, True)
 
         def write_legs(legs, style):
             file.write('<path style="{}" d="'.format(style))
