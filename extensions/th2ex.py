@@ -387,7 +387,7 @@ def get_props(e):
 		if role == 'line':
 			fill = get_style_attr(e, None, 'fill', 'none')
 			if fill != 'none' and is_closed_line(e):
-				role = fill2role.get(fill.lower(), 'u:area')
+				type = fill2type.get(fill.lower(), 'u:area')
 			else:
 				type = 'wall'
 		elif role == 'point':
@@ -453,8 +453,8 @@ text_keys_output = {
 }
 text_keys_output.update(text_keys)
 
-# line fill to role mapping
-fill2role = {
+# line fill to type mapping
+fill2type = {
 	'blue': 'u:water',
 	'#0000ff': 'u:water',
 	'yellow': 'u:sand',

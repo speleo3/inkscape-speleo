@@ -316,6 +316,12 @@
 		path.line.u {
 			stroke:red;
 		}
+		path.line.u.water {
+			fill:blue;
+		}
+		path.line.u.sand {
+			fill:yellow;
+		}
 
 path.line.u.BLACK { stroke: black }
 path.line.u.BLUE { stroke: blue }
