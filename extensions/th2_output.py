@@ -260,7 +260,7 @@ class Th2Output(Th2Effect):
 			elif 'width' in node.attrib and 'height' in node.attrib:
 				width = node.get('width')
 				height = node.get('height')
-				d = 'M' + node.get('x', '0') + ',' + node.get('y', '0') + 'h' + width + 'v' + height + 'h-' + width + 'z'
+				d = 'M{0},{1}h{2}v{3}h-{2}v-{3}z'.format(node.get('x', '0'), node.get('y', '0'), width, height)
 		return d or ''
 
 	def output_line(self, node):

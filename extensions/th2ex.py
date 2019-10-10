@@ -320,7 +320,7 @@ def maybe_line(node):
 			node.tag == svg_polygon
 
 def is_closed_line(node):
-	if node.tag == svg_polygon:
+	if node.tag in (svg_polygon, svg_rect):
 		return True
 	d = node.get('d', '')
 	return d.rstrip()[-1:].lower() == 'z'
