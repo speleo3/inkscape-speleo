@@ -425,6 +425,9 @@ path.line.u.RED { stroke: red }
 			marker-start:none;
 			marker-end:none;
 		}
+		path.line.via-ferrata {
+			stroke:red;
+		}
 		circle {
 			stroke:none;
 			fill:blue;

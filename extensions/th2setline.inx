@@ -25,6 +25,7 @@
     <item value="section">section</item>
     <item value="slope">slope</item>
     <item value="survey">survey</item>
+    <item value="via-ferrata">via-ferrata</item>
     <item value="water-flow">water-flow</item>
     <item value="wall">wall</item>
   </param>
