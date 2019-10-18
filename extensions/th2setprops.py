@@ -114,8 +114,8 @@ class Th2SetProps(Th2Effect):
 					node.set(xlink_href, '#' + href)
 
 			# update path effects
-			elif node.tag == svg_path and role in ['line', '']:
-				node.set('class', 'line ' + type + ' ' + subtype)
+			elif node.tag == svg_path and role in ['line', 'area', '']:
+				node.set('class', '%s %s %s' % (role or 'line', type, subtype))
 				if self.options.dropstyle:
 					node.set('style', '')
 				for href in ['LPE-' + type + '_' + subtype, 'LPE-' + type]:

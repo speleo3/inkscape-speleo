@@ -60,6 +60,41 @@ class Th2Line:
 		print("  " + "\n  ".join(self.points))
 		print("endline\n")
 
+class Th2Area:
+	count = 0
+
+	def __init__(self, type):
+		self.type = type
+		self.options = {}
+		self._lines = []
+
+	def current_line(self):
+		return self._lines[-1]
+
+	def append_line(self):
+		self._lines.append(Th2Line('border'))
+
+	def output(self, prefix):
+		ids = []
+
+		# if only one line, assume it must be closed
+		if len(self._lines) == 1:
+			self._lines[0].close()
+
+		for line in self._lines:
+			if not line.options.get('id'):
+				Th2Area.count += 1
+				line.options['id'] = "%s_%s_%s" % (prefix, self.type.replace(':', '_'), Th2Area.count)
+			ids.append(line.options['id'])
+			line.output()
+
+		# output area
+		print_utf8("area %s %s" % (self.type, format_options(self.options)))
+		for lineid in ids:
+			print_utf8("  " + lineid)
+		print("endarea\n")
+
+
 class Th2Output(Th2Effect):
 	def __init__(self):
 		inkex.Effect.__init__(self)
@@ -75,6 +110,7 @@ class Th2Output(Th2Effect):
 		self.OptionParser.add_option("--options",  type="string",  dest="options",  default="")
 		if th2pref.textonpath:
 			self.textpath_dict = dict()
+		self.current_scrap_id = 'none'
 
 	def get_style(self, node):
 		return simplestyle.parseStyle(node.get('style', ''))
@@ -84,6 +120,8 @@ class Th2Output(Th2Effect):
 		return style.get(key, d)
 
 	def print_scrap_begin(self, id, test, options = {}):
+		self.current_scrap_id = id
+
 		if test:
 			if 'scale' not in options and self.options.scale > 0:
 				dpi = self.options.dpi or self.unittouu('1in')
@@ -208,6 +246,8 @@ class Th2Output(Th2Effect):
 				self.output_point(child)
 			elif role == 'line':
 				self.output_line(child)
+			elif role == 'area':
+				self.output_area(child)
 			elif child.tag == svg_g:
 				self.output_g(child)
 
@@ -409,6 +449,35 @@ class Th2Output(Th2Effect):
 
 		# output in therion format
 		print_utf8("point %s %s %s %s" % (fstr(params[0]), fstr(params[1]), type, format_options(options)))
+
+	def output_area(self, node):
+		mat = self.i2d_affine(node)
+
+		# get therion attributes
+		role, type, options = get_props(node)
+
+		# get path data
+		d = self.get_d(node)
+		if not d:
+			inkex.errormsg('no path data for element %s' % (node))
+			return
+		p = parsePath(d)
+
+		visibility = options.pop('line-visibility', 'on')
+
+		th2area = Th2Area(type)
+		th2area.options.update(options)
+		for cmd,params in p:
+			if cmd == 'M':
+				th2area.append_line()
+				if visibility:
+					th2area.current_line().options['visibility'] = visibility
+			if cmd == 'Z':
+				th2area.current_line().close()
+			else:
+				th2area.current_line().append(transformParams(mat, params))
+		th2area.output(self.current_scrap_id)
+
 
 if __name__ == '__main__':
 	e = Th2Output()

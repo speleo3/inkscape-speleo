@@ -310,6 +310,14 @@
 			stroke-linecap:round;
 			stroke-linejoin:round;
 		}
+
+path.area { fill-opacity:0.5; }
+path.area.clay { fill:brown; }
+path.area.debris { fill:gray; }
+path.area.sand { fill:yellow; }
+path.area.sump { fill:#000099; }
+path.area.water { fill:blue; }
+
 		path.line {
 			marker-start:url(#PointInStart);
 			marker-end:url(#PointInEnd);
@@ -378,6 +386,7 @@ path.line.u.RED { stroke: red }
 			stroke: #cc0;
 			opacity: 0.7;
 		}
+		path.area,
 		path.line.border {
 			stroke:#9c9;
 			stroke-width:0.4;
