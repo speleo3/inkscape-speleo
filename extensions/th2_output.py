@@ -64,7 +64,7 @@ class Th2Output(Th2Effect):
 	def __init__(self):
 		inkex.Effect.__init__(self)
 		self.OptionParser.add_option("--scale",    type="int",     dest="scale",    default=100)
-		self.OptionParser.add_option("--dpi",      type="int",     dest="dpi",      default=90)
+		self.OptionParser.add_option("--dpi",      type="int",     dest="dpi",      default=0)
 		self.OptionParser.add_option("--layers",   type="string",  dest="layers",   default="all")
 		self.OptionParser.add_option("--images",   type="inkbool", dest="images",   default=True)
 		self.OptionParser.add_option("--nolpe",    type="inkbool", dest="nolpe",    default=True)
@@ -86,7 +86,8 @@ class Th2Output(Th2Effect):
 	def print_scrap_begin(self, id, test, options = {}):
 		if test:
 			if 'scale' not in options and self.options.scale > 0:
-				options['scale'] = '[0 0 %d 0 0 0 %d 0 inch]' % (self.options.dpi, self.options.scale)
+				dpi = self.options.dpi or self.unittouu('1in')
+				options['scale'] = '[0 0 %d 0 0 0 %d 0 inch]' % (dpi, self.options.scale)
 			if 'projection' not in options and self.options.projection:
 				options['projection'] = self.options.projection
 			if 'author' not in options and self.options.author:
