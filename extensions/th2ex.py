@@ -500,7 +500,7 @@ def parseViewBox(viewBox, width, height):
 	'''
 	Returns the 2x3 transformation matrix that a viewBox defines
 	'''
-	if isinstance(viewBox, str):
+	if isinstance(viewBox, basestring):
 		viewBox = [float(i) for i in viewBox.split()]
 	return [[float(width) / viewBox[2], 0, -viewBox[0]], [0, float(height) / viewBox[3], -viewBox[1]]]
 

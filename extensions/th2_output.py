@@ -117,7 +117,7 @@ class Th2Output(Th2Effect):
 		stylenodes = self.document.xpath('//svg:style', namespaces=inkex.NSS)
 		pattern = re.compile(r'\.(\w+)\s*\{(.*?)\}')
 		for stylenode in stylenodes:
-			if isinstance(stylenode.text, str):
+			if isinstance(stylenode.text, basestring):
 				for x in pattern.finditer(stylenode.text):
 					self.classes[x.group(1)] = simplestyle.parseStyle(x.group(2).strip())
 
