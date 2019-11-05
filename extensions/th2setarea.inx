@@ -10,6 +10,12 @@
     <item>sand</item>
     <item>debris</item>
     <item>sump</item>
+    <item>blocks</item>
+    <item>snow</item>
+    <item>ice</item>
+    <item>pebbles</item>
+    <item>flowstone</item>
+    <item>moonmilk</item>
   </param>
 
   <param name="options" type="enum" _gui-text="Line Visibility">
