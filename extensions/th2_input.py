@@ -42,6 +42,9 @@ LPE_symbols = [ id[4:] for id in ids ]
 
 currentlayer = root.xpath('svg:g[@id="layer-legend"]', namespaces=inkex.NSS)[0]
 
+# for areas
+borders = {}
+
 if th2pref.sublayers:
 	sublayers = {}
 	pointtype2layer = {
@@ -213,8 +216,8 @@ def f_readline():
 		line_nr, line = next(f_enum)
 	except StopIteration:
 		return ''
+	line = line.rstrip(b'\r\n')
 	line = line.decode(encoding)
-	line.rstrip('\r\n')
 	if line.endswith('\\'):
 		line = line[:-1] + f_readline()
 	return line + '\n'
@@ -344,6 +347,7 @@ def parse_scrap(a):
 
 	while True:
 		line = f_readline()
+		assert line != ''
 		a = line.split()
 		if len(a) == 0:
 			continue
@@ -353,12 +357,53 @@ def parse_scrap(a):
 	
 	currentlayer = root
 
+def parse_area(a_in):
+	lines = []
+	while True:
+		line = f_readline()
+		assert line != ''
+		a = line.split()
+		if not a:
+			continue
+		lines.append(line)
+		if a[0] == 'endarea':
+			break
+
+	# we can only handle areas with one border line
+	if len(lines) != 2 or lines[0].strip() not in borders:
+		e = etree.Comment('#therion\n')
+		e.text += ' '.join(a_in) + '\n'
+		e.text += ''.join(lines)
+		currentlayer.insert(0, e)
+		return
+
+	# update border line
+	e = borders[lines[0].strip()]
+	role, type, options = get_props(e)
+	assert (role, type) == ('line', 'border')
+	options.pop('id', None) # will get a new ID on export
+	vis = options.pop('visibility', None)
+	if options:
+		errormsg('warning: area border options not empty: ' + str(options))
+	if vis:
+		options['line-visibility'] = vis
+	options.update(parse_options(a_in[2:]))
+	type_subtype = a_in[1]
+	if ':' in type_subtype:
+		type, subtype = type_subtype.split(':', 1)
+	else:
+		type = type_subtype
+		subtype = options.get('subtype', '')
+	e.set('class', 'area %s %s' % (type, subtype))
+	set_props(e, 'area', type_subtype, options)
+
 def parse_BLOCK2COMMENT(a):
 	role = a[0]
 	e = etree.Comment('#therion\n')
 	e.text += ' '.join(a) + '\n'
 	while True:
 		line = f_readline()
+		assert line != ''
 		e.text += line
 		a = line.split()
 		if len(a) > 0 and a[0] == 'end%s' % (role):
@@ -390,6 +435,7 @@ def parse_BLOCK2TEXT(a):
 	desc.tail = ' '.join(a)
 	while True:
 		line = f_readline()
+		assert line != ''
 		a = line.split()
 		if len(a) > 0 and a[0] == 'end%s' % (role):
 			break
@@ -418,6 +464,7 @@ def parse_line(a):
 	started = False
 	while True:
 		line = f_readline()
+		assert line != ''
 		a = line.split()
 		if len(a) == 0:
 			continue
@@ -493,6 +540,10 @@ def parse_line(a):
 		if not e_textPath.text:
 		    errormsg('line label without text')
 		getlayer('line', type).insert(0, e_text)
+
+	# for areas
+	if type == 'border' and 'id' in options:
+		borders[options['id']] = e
 
 	set_props(e, 'line', type_subtype, options)
 	getlayer('line', type).insert(0, e)
@@ -573,7 +624,7 @@ parsedict = {
 	'line':			parse_line,
 	'point':		parse_point,
 	'encoding':		parse_encoding,
-	'area':			parse_BLOCK2COMMENT,
+	'area':			parse_area,
 	'map':			parse_BLOCK2COMMENT,
 	'centerline':	parse_BLOCK2COMMENT,
 	'centreline':	parse_BLOCK2COMMENT,
