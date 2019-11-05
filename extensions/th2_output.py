@@ -11,6 +11,7 @@ from __future__ import absolute_import
 
 from th2ex import *
 import simplepath, simpletransform, simplestyle, math, re
+import collections
 
 def parse_options_node(node):
 	options = node.get(therion_options, '')
@@ -61,7 +62,7 @@ class Th2Line:
 		print("endline\n")
 
 class Th2Area:
-	count = 0
+	count = collections.defaultdict(int)
 
 	def __init__(self, type):
 		self.type = type
@@ -83,8 +84,9 @@ class Th2Area:
 
 		for line in self._lines:
 			if not line.options.get('id'):
-				Th2Area.count += 1
-				line.options['id'] = "%s_%s_%s" % (prefix, self.type.replace(':', '_'), Th2Area.count)
+				id_prefix = "%s_%s_" % (prefix, self.type.replace(':', '_'))
+				Th2Area.count[id_prefix] += 1
+				line.options['id'] = id_prefix + str(Th2Area.count[id_prefix])
 			ids.append(line.options['id'])
 			line.output()
 
