@@ -1,7 +1,7 @@
 #!/usr/bin/env python 
 '''
 Copyright (C) 2008 Thomas Holder, http://sf.net/users/speleo3/
-Distributed under the terms of the GNU General Public License v2
+Distributed under the terms of the GNU General Public License v2 or later
 
 This program was inspired by http://www.cavediving.de/svg2th2.py
 '''

@@ -2,7 +2,7 @@
 Library to handle Survex 3D files (*.3d)
 
 Copyright (C) 2008-2012 Thomas Holder, http://sf.net/users/speleo3/
-Distributed under the terms of the GNU General Public License v2
+Distributed under the terms of the GNU General Public License v2 or later
 
 Example usage:
 

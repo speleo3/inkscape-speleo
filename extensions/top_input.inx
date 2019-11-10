@@ -2,7 +2,7 @@
 <inkscape-extension xmlns="http://www.inkscape.org/namespace/inkscape/extension">
 <!--
 Copyright (C) 2018 Thomas Holder, https://github.com/speleo3
-Distributed under BSD-2-Clause license terms
+Distributed under the terms of the GNU General Public License v2 or later
 -->
   <_name>PocketTopo Input</_name>
   <id>speleo.input.top</id>

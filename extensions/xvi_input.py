@@ -1,7 +1,8 @@
 '''
 Convert XVI file to SVG
 
-WORK IN PROGRESS
+Copyright (C) Thomas Holder
+Distributed under the terms of the GNU General Public License v2 or later
 '''
 
 from __future__ import print_function

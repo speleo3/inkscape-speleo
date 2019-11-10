@@ -3,7 +3,7 @@
 # vi: noexpandtab:sw=4:ts=4
 '''
 Copyright (C) 2008 Thomas Holder, http://sf.net/users/speleo3/
-Distributed under the terms of the GNU General Public License v2
+Distributed under the terms of the GNU General Public License v2 or later
 
 Converts Survex 3D files (*.3d) to SVG.
 Usage: python 3dtosvg.py [OPTIONS] FILE.3d
