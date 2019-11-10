@@ -139,6 +139,20 @@ def name_therion2survex(name, prefix=''):
 ##########################################
 # options stuff
 
+option_value_count = {
+	'attr' : 2,
+	'author': 2,
+	'context': 2,
+	'text': 1,
+	'value': 1,
+}
+
+repeatable_options = [
+	'attr',
+	'author',
+]
+
+# legacy
 two_arg_keys = ['attr', 'context', 'author']
 needquote = re.compile(r'[^-._@a-z0-9]', re.I)
 
@@ -150,11 +164,17 @@ def is_numeric(s):
 	return True
 
 
+def maybe_key(s):
+	return re.match(r'-\S+$', s) != None and not is_numeric(s)
+
+
 def splitquoted(ustr, comments=False):
 	'''
 	Unicode safe shlex.split() drop-in.
 
 	Only uses double quotes, not single quotes.
+
+	Returns "[foo bar]" as one string.
 	'''
 
 	if sys.version_info[0] > 2:
@@ -188,7 +208,14 @@ def _splitquoted(s, comments=False):
 	if not comments:
 		lex.commenters = ''
 	lex.quotes = '"'
-	return list(lex)
+	def gen():
+		values = iter(lex)
+		for value in values:
+			if value.startswith('['):
+				while not value.endswith(']'):
+					value += ' ' + next(values)
+			yield value
+	return list(gen())
 
 
 def quote(value):
@@ -200,7 +227,13 @@ def quote(value):
 		return '""'
 	if needquote.search(value) is None:
 		return value
+	if value.startswith('[') and value.endswith(']'):
+		return value
 	return '"' + value.replace('\\', '\\\\').replace('"', '\\"') + '"'
+
+
+def _skipunexpected(s):
+	inkex.errormsg(s)
 
 
 def parse_options_new(a):
@@ -221,25 +254,33 @@ def parse_options_new(a):
 		try:
 			assert a[i][0] == '-'
 		except:
-			inkex.errormsg('assertion failed on ' + a[i])
+			_skipunexpected('assertion failed on ' + a[i])
+			return options
+
 		key = a[i][1:]
-		if i + 1 == n or a[i + 1][0] == '-' and \
-				not is_numeric(a[i + 1]) and \
-				key not in ['value', 'text']: # TODO: hack!!!
-			options[key] = True
-		else:
-			i += 1
-			if key in two_arg_keys:
-				value = quote(a[i]) + ' ' + quote(a[i + 1])
-				i += 1
-			else:
-				value = a[i]
-			if value[0] == '[':
-				while value[-1:] != ']':
-					i += 1
-					value += ' ' + a[i]
-			options[key] = value
 		i += 1
+
+		value_count = option_value_count.get(key)
+
+		if value_count is None:
+			value_count = 0
+			while (value_count + i) != n and not maybe_key(a[value_count + i]):
+				value_count += 1
+
+		if value_count == 0:
+			value = True
+		elif value_count == 1:
+			value = a[i]
+		else:
+			value = tuple(a[i:i + value_count])
+
+		if key in repeatable_options:
+			options.setdefault(key, []).append(value)
+		else:
+			options[key] = value
+
+		i += value_count
+
 	return options
 
 parse_options = parse_options_new
@@ -249,33 +290,49 @@ def format_options(options):
 	'''
 	Format options dictionary as therion options string.
 	'''
-	ret = ''
-	for key,value in options.items():
-		if len(ret) > 0:
-			ret += ' '
+	def format_option(key, value):
+		# legacy (might come from SVG file)
 		for two_arg_key in two_arg_keys:
 			if key.startswith(two_arg_key + '-'):
-				ret += '-' + key.replace('-', ' ', 1)
+				ret = '-' + key.replace('-', ' ', 1)
+				value_count = 1
 				break
 		else:
-			ret += '-' + key
+			ret = '-' + key
+			value_count = option_value_count.get(key)
+
 		if value == True:
-			continue
-		if not isinstance(value, basestring):
+			assert value_count in (None, 0)
+		elif isinstance(value, (tuple, list)):
+			# multi-value string
+			assert value_count in (None, len(value))
+			ret += ''.join(' ' + quote(v) for v in value)
+		elif not isinstance(value, basestring):
+			# number
+			assert value_count in (None, 1)
 			ret += ' ' + str(value)
-		elif key in two_arg_keys:
-			try:
-				assert len(splitquoted(value)) == 2
-			except AssertionError:
-				inkex.errormsg('error: -{} needs two argument value, got {}'.format(key, repr(value)))
-				ret += ' ' + quote(value) + ' <missing>'
-			else:
-				ret += ' ' + value
-		elif value.startswith('[') and value.endswith(']'):
+		elif value_count == 0:
+			_skipunexpected('error: -{} must have value True, got {}'.format(key, repr(value)))
+		elif value_count in (None, 1):
+			ret += ' ' + quote(value)
+		elif len(splitquoted(value)) == value_count:
+			# pre-quoted multi-value string
 			ret += ' ' + value
 		else:
-			ret += ' ' + quote(value)
-	return ret
+			_skipunexpected('error: -{} needs {} values, got {}'.format(key, value_count, repr(value)))
+			ret += ' <error>' * value_count
+
+		return ret
+
+	ret = []
+	for key,value in sorted(options.items()):
+		if key in repeatable_options and isinstance(value, list):
+			for v in value:
+				ret.append(format_option(key, v))
+		else:
+			ret.append(format_option(key, value))
+
+	return ' '.join(ret)
 
 def maybe_point(node):
 	return node.tag == svg_text or \
