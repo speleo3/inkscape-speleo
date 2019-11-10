@@ -150,17 +150,18 @@ def is_numeric(s):
 	return True
 
 
-def splitquoted(ustr):
+def splitquoted(ustr, comments=False):
 	'''
 	Unicode safe shlex.split() drop-in.
+
+	Only uses double quotes, not single quotes.
 	'''
-	import shlex
 
 	if sys.version_info[0] > 2:
 		assert not isinstance(ustr, bytes)
-		return(shlex.split(ustr))
+		return(_splitquoted(ustr, comments))
 	elif isinstance(ustr, bytes):
-		return(shlex.split(ustr))
+		return(_splitquoted(ustr, comments))
 
 	import re
 
@@ -177,13 +178,26 @@ def splitquoted(ustr):
 			lambda m: unichr(int(m.group(1), 16)),
 			bstr.decode('ascii'))
 
-	return [mydecode(b) for b in shlex.split(myencode(ustr))]
+	return [mydecode(b) for b in _splitquoted(myencode(ustr), comments)]
+
+
+def _splitquoted(s, comments=False):
+	import shlex
+	lex = shlex.shlex(s, posix=True)
+	lex.whitespace_split = True
+	if not comments:
+		lex.commenters = ''
+	lex.quotes = '"'
+	return list(lex)
 
 
 def quote(value):
 	'''
 	Add quotes around value, if needed
 	'''
+	assert isinstance(value, basestring)
+	if not value:
+		return '""'
 	if needquote.search(value) is None:
 		return value
 	return '"' + value.replace('\\', '\\\\').replace('"', '\\"') + '"'
@@ -228,50 +242,6 @@ def parse_options_new(a):
 		i += 1
 	return options
 
-# DONE: this fails for -text "foo \"bar\" com"
-# DONE: this fails for -text " "
-# DONE: this fails for -context role type (2 arguments)
-# DONE: negative number values are recognized as option (leading hyphen)
-# NOTE: result is the same for -text "[foo bar]" and -text [foo bar], but should be no problem
-def parse_options_old(a):
-	'''
-	Parses therion options string or sequence of strings.
-	Old: Does not use the shlex class, parses quotes manually.
-	'''
-	options = {}
-	if isinstance(a, basestring):
-		a = a.split()
-	n = len(a)
-	i = 0
-	while i < n:
-		try:
-			assert a[i][0] == '-'
-		except:
-			inkex.errormsg('assertion failed on ' + a[i])
-		key = a[i][1:]
-		if i + 1 == n or a[i + 1][0] == '-' and \
-				not is_numeric(a[i + 1]) and \
-				key not in ['value', 'text']: # TODO: hack!!!
-			options[key] = True
-		else:
-			i += 1
-			if key in two_arg_keys:
-				key += '-' + a[i]
-				i += 1
-			value = a[i]
-			if value[0] == '"':
-				while len(value) == 1 or value[-1] != '"' or value[-2] == r'\\':
-					i += 1
-					value += ' ' + a[i]
-				value = value[1:-1].replace('\\"', '"')
-			elif value[0] == '[':
-				while value[-1:] != ']':
-					i += 1
-					value += ' ' + a[i]
-			options[key] = value
-		i += 1
-	return options
-
 parse_options = parse_options_new
 
 # TODO this fails for -text "[foo bar]" (will be -text [foo bar], no quotes)
@@ -301,9 +271,6 @@ def format_options(options):
 				ret += ' ' + quote(value) + ' <missing>'
 			else:
 				ret += ' ' + value
-		elif len(value) == 0:
-			inkex.errormsg('error: empty value: -' + key);
-			ret += ' '
 		elif value.startswith('[') and value.endswith(']'):
 			ret += ' ' + value
 		else:
