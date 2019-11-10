@@ -184,9 +184,11 @@ class Th2Output(Th2Effect):
 				params = [ self.unittouu(node.get('x', '0')), self.unittouu(node.get('y', '0')) ]
 				mat = self.i2d_affine(node)
 				href = node.get(xlink_href, '')
+				XVIroot = '{}'
 				if href == '': # xvi image (svg:g)
 					options = parse_options(node.get(therion_options, ''))
 					href = options.get('href', '')
+					XVIroot = options.get('XVIroot', '{}')
 				elif href.startswith('data:'):
 					inkex.errormsg('Embedded images not supported!')
 					continue
@@ -199,8 +201,8 @@ class Th2Output(Th2Effect):
 					continue
 				if href.startswith('file://'):
 					href = href[7:]
-				print('##XTHERION## xth_me_image_insert {%f 1 1.0} {%f 1} "%s" 0 {}' % \
-						(paramsTrans[0], paramsTrans[1], href))
+				print('##XTHERION## xth_me_image_insert {%f 1 1.0} {%f %s} "%s" 0 {}' % \
+						(paramsTrans[0], paramsTrans[1], XVIroot, href))
 
 		self.print_scrap_begin('scrap1', not self.options.lay2scr)
 

@@ -12,12 +12,14 @@ import th2ex
 
 if sys.version_info[0] < 3:
 	import Tkinter
+	binarystdout = sys.stdout
 else:
 	import tkinter as Tkinter
+	binarystdout = sys.stdout.buffer
 
 etree = th2ex.inkex.etree
 
-def xvi2svg(handle, fullsvg=True, strokewidth=3, XVIroot=False):
+def xvi2svg(handle, fullsvg=True, strokewidth=3, XVIroot=''):
 	# file contents
 	filecontents = ''.join(handle)
 	tk_instance = Tkinter.Tcl().tk.eval
@@ -43,6 +45,7 @@ def xvi2svg(handle, fullsvg=True, strokewidth=3, XVIroot=False):
 	shots = list_tcl2py('XVIshots')
 	sketchlines = list_tcl2py('XVIsketchlines')
 	grid = list_tcl2py('XVIgrid')
+	root_translate = None
 
 	if fullsvg:
 		root = etree.Element('svg')
@@ -84,6 +87,8 @@ def xvi2svg(handle, fullsvg=True, strokewidth=3, XVIroot=False):
 			'y': y,
 		})
 		e.text = label
+		if XVIroot == label:
+			root_translate = -float(x), -float(y)
 	
 	if not XVIroot:
 		x, y, dx, _, _, dy, nx, ny = grid
@@ -93,6 +98,8 @@ def xvi2svg(handle, fullsvg=True, strokewidth=3, XVIroot=False):
 				float(dx) * float(nx), height))
 		else:
 			root.set('transform', 'translate(%f,%f)' % (-float(x), -float(y)))
+	elif root_translate is not None:
+		root.set('transform', 'translate(%f,%f)' % root_translate)
 
 	return root
 
@@ -102,4 +109,6 @@ if __name__ == '__main__':
 	else:
 		handle = sys.stdin
 	root = xvi2svg(handle)
-	print(etree.tostring(root))
+	handle.close()
+	binarystdout.write(etree.tostring(root, encoding='utf-8'))
+	binarystdout.write(b'\n')

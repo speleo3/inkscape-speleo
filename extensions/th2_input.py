@@ -5,7 +5,6 @@ Distributed under the terms of the GNU General Public License v2
 
 TODO
  * support line options between line data, for example by splitting lines and grouping
- * Place XVI correct!
 '''
 
 from __future__ import print_function
@@ -251,11 +250,12 @@ def parse_XTHERION(a):
 	global doc_width, doc_x, doc_y
 	global scrap_transform, scrap_transform_inv
 	if a[1] == 'xth_me_image_insert':
-		href, XVIroot = '', False
+		href, XVIroot = '', ''
 		try:
 			# xth_me_image_insert {xx yy fname iidx imgx}
 			# xx = {xx vsb igamma}
 			# yy = {yy XVIroot}
+			# XVIroot is the station name which defines (0,0)
 			me_image_str = ' '.join(a[2:])
 			if sys.version_info[0] < 3:
 				import Tkinter
@@ -268,7 +268,6 @@ def parse_XTHERION(a):
 			x = tk_instance('lindex $xth_me_image 0 0')
 			y = tk_instance('expr (-1 * [lindex $xth_me_image 1 0])')
 			XVIroot = tk_instance('lindex $xth_me_image 1 1')
-			XVIroot = float(XVIroot) > 0.0 if len(XVIroot) else False
 		except BaseException as e:
 			errormsg('tk parsing failed, fallback to regex (%s)' % str(e))
 			# TODO: Warning: poor expression, might fail
@@ -288,17 +287,16 @@ def parse_XTHERION(a):
 			try:
 				import xvi_input
 				with open(href) as handle:
-					img = xvi_input.xvi2svg(handle, False, 2, XVIroot)
-				transform = img.get('transform', '')
-				img.set('transform', '%s scale(1,-1) translate(%s,%s)' % (transform, x, y))
-				img.set('transform-orig', '%s scale(1,-1) translate(%s,%s)' % (transform, x, y))
-				# set_props(img, 'XTHERION', 'xth_me_image_insert', {'href': href})
+					g_xvi = xvi_input.xvi2svg(handle, False, 2, XVIroot)
+				img = etree.Element('g')
+				img.append(g_xvi)
+				img.set('transform', 'scale(1,-1) translate(%s,%s)' % (x, y))
 				img.set(therion_type, 'xth_me_image_insert')
 				img.set(therion_options, format_options({'href': href,
-					'XVIroot': '1'}))
+						'XVIroot': XVIroot}))
 				root.xpath('svg:g[@id="layer-scan"]', namespaces=inkex.NSS)[0].append(img)
-			except:
-				errormsg('xvi2svg failed')
+			except BaseException as e:
+				errormsg('xvi2svg failed ({})'.format(e))
 		elif href != '':
 			img = etree.Element('image')
 			img.set(xlink_href, href)
@@ -647,7 +645,6 @@ f_handle.close()
 
 e = root.xpath('svg:g[@id="layer-scan"]', namespaces=inkex.NSS)[0]
 e.set('transform', scrap_transform + ' scale(1,-1) scale(%f)' % (1./th2pref.basescale))
-e.set('transform-orig', scrap_transform + ' scale(1,-1) scale(%f)' % (1./th2pref.basescale))
 
 e = root.xpath('svg:g[@id="layer-scrap0"]', namespaces=inkex.NSS)[0]
 if len(e) > 0:
