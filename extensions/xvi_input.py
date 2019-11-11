@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 '''
 Convert XVI file to SVG
 
