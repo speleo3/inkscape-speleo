@@ -72,6 +72,48 @@ def avgdeg(deg):
     return math.degrees(math.atan2(mss, msc))
 
 
+def average_shots(shots, ignore_splays=True):
+    '''Average duplicate legs and return a new set of legs. Ignores splay shots.
+    '''
+    duplicates = collections.defaultdict(list)
+    order = []
+
+    for s in shots:
+        if not s['to']:
+            if not ignore_splays:
+                order.append((s, None))
+            continue
+
+        if (s['to'], s['from']) in duplicates:
+            s = reverse_shot(s)
+
+        key = (s['from'], s['to'])
+        dups = duplicates[key]
+
+        if not dups:
+            order.append(key)
+
+        dups.append(s)
+
+    for key in order:
+        if key[1] is None:
+            yield key[0]
+            continue
+
+        dups = duplicates[key]
+
+        yield {
+            'from': key[0],
+            'to': key[1],
+            'compass': posdeg(avgdeg([s['compass'] for s in dups])),
+            'clino': sum(s['clino'] for s in dups) / len(dups),
+            KEY_TAPE: sum(s[KEY_TAPE] for s in dups) / len(dups),
+            # copy from first
+            'trip': dups[0]['trip'],
+            'comment': dups[0].get('comment', ''),
+        }
+
+
 def _make_Point(x, y):
     return distmm(x), distmm(y)
 
@@ -265,9 +307,17 @@ def dump_svx(top,
         surveyname=None,
         prefixadd='',
         prefixstrip='',
+        doavg=True,
+        dosep=False,
         file=sys.stdout,
         end=os.linesep):
     '''Write a Survex (.svx) data file
+
+    :param surveyname: Add *begin and *end with surveyname
+    :param prefixadd: Prefix to add
+    :param prefixstrip: Prefix to strip (e.g. "1.")
+    :param doavg: Average redundant shots
+    :param dosep: Separate blocks for legs and splays
     '''
     if 'filename' in top:
         file.write('; ' + os.path.basename(top['filename']))
@@ -280,7 +330,7 @@ def dump_svx(top,
     file.write('*data default')
     file.write(end)
 
-    tripidx = None
+    tripidx = [None] # list as mutable pointer in function scope
 
     allhaveprefixstrip = prefixstrip and (
             all(s['from'].startswith(prefixstrip) for s in top['shots']) and
@@ -290,14 +340,14 @@ def dump_svx(top,
 
     sname = lambda n: n.replace('.', '_')
 
-    for s in top['shots']:
+    def write_shot(s):
         # ignore "1.0  .. 0.0 0.0 0.0" line
         if not s[KEY_TAPE] and not s['to']:
-            continue
+            return
 
-        if tripidx != s['trip']:
-            tripidx = s['trip']
-            trip = top['trips'][tripidx]
+        if tripidx[0] != s['trip']:
+            tripidx[0] = s['trip']
+            trip = top['trips'][tripidx[0]]
 
             file.write(end)
             file.write('*date {0.tm_year}.{0.tm_mon:02}.{0.tm_mday:02}'.format(trip['date']))
@@ -315,6 +365,22 @@ def dump_svx(top,
             file.write(' ; {comment}'.format(**s))
 
         file.write(end)
+
+    if doavg:
+        leg_iter = average_shots(top['shots'], dosep)
+    elif dosep:
+        leg_iter = (s for s in top['shots'] if s['to'])
+    else:
+        leg_iter = iter(top['shots'])
+
+    for s in leg_iter:
+        write_shot(s)
+
+    if dosep:
+        file.write(end + '; passage data' + end)
+        for s in top['shots']:
+            if not s['to']:
+                write_shot(s)
 
     if surveyname:
         file.write(end)
@@ -343,39 +409,6 @@ def dump_svg(top, hidesideview=False, file=sys.stdout, showbbox=True):
             'clino': -s['clino'],
             KEY_TAPE: s[KEY_TAPE],
         }
-
-    def average_shots(shots):
-        '''Average duplicate legs and return a new set of new legs. Ignores
-        splay shots.
-        '''
-        duplicates = collections.defaultdict(list)
-        order = []
-
-        for s in shots:
-            if not s['to']:
-                continue
-
-            if (s['to'], s['from']) in duplicates:
-                s = reverse_shot(s)
-
-            key = (s['from'], s['to'])
-            dups = duplicates[key]
-
-            if not dups:
-                order.append(key)
-
-            dups.append(s)
-
-        for key in order:
-            dups = duplicates[key]
-
-            yield {
-                'from': key[0],
-                'to': key[1],
-                'compass': avgdeg([s['compass'] for s in dups]),
-                'clino': sum(s['clino'] for s in dups) / len(dups),
-                KEY_TAPE: sum(s[KEY_TAPE] for s in dups) / len(dups),
-            }
 
     leg_shots = list(average_shots(top['shots']))
 
@@ -636,6 +669,8 @@ def main(argv=None):
     argparser.add_argument("--surveyname", help="survey name for survex dump", default="")
     argparser.add_argument("--prefixadd", help="station name prefix to add", default="")
     argparser.add_argument("--prefixstrip", help="station name prefix to strip", default="")
+    argparser.add_argument("--no-avg", help="don't average repeated legs", action='store_true', default=False)
+    argparser.add_argument("--do-sep", help="separate legs from splays", action='store_true', default=False)
     argparser.add_argument('filenames', metavar='FILENAME', nargs='+', help='one or more .top files')
     args = argparser.parse_args(argv)
 
@@ -653,6 +688,8 @@ def main(argv=None):
                 dump_json(top)
             elif args.dump == 'svx':
                 dump_svx(top,
+                        doavg=not args.no_avg,
+                        dosep=args.do_sep,
                         prefixstrip=args.prefixstrip,
                         prefixadd=args.prefixadd)
             elif args.dump == 'svg':
