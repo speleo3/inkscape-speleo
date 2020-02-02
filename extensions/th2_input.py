@@ -81,7 +81,7 @@ if th2pref.sublayers:
 	    'wall': 'wall',
 	}
 	def getlayer(role, type):
-		if role is 'point':
+		if role == 'point':
 			key = pointtype2layer.get(type, 'misc')
 		else:
 			key = linetype2layer.get(type, 'misc')
