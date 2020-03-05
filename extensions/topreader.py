@@ -388,6 +388,41 @@ def dump_svx(top,
         file.write(end)
 
 
+def dump_tro(top,
+        file=sys.stdout,
+        end=os.linesep):
+    '''Write a Visual Topo (.tro) data file
+    '''
+    def write_shot(s):
+        # ignore "1.0  .. 0.0 0.0 0.0" line
+        if not s[KEY_TAPE] and not s['to']:
+            return
+
+        to = s['to'] if s['to'] else '*'
+        fmt = '{from:10} {0:10} {' + KEY_TAPE + ':19.2f}  {compass:6.2f} {clino:7.2f}'
+        file.write(fmt.format(to, **s))
+        file.write(end)
+
+    # (dummy) entrance required for processing
+    entrance_name = top['shots'][0]['from']
+    entrance_shot = {
+        'from': entrance_name,
+        'to': entrance_name,
+        KEY_TAPE: 0,
+        'compass': 0,
+        'clino': 0
+    }
+
+    file.write('Entree ' + entrance_name + end)
+    file.write('Param Deca Degd Clino Degd 0.0000 Dir,Dir,Dir' + end)
+    write_shot(entrance_shot)
+
+    leg_iter = average_shots(top['shots'], False)
+
+    for s in leg_iter:
+        write_shot(s)
+
+
 def dump_svg(top, hidesideview=False, file=sys.stdout, showbbox=True):
     '''Dump drawing as SVG in 1:100 scale.
     Plan and side views go into separate layers.
@@ -664,7 +699,7 @@ def view_inkscape(top, tmpname='', exe='inkscape'):
 def main(argv=None):
     import argparse
     argparser = argparse.ArgumentParser()
-    argparser.add_argument("--dump", help="dump file to stdout", choices=('json', 'svg', 'svx'))
+    argparser.add_argument("--dump", help="dump file to stdout", choices=('json', 'svg', 'svx', 'tro'))
     argparser.add_argument("--view", help="open viewer application", choices=('aven', 'inkscape'))
     argparser.add_argument("--surveyname", help="survey name for survex dump", default="")
     argparser.add_argument("--prefixadd", help="station name prefix to add", default="")
@@ -694,6 +729,8 @@ def main(argv=None):
                         prefixadd=args.prefixadd)
             elif args.dump == 'svg':
                 dump_svg(top)
+            elif args.dump == 'tro':
+                dump_tro(top)
             elif not args.view:
                 dump_info(top)
 
