@@ -631,6 +631,25 @@
       <path d="M 4.4,4e-7 A 4.4,4.25 0 0 1 0,4.25 4.4,4.25 0 0 1 -4.4,4.e-7 4.4,4.25 0 0 1 0,-4.25 4.4,4.25 0 0 1 4.4,4e-7 Z"
         style="fill:#4e9eda;fill-opacity:0.5;stroke:#2795e2;stroke-width:0.8" />
     </symbol>
+	<symbol id="point-clay-choke">
+	  <path d="M -6,6 6,6 6,-6 -6,-6 z" style="fill:none;stroke:black;stroke-width:0.5;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10" />
+	  <path d="m -1.6397635,-4.0295275 v 7.5590551 h 3.779527" style="fill:none;stroke:black;stroke-width:0.8;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10" />
+	</symbol>
+	<symbol id="point-clay-tree">
+	  <path d="m -3.9685038,2.6456704 1.3228346,-3.4015748 1.3228346,3.4015748" style="fill:none;stroke:black;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1" />
+	  <path d="M 1.3228346,2.6456704 2.6456692,-0.7559044 3.9685038,2.6456704" style="fill:none;stroke:black;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1" />
+	  <path d="M -1.1903159,0.50177307 0.00670301,-2.5762756 1.2037219,0.50177307" style="fill:none;stroke:black;stroke-width:0.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1" />
+	</symbol>
+	<symbol id="point-via-ferrata">
+	  <path d="m -3.4015748,-2.8956505 v 1.511811 h 6.8031496 v -1.511811" style="fill:none;stroke:#000000;stroke-width:0.6px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+	  <path d="M -3.4015748,1.133877 V 2.645688 H 3.4015748 V 1.133877" style="fill:none;stroke:#000000;stroke-width:0.6px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+	  <path d="M -6,6 6,6 6,-6 -6,-6 z " style="fill:none;stroke:#000000;stroke-width:0.5px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+    </symbol>
+	<symbol id="point-section">
+	  <path d="M -6,6 6,6 6,-6 -6,-6 z " style="opacity:0.7;fill:#cccc00;stroke:#000000;stroke-width:0.5px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+	  <path d="M -3.4848246,3.7584394 -0.54233457,-0.20639797 -3.1371229,-3.8494807 h 1.1987921 l 1.38042764,1.9512814 q 0.43073449,0.6071798 0.61236998,0.93412379 Q 0.30875575,-1.3792422 0.65645748,-1.8307352 L 2.1873828,-3.8494807 H 3.2823836 L 0.6097511,-0.26348283 3.4899661,3.7584394 H 2.2444684 L 0.32951437,1.0442906 Q 0.16863739,0.81075947 -0.00261889,0.53571192 -0.25690782,0.95087783 -0.36588912,1.1065655 L -2.2756533,3.7584394 Z"
+	  style="fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.79711902px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
+	</symbol>
 
     <!-- LPEs -->
     <inkscape:path-effect effect="skeletal" id="LPE-contour" prop_scale="-3" pattern="m 0,0 2,0 m -1,0 0,1" normal_offset="0.5" />

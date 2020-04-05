@@ -45,6 +45,7 @@
 <item value="karren">karren</item>
 <item value="label">label</item>
 <item value="low-end">low-end</item>
+<item value="map-connection">map-connection</item>
 <item value="moonmilk">moonmilk</item>
 <item value="narrow-end">narrow-end</item>
 <item value="no-equipment">no-equipment</item>
@@ -63,6 +64,7 @@
 <item value="rope">rope</item>
 <item value="sand">sand</item>
 <item value="scallop">scallop</item>
+<item value="section">section</item>
 <item value="sink">sink</item>
 <item value="snow">snow</item>
 <item value="soda-straw">soda-straw</item>
