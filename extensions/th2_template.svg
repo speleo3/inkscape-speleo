@@ -610,6 +610,28 @@
     <symbol id="point-sand">
       <path d="m -2.05,2 c 0,0.2761424 -0.2238576,0.5 -0.5,0.5 -0.2761424,0 -0.5,-0.2238576 -0.5,-0.5 0,-0.2761424 0.2238576,-0.5 0.5,-0.5 0.2761424,0 0.5,0.2238576 0.5,0.5 z m 5.1,0 c 0,0.2761424 -0.2238576,0.5 -0.5,0.5 -0.2761424,0 -0.5,-0.2238576 -0.5,-0.5 0,-0.2761424 0.2238576,-0.5 0.5,-0.5 0.2761424,0 0.5,0.2238576 0.5,0.5 z M 0.5,-2.55 c 0,0.2761424 -0.2238576,0.5 -0.5,0.5 -0.2761424,0 -0.5,-0.2238576 -0.5,-0.5 0,-0.2761424 0.2238576,-0.5 0.5,-0.5 0.2761424,0 0.5,0.2238576 0.5,0.5 z" style="fill:black;stroke:none" />
     </symbol>
+
+    <!-- neue Symbole von Axel (2020-03-02) -->
+    <symbol id="point-passage-height">
+      <path d="M 8,0 A 8,8 0 0 1 0,8 8,8 0 0 1 -8,0 8,8 0 0 1 0,-8 8,8 0 0 1 8,0 Z"
+        style="fill:none;stroke:#000000;stroke-width:1.2" />
+    </symbol>
+    <symbol id="point-altitude">
+      <text x="1.4" y="2" style="font-size: 7px" transform="scale(0.7,1.4)">altitude</text>
+      <path d="m -9.35,0.35 a 0.812,1 0 0 1 -0.812,1 0.812,1 0 0 1 -0.812,-1 0.812,1 0 0 1 0.812,-1 0.812,1 0 0 1 0.812,1 z"
+        style="fill:#000000;stroke:none" />
+    </symbol>
+    <symbol id="point-height">
+      <text x="-0.5" y="1.8" transform="scale(1,1.2)" style="font-size: 9px"><tspan style="font-size: 6px">±</tspan><tspan dy="1.5" dx="1">X</tspan></text>
+    </symbol>
+    <symbol id="point-station-name">
+      <text x="0" y="2.4" style="font-size: 7px" transform="scale(0.7,1.4)">st name</text>
+    </symbol>
+    <symbol id="point-label">
+      <path d="M 4.4,4e-7 A 4.4,4.25 0 0 1 0,4.25 4.4,4.25 0 0 1 -4.4,4.e-7 4.4,4.25 0 0 1 0,-4.25 4.4,4.25 0 0 1 4.4,4e-7 Z"
+        style="fill:#4e9eda;fill-opacity:0.5;stroke:#2795e2;stroke-width:0.8" />
+    </symbol>
+
     <!-- LPEs -->
     <inkscape:path-effect effect="skeletal" id="LPE-contour" prop_scale="-3" pattern="m 0,0 2,0 m -1,0 0,1" normal_offset="0.5" />
     <inkscape:path-effect effect="skeletal" id="LPE-pit" copytype="repeated_stretched" fuse_tolerance="0.1" prop_scale="-3" pattern="m 0,0 4,0 m -2,0 0,1" normal_offset="0.5" />
