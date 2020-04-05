@@ -661,9 +661,11 @@ path.area.flowstone { fill:url(#pattern-flowstone) }
 		}
 		path.line.u.water {
 			fill:blue;
+			fill-opacity:0.5;
 		}
 		path.line.u.sand {
 			fill:yellow;
+			fill-opacity:0.5;
 		}
 
 path.line.u.BLACK { stroke: black }
@@ -741,6 +743,8 @@ path.line.u.RED { stroke: red }
 		path.line.rock-edge {
 			stroke:black;
 			stroke-width:0.325;
+			marker-start:none;
+			marker-end:none;
 		}
 		path.line.overhang {
 			stroke:none;
