@@ -141,8 +141,8 @@ class Th2Output(Th2Effect):
 
 	def output(self):
 		root = self.document.getroot()
-		doc_width = self.unittouu(root.get('width'))
-		doc_height = self.unittouu(root.get('height'))
+		doc_width = self.unittouu(root.get('width') or '0')
+		doc_height = self.unittouu(root.get('height') or '0')
 
 		# load prefs from file
 		th2pref_load_from_xml(root)
@@ -150,7 +150,7 @@ class Th2Output(Th2Effect):
 
 		self.r2d = [[1, 0, 0],[0, -1, doc_height]]
 		viewBox = root.get('viewBox')
-		if viewBox:
+		if viewBox and doc_width and doc_height:
 			m1 = parseViewBox(viewBox, doc_width, doc_height)
 			self.r2d = simpletransform.composeTransform(self.r2d, m1)
 
@@ -162,10 +162,12 @@ class Th2Output(Th2Effect):
 				for x in pattern.finditer(stylenode.text):
 					self.classes[x.group(1)] = simplestyle.parseStyle(x.group(2).strip())
 
-		print('''encoding  utf-8
-##XTHERION## xth_me_area_adjust 0 0 %f %f
-##XTHERION## xth_me_area_zoom_to 100
-''' % (doc_width * th2pref.basescale, doc_height * th2pref.basescale))
+		print('encoding  utf-8')
+		if doc_width and doc_height:
+			print('##XTHERION## xth_me_area_adjust 0 0 %f %f' % (
+				doc_width * th2pref.basescale,
+				doc_height * th2pref.basescale))
+		print('##XTHERION## xth_me_area_zoom_to 100')
 
 		# text on path
 		if th2pref.textonpath:
