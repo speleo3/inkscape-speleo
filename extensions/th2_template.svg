@@ -657,7 +657,7 @@
     <inkscape:path-effect effect="skeletal" id="LPE-flowstone" copytype="repeated_stretched" prop_scale="-1" pattern="m 0,0 c 2,4 8,4 10,0" fuse_tolerance="0.1" normal_offset="1.5" />
     <inkscape:path-effect effect="skeletal" id="LPE-moonmilk" copytype="repeated_stretched" prop_scale="-1" pattern="M 0,0 C 1,2 4,2 5,0" fuse_tolerance="0.1" normal_offset="1.0" />
     <inkscape:path-effect effect="skeletal" id="LPE-floor-step" prop_scale="-3" pattern="m 0,0 -6,0 m 3,0 0,1" normal_offset="0.5" fuse_tolerance="0.1" copytype="repeated_stretched" />
-    <inkscape:path-effect effect="skeletal" id="LPE-ceiling-step" prop_scale="-3" pattern="m 0,0 -6,0 m 3,0 0,1" normal_offset="0.5" copytype="repeated_stretched" spacing="3" />
+    <inkscape:path-effect effect="skeletal" id="LPE-ceiling-step" prop_scale="-3" pattern="m 0,0 -6,0 m 3,0 0,-1" normal_offset="0.5" copytype="repeated_stretched" spacing="3" />
     <inkscape:path-effect effect="skeletal" id="LPE-floor-meander" pattern="m 0,-2 h 2 m -1,0 v 1 M 0,2 H 2 M 1,2 V 1" fuse_tolerance="0.1" copytype="repeated_stretched" />
     <inkscape:path-effect effect="skeletal" id="LPE-ceiling-meander" pattern="m 0,-2 h 2 m -1,0 v 1 M 0,2 H 2 M 1,2 V 1" fuse_tolerance="0.1" copytype="repeated_stretched" spacing="2" />
     <inkscape:path-effect effect="skeletal" id="LPE-overhang" prop_scale="-3" pattern="m 0,0 -4,0 2,1 z" normal_offset="0.5" copytype="repeated_stretched" />
@@ -680,7 +680,7 @@
 			stroke-linecap:round;
 			stroke-linejoin:round;
 		}
-
+path.area { fill-opacity:0.5 }
 path.area.clay { fill:url(#pattern-clay) }
 path.area.debris {fill:url(#pattern-debris) }
 path.area.sand { fill:url(#pattern-sand) }
@@ -827,6 +827,11 @@ path.line.u.RED { stroke: red }
 			stroke:none;
 			fill:blue;
 			fill-opacity:0.8;
+		}
+		path.line.label {
+			stroke:#2795e2;
+			stroke-width:3.5;
+			marker-end:none;
 		}
 	</style>
   </defs>
