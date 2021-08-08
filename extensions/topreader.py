@@ -4,7 +4,7 @@
 #
 # Based on Andrew Atkinson's "TopParser"
 #
-# Copyright (C) 2018 Thomas Holder
+# Copyright (C) 2018-2021 Thomas Holder
 # Copyright (C) 2011-2012 Andrew Atkinson ("TopParser")
 #
 # --------------------------------------------------------------------
@@ -217,6 +217,11 @@ def _read_Polygon(F):
 def _read_station(F):
     # id's split into major.decimal(minor)
     idd, idm = struct.unpack('<HH', F.read(4))
+    if idd == 0xffff:
+        # TODO Observed (0xffff, 0x800f), what does this mean?
+        print('unknown idd=0x{:04x} idm=0x{:04x}'.format(idd, idm),
+              file=sys.stderr)
+        return ""
     if idm != 0x8000:
         return str(idm) + "." + str(idd)
     if idd != 0:
@@ -309,25 +314,41 @@ def dump_svx(top,
         prefixstrip='',
         doavg=True,
         dosep=False,
+        therion=False,
+        dot='.',
         file=sys.stdout,
         end=os.linesep):
-    '''Write a Survex (.svx) data file
+    '''Write a Survex (.svx) or Therion (.th) data file
 
     :param surveyname: Add *begin and *end with surveyname
     :param prefixadd: Prefix to add
     :param prefixstrip: Prefix to strip (e.g. "1.")
     :param doavg: Average redundant shots
     :param dosep: Separate blocks for legs and splays
+    :param therion: Use Therion format
+    :param dot: Character to use instead of '.' in station names
     '''
+    if therion:
+        C = '#'
+        P = ''
+        splayname = '-'
+    else:
+        C = ';'
+        P = '*'
+        splayname = '..'
+
     if 'filename' in top:
-        file.write('; ' + os.path.basename(top['filename']))
+        file.write(C + ' ' + os.path.basename(top['filename']))
         file.write(end * 2)
 
     if surveyname:
-        file.write('*begin ' + surveyname)
+        if therion:
+            file.write('survey ' + surveyname)
+        else:
+            file.write('*begin ' + surveyname)
         file.write(end * 2)
 
-    file.write('*data default')
+    file.write(P + 'data normal from to tape compass clino')
     file.write(end)
 
     tripidx = [None] # list as mutable pointer in function scope
@@ -338,7 +359,7 @@ def dump_svx(top,
 
     nstrip = len(prefixstrip) if allhaveprefixstrip else 0
 
-    sname = lambda n: n.replace('.', '_')
+    sname = lambda n: n.replace('.', dot)
 
     def write_shot(s):
         # ignore "1.0  .. 0.0 0.0 0.0" line
@@ -350,19 +371,19 @@ def dump_svx(top,
             trip = top['trips'][tripidx[0]]
 
             file.write(end)
-            file.write('*date {0.tm_year}.{0.tm_mon:02}.{0.tm_mday:02}'.format(trip['date']))
+            file.write(P + 'date {0.tm_year}.{0.tm_mon:02}.{0.tm_mday:02}'.format(trip['date']))
             file.write(end * 2)
 
         from_ = prefixadd + sname(s['from'][nstrip:])
-        to = (prefixadd + sname(s['to'][nstrip:])) if s['to'] else '..'
+        to = (prefixadd + sname(s['to'][nstrip:])) if s['to'] else splayname
 
         fmt = '{0}\t{1}\t{' + KEY_TAPE + ':6.3f} {compass:5.1f} {clino:5.1f}'
         if not s[KEY_TAPE]:
-            fmt = '*equate {0} {1}'
+            fmt = P + 'equate {0} {1}'
         file.write(fmt.format(from_, to, **s))
 
         if s.get('comment'):
-            file.write(' ; {comment}'.format(**s))
+            file.write(' {} {comment}'.format(C, **s))
 
         file.write(end)
 
@@ -377,14 +398,17 @@ def dump_svx(top,
         write_shot(s)
 
     if dosep:
-        file.write(end + '; passage data' + end)
+        file.write(end + C + ' passage data' + end)
         for s in top['shots']:
             if not s['to']:
                 write_shot(s)
 
     if surveyname:
         file.write(end)
-        file.write('*end ' + surveyname)
+        if therion:
+            file.write('endsurvey')
+        else:
+            file.write('*end ' + surveyname)
         file.write(end)
 
 
@@ -699,7 +723,7 @@ def view_inkscape(top, tmpname='', exe='inkscape'):
 def main(argv=None):
     import argparse
     argparser = argparse.ArgumentParser()
-    argparser.add_argument("--dump", help="dump file to stdout", choices=('json', 'svg', 'svx', 'tro'))
+    argparser.add_argument("--dump", help="dump file to stdout", choices=('json', 'svg', 'svx', 'th', 'tro'))
     argparser.add_argument("--view", help="open viewer application", choices=('aven', 'inkscape'))
     argparser.add_argument("--surveyname", help="survey name for survex dump", default="")
     argparser.add_argument("--prefixadd", help="station name prefix to add", default="")
@@ -721,8 +745,9 @@ def main(argv=None):
 
             if args.dump == 'json':
                 dump_json(top)
-            elif args.dump == 'svx':
+            elif args.dump in ('svx', 'th'):
                 dump_svx(top,
+                        therion=args.dump == 'th',
                         doavg=not args.no_avg,
                         dosep=args.do_sep,
                         prefixstrip=args.prefixstrip,
