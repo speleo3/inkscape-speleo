@@ -72,19 +72,21 @@ def xvi2svg(handle, fullsvg=True, strokewidth=3, XVIroot=''):
 				'style': 'fill:none;stroke:%s;stroke-width:%f' % (color, strokewidth),
 			})
 
+	g_shots = etree.SubElement(root, 'g', {th2ex.inkscape_label: 'Shots'})
 	for line in shots:
 		coords = line.split()
 		coords[1::2] = map(invert_str, coords[1::2])
 		coords_str = ' '.join(coords)
-		e = etree.SubElement(root, 'path', {
+		e = etree.SubElement(g_shots, 'path', {
 			'd': 'M ' + coords_str,
 			'style': 'fill:none;stroke:#999;stroke-width:%f' % (strokewidth),
 		})
 
+	g_stations = etree.SubElement(root, 'g', {th2ex.inkscape_label: 'Stations'})
 	for line in stations:
 		x, y, label = line.split()
 		y = invert_str(y)
-		e = etree.SubElement(root, 'text', {
+		e = etree.SubElement(g_stations, 'text', {
 			'x': x,
 			'y': y,
 		})
@@ -114,3 +116,5 @@ if __name__ == '__main__':
 	handle.close()
 	binarystdout.write(etree.tostring(root, encoding='utf-8'))
 	binarystdout.write(b'\n')
+
+# vi:noexpandtab
