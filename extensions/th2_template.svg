@@ -474,7 +474,7 @@
     </symbol>
     <symbol id="point-water">
       <path d="m 6.35,0 c 0,-1.2 -0.7,-2.3 -1.9,-3.2 -1.2,-0.8 -2.8,-1.3 -4.5,-1.3 -1.7,0 -3.3,0.5 -4.5,1.3 -1.2,0.9 -1.8,2 -1.8,3.2 0,1.2 0.6,2.4 1.8,3.2 1.2,0.8 2.8,1.3 4.5,1.3 1.7,0 3.3,-0.5 4.5,-1.3 1.2,-0.8 1.9,-2 1.9,-3.2 z" style="fill:#8dc0ff;fill-opacity:1;stroke:black;stroke-width:0.52499998;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10" />
-      <path style="color:black;fill:none;stroke:black;stroke-width:0.30000001;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate" d="M 2.44,4.094 C 0.43,2.082 -2.21,-0.581 -4.75,-3.094 M 6.31,0.4062 C 4.76,-1.207 3.13,-2.794 1.53,-4.375 m -7.81,3.5938 C -3.77,1.724 -2.41,3.081 -1.09,4.406 M -2.16,-4.25 c 1.71,1.667 4.35,4.28 7.1,7.031" sodipodi:nodetypes="cccccccc" />
+      <path style="fill:none;stroke:black;stroke-width:0.3" d="M 2.44,4.094 C 0.43,2.082 -2.21,-0.581 -4.75,-3.094 M 6.31,0.4062 C 4.76,-1.207 3.13,-2.794 1.53,-4.375 m -7.81,3.5938 C -3.77,1.724 -2.41,3.081 -1.09,4.406 M -2.16,-4.25 c 1.71,1.667 4.35,4.28 7.1,7.031" sodipodi:nodetypes="cccccccc" />
     </symbol>
     <symbol id="point-clay">
       <path d="m -4.485,0 c 0,-3 4.47,-3 4.47,0 0,3 4.5,3 4.5,0" style="fill:none;stroke:black;stroke-width:0.75;stroke-linecap:round" />
