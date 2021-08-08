@@ -415,7 +415,8 @@ class Survex3D(object):
         '''
         Load 3d file
         '''
-        self.read_stream(open(filename, 'rb'))
+        with open(filename, 'rb') as stream:
+            self.read_stream(stream)
 
     def read_stream(self, f):
         from struct import unpack
