@@ -27,8 +27,7 @@ basename as the *.3d file, it will be passed to the extend binary
 with the --specfile option. See "extend" manpage for details.
 
 Related:
- * http://survex.com/
- * http://trac.survex.com/browser/trunk/doc/3dformat.htm
+ * https://survex.com/docs/3dformat.htm
 
 Changelog:
  * 2011-01-23: New args use_inkscape_label, use_therion_attribs
@@ -129,6 +128,7 @@ _cos = math.cos(math.radians(args['bearing']))
 _sin = math.sin(math.radians(args['bearing']))
 
 coords = []
+coords_splay = []
 curr_label = ''
 labels = {}
 
@@ -150,7 +150,7 @@ def read_len():
 
 if sys.version_info[0] > 2:
 	def _read_label(n):
-		return f.read(n).decode('ascii')
+		return f.read(n).decode('utf-8', errors='replace')
 else:
 	def _read_label(n):
 		return f.read(n)
@@ -177,6 +177,7 @@ def read_label_v8():
 		ndel = read_len_v8()
 		nadd = read_len_v8()
 	oldlen = len(curr_label)
+	# TODO ndel is byte count, not unicode character count
 	curr_label = curr_label[:oldlen - ndel] + _read_label(nadd)
 
 def skip_bytes(n):
@@ -199,6 +200,7 @@ if ff_version >= 8:
 	flags = read_byte()
 
 	style = -1
+	xyz_move = None
 
 	while True:
 		byte = f.read(1)
@@ -217,9 +219,7 @@ if ff_version >= 8:
 			continue
 		elif byte == 0x0f:
 			# MOVE
-			xyz = read_xyz()
-			coords.append('M')
-			coords.extend(xyz)
+			xyz_move = read_xyz()
 		elif byte == 0x10:
 			# DATE
 			pass
@@ -257,9 +257,14 @@ if ff_version >= 8:
 			flag = byte & 0x3f
 			if not (flag & 0x20):
 				read_label_v8()
-			xyz = read_xyz()
-			coords.append('L')
-			coords.extend(xyz)
+			coords_ = coords_splay if (flag & 0x04) else coords
+			assert xyz_move
+			if xyz_move != coords_[-3:]:
+				coords_.append('M')
+				coords_.extend(xyz_move)
+			xyz_move = read_xyz()
+			coords_.append('L')
+			coords_.extend(xyz_move)
 		elif byte <= 0xff:
 			# LABEL
 			flag = byte & 0x7f
@@ -341,20 +346,23 @@ while ff_version < 8:
 		# Reserved
 		continue
 
+f.close()
+
 # find min/max
 min_x = coords[1]
 max_x = coords[1]
 min_y = coords[2]
 max_y = coords[2]
-for i in range(4, len(coords), 4):
-	if (min_x > coords[i + 1]):
-		min_x = coords[i + 1]
-	if (max_x < coords[i + 1]):
-		max_x = coords[i + 1]
-	if (min_y > coords[i + 2]):
-		min_y = coords[i + 2]
-	if (max_y < coords[i + 2]):
-		max_y = coords[i + 2]
+for coords_ in (coords, coords_splay):
+	for i in range(4, len(coords_), 4):
+		if (min_x > coords_[i + 1]):
+			min_x = coords_[i + 1]
+		if (max_x < coords_[i + 1]):
+			max_x = coords_[i + 1]
+		if (min_y > coords_[i + 2]):
+			min_y = coords_[i + 2]
+		if (max_y < coords_[i + 2]):
+			max_y = coords_[i + 2]
 
 # extend
 width = max_x - min_x;
@@ -367,18 +375,20 @@ marker = {
 	2: 'url(#StationTriangle)',
 }.get(args['markers'], 'none')
 
-style = [
-	'fill:none',
-	'stroke:#900',
-	'stroke-width:' + str(max(0.1, args['scale'] / 50)),
-	'stroke-linecap:round',
-	'stroke-linejoin:round',
-	'marker-start:' + marker,
-	'marker-mid:' + marker,
-	'marker-end:' + marker,
-]
+def print_path(coords, style, scale=1.0):
+	if not coords:
+		return
 
-def print_path():
+	style = style + [
+		'fill:none',
+		'stroke-width:' + str(max(0.1, scale * args['scale'] / 50)),
+		'stroke-linecap:round',
+		'stroke-linejoin:round',
+		'marker-start:' + marker,
+		'marker-mid:' + marker,
+		'marker-end:' + marker,
+	]
+
 	print('<path style="%s"' % (';'.join(style)))
 	if args['use_therion_attribs']:
 		print('  therion:type="survey"')
@@ -468,12 +478,14 @@ print("""<?xml version="1.0" encoding="UTF-8"?>
 		height,
 		width * scale,
 		height * scale,
-		1.0 / scale,
+		0.1 / scale,
 		args['scale'],
 		infile,
 	))
 
-print_path()
+print_path(coords_splay, ['stroke:#990'], 0.5)
+print_path(coords, ['stroke:#900'])
+
 if args['markers'] == 3:
 	print_points()
 if args['stationnames']:
@@ -485,8 +497,11 @@ if args['scalebar']:
 	try:
 		from render_scalebar import Scalebar
 		scalebar = Scalebar(args['scale'], 3 * 25.4, docunit=scale * 10 * 3)
-		print(scalebar.get_xml())
-	except:
-		print("<text>Scalebar import failed</text>");
+		scalebar_xml = scalebar.get_xml()
+		if not isinstance(scalebar_xml, str):
+			scalebar_xml = scalebar_xml.decode("utf-8")
+		print(scalebar_xml)
+	except Exception as e:
+		print("<text>Scalebar import failed ({})</text>".format(e));
 
 print("</svg>")
