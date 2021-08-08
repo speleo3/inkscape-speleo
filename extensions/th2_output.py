@@ -49,13 +49,18 @@ class Th2Line:
 		self.type = type
 		self.options = {}
 		self.points = []
+		self._last = None
 	def append(self, params):
 		self.points.append(" ".join(fstr(i) for i in params))
+		self._last = self.points[-1]
 	def append_node_options(self, olist):
 		for o in olist:
 			self.points.append(o)
 	def close(self):
 		self.options['close'] = 'on'
+		if self._last is not None and (
+				self._last.split()[-2:] != self.points[0].split()):
+			self.points.append(self.points[0])
 	def output(self):
 		print_utf8("line %s %s" % (self.type, format_options(self.options)))
 		print("  " + "\n  ".join(self.points))
@@ -326,7 +331,8 @@ class Th2Output(Th2Effect):
 		# get path data
 		d = self.get_d(node)
 		if not d:
-			inkex.errormsg('no path data for element %s' % (node))
+			inkex.errormsg('no path data for element <{} id="{}">'.format(
+				node, node.get('id')))
 			return
 		p = parsePath(d)
 

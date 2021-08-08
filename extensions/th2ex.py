@@ -381,26 +381,16 @@ def get_props(e):
 	Get list of (str role, str type, dict options) from annotated SVG element.
 	'''
 	assert e.get(therion_role) != 'scrap', 'Cannot use get_props for scraps'
-	role, type, options, label = '', '', '', []
+
 	if th2pref.howtostore == 'inkscape_label':
-		label = e.get(inkscape_label, '').split(None, 2)
-	elif th2pref.howtostore == 'title':
-		title = title_node(e).text
-		if title is None:
-			title = ''
-		label = title.split(None, 2)
-	elif th2pref.howtostore == 'therion_attribs':
-		label = [e.get(therion_role, ''),
-				e.get(therion_type, ''),
-				e.get(therion_options, '')]
+		label = e.get(inkscape_label) or title_node(e).text or ''
 	else:
-		raise Exception('unknown th2pref.howtostore')
-	try:
-		role = label[0]
-		type = label[1]
-		options = label[2]
-	except IndexError:
-		pass
+		label = title_node(e).text or e.get(inkscape_label) or ''
+
+	label = label.split(None, 2) + [''] * 3
+	role = e.get(therion_role, label[0])
+	type = e.get(therion_type, label[1])
+	options = e.get(therion_options, label[2])
 	options = parse_options(options)
 	if role == '':
 		if maybe_point(e):
@@ -414,8 +404,6 @@ def get_props(e):
 			fill = get_style_attr(e, None, 'fill', 'none')
 			if fill != 'none' and is_closed_line(e):
 				type = fill2type.get(fill.lower(), 'u:area')
-			else:
-				type = 'wall'
 		elif role == 'point':
 			if e.tag == svg_text:
 				type = 'label'
@@ -541,7 +529,7 @@ def find_in_pwd(filename, path=[]):
 	raise IOError("Can't find file '" + filename + "'")
 
 def find_in_pythonpath(filename):
-	for dirname in sys.path:
+	for dirname in [os.path.dirname(__file__)]:
 		candidate = os.path.join(dirname, filename)
 		if os.path.exists(candidate):
 			return candidate

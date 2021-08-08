@@ -41,8 +41,10 @@
   </param>
   <param name="lay2scr" type="boolean" _gui-text="Layers as Scraps"
   	gui-description="Export each layer as a separate scrap (does not apply to sublayers)">true</param>
+  <!--
   <param name="nolpe" type="boolean" _gui-text="Disable Path Effects"
   	gui-description="For path effects export the original helper path rather than the processed effect path">true</param>
+  -->
   <param name="xyascenter" type="boolean" _gui-text="Symbols are centered"
   	gui-description="If checked, this will skip center calculation for symbols (used by clones which are annotated as points). Recommended for imported th2 files.">true</param>
   <output>
