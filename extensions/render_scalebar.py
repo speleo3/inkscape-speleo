@@ -6,11 +6,12 @@ Distributed under the terms of the GNU General Public License v2 or later
 '''
 
 import math
-try:
-	import inkex
-except:
-	import speleoex
-	import inkex
+import inkex
+import warnings
+from lxml import etree
+
+warnings.simplefilter("ignore", DeprecationWarning)
+
 import simpletransform
 
 def i2d_affine(self, node):
@@ -77,22 +78,22 @@ class Scalebar:
 		d = "m%f,0 h-%f v%f h%f z " % (2 * steplength, steplength, 7 / docunit, steplength) * 3
 		d = d.replace(' ', ' m-%f,0 ' % steplength, 1)
 
-		self.g = inkex.etree.Element('g')
+		self.g = etree.Element('g')
 		self.g.set('style', 'font-size:10px;text-anchor:middle;font-family:sans-serif')
 		self.g.set(inkex.addNS('label', 'inkscape'), 'none scalebar')
 
-		node = inkex.etree.Element('path')
+		node = etree.Element('path')
 		node.set('d', d)
 		node.set('style', 'fill:black;stroke:none')
 		self.g.append(node)
 
-		node = inkex.etree.Element('path')
+		node = etree.Element('path')
 		node.set('d', 'M0,0 h%f M0,%f h%f' % (steplength * 5, 7 / docunit, steplength * 5))
 		node.set('style', 'fill:none;stroke:black;stroke-width:' + str(0.5 / docunit))
 		self.g.append(node)
 
 		for i in range(6):
-			node = inkex.etree.Element('text')
+			node = etree.Element('text')
 			node.set('x', str(steplength * i * docunit))
 			node.set('y', str(18))
 			node.set('transform', 'scale(' + str(1 / docunit) + ')')
@@ -104,7 +105,7 @@ class Scalebar:
 		if len(text):
 			if isinstance(text, bytes):
 				text = text.decode('utf-8')
-			node = inkex.etree.Element('text')
+			node = etree.Element('text')
 			node.set('y', str(-5))
 			node.set('style', 'text-anchor:start')
 			node.set('transform', 'scale(' + str(1 / docunit) + ')')
@@ -115,7 +116,7 @@ class Scalebar:
 		return self.g
 	
 	def get_xml(self):
-		return inkex.etree.tostring(self.g)
+		return etree.tostring(self.g)
 
 class InsertScalebar(inkex.Effect):
 
