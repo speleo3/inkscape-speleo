@@ -19,7 +19,11 @@ else:
 	import tkinter as Tkinter
 	binarystdout = sys.stdout.buffer
 
-etree = th2ex.inkex.etree
+from lxml import etree
+from inkex import NSS
+
+NSS[None] = NSS["svg"]
+
 
 def xvi2svg(handle, fullsvg=True, strokewidth=3, XVIroot=''):
 	# file contents
@@ -50,9 +54,9 @@ def xvi2svg(handle, fullsvg=True, strokewidth=3, XVIroot=''):
 	root_translate = None
 
 	if fullsvg:
-		root = etree.Element('svg')
+		root = etree.Element('svg', nsmap=NSS)
 	else:
-		root = etree.Element('g')
+		root = etree.Element('g', nsmap=NSS)
 
 	for line in sketchlines:
 		color, coords_str = line.split(None, 1)
@@ -114,7 +118,7 @@ if __name__ == '__main__':
 		handle = sys.stdin
 	root = xvi2svg(handle)
 	handle.close()
-	binarystdout.write(etree.tostring(root, encoding='utf-8'))
+	binarystdout.write(etree.tostring(root, encoding='utf-8', xml_declaration=True))
 	binarystdout.write(b'\n')
 
 # vi:noexpandtab
