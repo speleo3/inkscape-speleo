@@ -114,6 +114,20 @@ def average_shots(shots, ignore_splays=True):
         }
 
 
+def get_true_bearing(shot, top):
+    """Get the direction relative to geographic "true" north which is corrected
+    by magnetic declination.
+    """
+    tripidx = shot["trip"]
+
+    if tripidx != -1:
+        decl = top["trips"][tripidx][KEY_DECLINATION]
+    else:
+        decl = 0
+
+    return shot["compass"] + decl
+
+
 def _make_Point(x, y):
     return distmm(x), distmm(y)
 
@@ -366,12 +380,14 @@ def dump_svx(top,
         if not s[KEY_TAPE] and not s['to']:
             return
 
-        if tripidx[0] != s['trip']:
+        if tripidx[0] != s['trip'] and s['trip'] != -1:
             tripidx[0] = s['trip']
             trip = top['trips'][tripidx[0]]
 
             file.write(end)
             file.write(P + 'date {0.tm_year}.{0.tm_mon:02}.{0.tm_mday:02}'.format(trip['date']))
+            file.write(end)
+            file.write(P + 'declination {:.2f} degrees'.format(trip[KEY_DECLINATION]))
             file.write(end * 2)
 
         from_ = prefixadd + sname(s['from'][nstrip:])
@@ -500,13 +516,14 @@ def dump_svg(top, hidesideview=False, file=sys.stdout, showbbox=True):
                 s = reverse_shot(s)
 
             length_proj = s[KEY_TAPE] * math.cos(math.radians(s['clino']))
+            true_bearing = get_true_bearing(s, top)
 
             if sideview:
                 compass_delta = 1.0
 
                 if not is_splay:
-                    compass_from[s['from']].append(s['compass'])
-                    compass_to[s['to']].append(s['compass'])
+                    compass_from[s['from']].append(true_bearing)
+                    compass_to[s['to']].append(true_bearing)
                 else:
                     compass_out = compass_from.get(s['from'])
                     compass_in = compass_to.get(s['from'], compass_out)
@@ -521,7 +538,7 @@ def dump_svg(top, hidesideview=False, file=sys.stdout, showbbox=True):
                     compass_out = avgdeg(compass_out)
 
                     compass_in += 180
-                    compass_splay_rel = posdeg(s['compass'] - compass_in)
+                    compass_splay_rel = posdeg(true_bearing - compass_in)
                     compass_out_rel = posdeg(compass_out - compass_in)
 
                     if compass_splay_rel > compass_out_rel:
@@ -536,8 +553,8 @@ def dump_svg(top, hidesideview=False, file=sys.stdout, showbbox=True):
                 delta_x = length_proj * compass_delta
                 delta_y = s[KEY_TAPE] * math.sin(math.radians(s['clino']))
             else:
-                delta_x = length_proj * math.sin(math.radians(s['compass']))
-                delta_y = length_proj * math.cos(math.radians(s['compass']))
+                delta_x = length_proj * math.sin(math.radians(true_bearing))
+                delta_y = length_proj * math.cos(math.radians(true_bearing))
 
             pnt_from = frompoints[s['from']]
             pnt_to = (pnt_from[0] + delta_x, pnt_from[1] - delta_y)
