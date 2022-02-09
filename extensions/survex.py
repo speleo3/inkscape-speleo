@@ -61,6 +61,16 @@ def autodecode(bytestring):
     return bytestring.decode('latin1')
 
 
+FLAG_LEG_SURFACE = 0x01
+FLAG_LEG_DUPLICATE = 0x02
+FLAG_LEG_SPLAY = 0x04
+
+FLAGS_LEG_EXCLUDE_CAVE_LENGTH = (  #
+    FLAG_LEG_SURFACE |  #
+    FLAG_LEG_DUPLICATE |  #
+    FLAG_LEG_SPLAY)
+
+
 class Station(object):
     '''
     Survey station
@@ -109,6 +119,23 @@ class Station(object):
         '''Iterator over connected stations'''
         from itertools import chain
         return chain(self.connected_from, self.connected_to)
+
+    def connected_deep(self):
+        '''Set of all stations which are directly or indirectly connected to
+        this station.
+        '''
+        deep = set()
+
+        def recurse(station):
+            if station in deep:
+                return
+
+            deep.add(station)
+            for other in station.connected:
+                recurse(other)
+
+        recurse(self)
+        return deep
 
     @property
     def label(self):
@@ -221,8 +248,9 @@ class Survex3D(object):
     instance, but only makes sense if there are no overlapping station
     names.
     '''
-    def __init__(self, filename=None):
+    def __init__(self, filename=None, flags_leg_exclude=0):
         self.clear()
+        self.flags_leg_exclude = flags_leg_exclude
         if filename is None:
             pass
         elif isinstance(filename, basestring):
@@ -271,7 +299,10 @@ class Survex3D(object):
     def _line(self, xyz, flag=0):
         assert self._prev != None
         station = self._get_or_new(xyz)
-        station.connect(self._prev)
+
+        if not (flag & self.flags_leg_exclude):
+            station.connect(self._prev)
+
         self._prev = station
 
     def _label(self, xyz, flag=0):
@@ -313,6 +344,14 @@ class Survex3D(object):
         for station in self:
             if any(label.startswith(prefix) for label in station.labels):
                 yield station
+
+    def connected_deep(self, key):
+        '''Sub-survey of all stations which are connected to the given station.
+        '''
+        sys.setrecursionlimit(max(sys.getrecursionlimit(), len(self)))
+        sub = Survex3D(self[key].connected_deep())
+        sub.title = "Connected to {}".format(key)
+        return sub
 
     def _get_or_new(self, xyz):
         '''Like self.xyz2sta.setdefault(xyz, Station(xyz))'''
