@@ -10,6 +10,7 @@ from __future__ import print_function
 from __future__ import absolute_import
 
 from th2ex import *
+from lxml import etree
 import simplepath, simpletransform, simplestyle, math, re
 import collections
 
@@ -236,7 +237,7 @@ class Th2Output(Th2Effect):
 
 	def output_g(self, node):
 		for child in reversed(node):
-			if isinstance(child, inkex.etree._Comment):
+			if isinstance(child, etree._Comment):
 				if child.text.startswith('#therion'):
 					print_utf8(child.text.split('\n', 1)[1])
 				continue

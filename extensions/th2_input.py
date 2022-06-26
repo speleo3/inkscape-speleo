@@ -12,7 +12,7 @@ from __future__ import absolute_import
 
 import sys, os, re
 from th2ex import *
-etree = inkex.etree
+from lxml import etree
 import simplepath
 
 # some prefs

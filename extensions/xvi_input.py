@@ -22,8 +22,6 @@ else:
 from lxml import etree
 from inkex import NSS
 
-NSS[None] = NSS["svg"]
-
 
 def xvi2svg(handle, fullsvg=True, strokewidth=3, XVIroot=''):
 	# file contents

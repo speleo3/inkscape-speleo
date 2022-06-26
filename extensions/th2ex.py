@@ -24,6 +24,7 @@ try:
 except NameError:
 	basestring = str
 
+from lxml import etree
 import sys, os, math, re, optparse
 import inkex
 import warnings
@@ -49,8 +50,15 @@ class th2pref:
 # fix Python 3 mappingproxy issue
 th2pref = th2pref()
 
+
+class InkOption(optparse.Option):
+    TYPES = optparse.Option.TYPES + ("inkbool", )
+    TYPE_CHECKER = dict(optparse.Option.TYPE_CHECKER)
+    TYPE_CHECKER["inkbool"] = lambda _1, _2, v: str(v).capitalize() == "True"
+
+
 # command line options and hook to th2pref
-oparser = optparse.OptionParser(option_class=inkex.InkOption)
+oparser = optparse.OptionParser(option_class=InkOption)
 oparser.defaults = th2pref.__dict__
 def th2pref_reload():
 	_values, th2pref.argv = oparser.parse_args()
@@ -105,7 +113,7 @@ sodipodi_insensitive = inkex.addNS('insensitive', 'sodipodi')
 def title_node(parent):
 	title = parent.find(svg_title)
 	if title is None:
-		title = inkex.etree.Element(svg_title)
+		title = etree.Element(svg_title)
 		title.text = ""
 		# if <title> is last child of <text>, Inkscape screws up when
 		# appending lines and inserts <title> instead of <tspan> elements.

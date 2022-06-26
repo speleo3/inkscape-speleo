@@ -7,6 +7,7 @@ Annotate SVG elements for therion export.
 '''
 
 from th2ex import *
+from lxml import etree
 import re
 
 def asunicode(s):
@@ -39,7 +40,7 @@ class Th2SetProps(Th2Effect):
 
 		if self.options.dropstyle and 'th2style' not in self.doc_ids:
 			template = open_in_pythonpath('th2_template.svg')
-			doc_temp = inkex.etree.parse(template)
+			doc_temp = etree.parse(template)
 			template.close()
 			defs_temp = doc_temp.find(inkex.addNS('defs', 'svg'))
 			defs_self = self.document.find(inkex.addNS('defs', 'svg'))
@@ -103,7 +104,7 @@ class Th2SetProps(Th2Effect):
 					if bbox is not None:
 						parent = node.getparent()
 						parent.remove(node)
-						node = inkex.etree.SubElement(parent, svg_use, {
+						node = etree.SubElement(parent, svg_use, {
 							"x": str((bbox[0] + bbox[1]) / 2.0),
 							"y": str((bbox[2] + bbox[3]) / 2.0),
 							"id": id,
