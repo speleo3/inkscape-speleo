@@ -72,6 +72,16 @@ def avgdeg(deg):
     return math.degrees(math.atan2(mss, msc))
 
 
+def reverse_shot(s):
+    return s | {
+        'from': s['to'],
+        'to': s['from'],
+        'compass': s['compass'] + 180.0,
+        'clino': -s['clino'],
+        KEY_TAPE: s[KEY_TAPE],
+    }
+
+
 def average_shots(shots, ignore_splays=True):
     '''Average duplicate legs and return a new set of legs. Ignores splay shots.
     '''
@@ -475,15 +485,6 @@ def dump_svg(top, hidesideview=False, file=sys.stdout, showbbox=True):
             max(pnt[KEY_X] for poly in polys for pnt in poly['coord']),
             max(pnt[KEY_Y] for poly in polys for pnt in poly['coord']),
         ]
-
-    def reverse_shot(s):
-        return {
-            'from': s['to'],
-            'to': s['from'],
-            'compass': s['compass'] + 180.0,
-            'clino': -s['clino'],
-            KEY_TAPE: s[KEY_TAPE],
-        }
 
     leg_shots = list(average_shots(top['shots']))
 
