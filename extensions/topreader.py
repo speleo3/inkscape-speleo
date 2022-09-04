@@ -24,6 +24,7 @@ import struct
 import time
 import collections
 import math
+from html import escape
 
 COLOURS = (
     'black',
@@ -589,7 +590,7 @@ def dump_svg(top, hidesideview=False, file=sys.stdout, showbbox=True):
             file.write('<path style="{}" d="'.format(style))
             for (pnt_from, pnt_to) in legs:
                 file.write('M {0[0]},{0[1]} {1[0]},{1[1]} '.format(pnt_from, pnt_to))
-            file.write('" />\n')
+            file.write('" inkscape:label="line survey" />\n')
 
         write_legs(splays, 'stroke:#fc0;stroke-width:0.02')
         write_legs(legs, 'stroke:#f00;stroke-width:0.03')
@@ -600,11 +601,16 @@ def dump_svg(top, hidesideview=False, file=sys.stdout, showbbox=True):
         for xsec in drawing['xsec']:
             pnt_stn = frompoints[xsec[2]]
             file.write('<path class="xsecconnector" '
+                    'inkscape:label="line section" '
                     'd="M {0[0]} {0[1]} {1[0]} {1[1]}" />\n'.format(pnt_stn, xsec))
 
     def write_stationlabels(frompoints):
         for key, pnt in frompoints.items():
-            file.write('<text x="{0[0]}" y="{0[1]}">{1}</text>\n'.format(pnt, key))
+            survey, _, station = key.rpartition(".")
+            name = "{}@{}".format(station, survey) if survey else key
+            assert name == escape(name)
+            file.write('<text x="{0[0]}" y="{0[1]}" inkscape:label="point station -name {2}">{1}</text>'
+                    '\n'.format(pnt, key, name))
 
     def write_layer(top, view, label=None, display='inline'):
         file.write('<g inkscape:groupmode="layer" inkscape:label="{}" '
