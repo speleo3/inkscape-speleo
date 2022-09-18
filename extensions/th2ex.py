@@ -565,16 +565,51 @@ except:
 ######################################
 # inkex (and similar) fixed or enhanced functions
 
+PX_PER_IN = 96.0
+PX_PER_CM = PX_PER_IN / 2.54
+UUCONV = {
+    'in': PX_PER_IN,
+    'pt': (4.0 / 3.0),
+    'px': 1.0,
+    'mm': PX_PER_CM / 10,
+    'cm': PX_PER_CM,
+    'm': PX_PER_CM * 1e2,
+    'km': PX_PER_CM * 1e5,
+    'pc': 16.0,
+    'yd': 3456.0,
+    'ft': 1152.0,
+}
+
+
 class Th2Effect(inkex.Effect):
 
-	try:
-		inkex.Effect.unittouu
-	except AttributeError:
-		unittouu = inkex.unittouu
+	@staticmethod
+	def unittouu(string):
+		"""Returns userunits given a string representation of units in another system"""
+		param = re.compile(r'((?:[-+]?[0-9]+(?:\.[0-9]*)?|[-+]?\.[0-9]+)(?:[eE][-+]?[0-9]+)?)(.*)')
+
+		m = re.match(r'((?:[-+]?[0-9]+(?:\.[0-9]*)?|[-+]?\.[0-9]+)(?:[eE][-+]?[0-9]+)?)(.*)$', string)
+		if m is None:
+			return 0.0
+
+		val, unit = m.groups()
+
+		try:
+			unitfactor = UUCONV[unit.strip()]
+		except KeyError:
+			unitfactor = 1.0
+
+			if unit:
+				inkex.errormsg("unittouu: unknown unit: " + unit)
+
+		return float(val) * unitfactor
+
+	@staticmethod
+	def uutounit(val, unit):
+		return val / UUCONV[unit]
 
 	def getDocumentUnit(self):
-		'''Overload inkex.Effect.getDocumentUnit to restore the
-		original inkex.unittouu behavior'''
+		'''Override inkex.Effect.getDocumentUnit'''
 		return 'px'
 
 	bbox_cache = {}
