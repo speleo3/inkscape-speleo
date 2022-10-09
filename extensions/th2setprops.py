@@ -124,6 +124,7 @@ class Th2SetProps(Th2Effect):
 						node.set(inkscape_path_effect, '#' + href)
 						if inkscape_original_d not in node.attrib:
 							node.set(inkscape_original_d, node.get('d'))
+						node.attrib.pop('d', None)
 						break
 				else:
 					if self.options.dropstyle and \
