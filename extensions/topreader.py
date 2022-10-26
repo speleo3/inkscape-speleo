@@ -473,18 +473,19 @@ def dump_tro(top,
         write_shot(s)
 
 
+def get_bbox(polys):
+    return [
+        min(pnt[KEY_X] for poly in polys for pnt in poly['coord']),
+        min(pnt[KEY_Y] for poly in polys for pnt in poly['coord']),
+        max(pnt[KEY_X] for poly in polys for pnt in poly['coord']),
+        max(pnt[KEY_Y] for poly in polys for pnt in poly['coord']),
+    ]
+
+
 def dump_svg(top, hidesideview=False, file=sys.stdout, showbbox=True):
     '''Dump drawing as SVG in 1:100 scale.
     Plan and side views go into separate layers.
     '''
-
-    def get_bbox(polys):
-        return [
-            min(pnt[KEY_X] for poly in polys for pnt in poly['coord']),
-            min(pnt[KEY_Y] for poly in polys for pnt in poly['coord']),
-            max(pnt[KEY_X] for poly in polys for pnt in poly['coord']),
-            max(pnt[KEY_Y] for poly in polys for pnt in poly['coord']),
-        ]
 
     leg_shots = list(average_shots(top['shots']))
 
@@ -695,6 +696,139 @@ def dump_svg(top, hidesideview=False, file=sys.stdout, showbbox=True):
     file.write('</svg>')
 
 
+def dump_xvi(top, *, file=sys.stdout):
+    '''Dump drawing as XVI.
+    '''
+    # Default XTherion PocketTopo Import Settings
+    SCALE = 200
+    RESOLUTION_DPI = 200
+    METER_PER_INCH = 0.0254
+    FACTOR = RESOLUTION_DPI / METER_PER_INCH / SCALE
+
+    def pnt2xvi(pnt):
+        return FACTOR * pnt[KEY_X], -FACTOR * pnt[KEY_Y]
+
+    leg_shots = list(average_shots(top['shots']))
+
+    def write_shots(shots, sideview=False):
+        suppresswarnings = sideview
+        frompoints = {}
+        compass_from = collections.defaultdict(list)
+        compass_to = collections.defaultdict(list)
+        legs = []
+        splays = []
+        defer = []
+
+        for s in top['shots']:
+            frompoints[s['from']] = (0, 0)
+            break
+
+        def process_shot(s, do_splays):
+            is_splay = not s['to']
+
+            if do_splays != is_splay:
+                return True
+
+            # ignore "1.0  .. 0.0 0.0 0.0" line
+            if not s[KEY_TAPE] and is_splay:
+                return True
+
+            if s['from'] not in frompoints:
+                if s['to'] not in frompoints:
+                    return False
+                s = reverse_shot(s)
+
+            length_proj = s[KEY_TAPE] * math.cos(math.radians(s['clino']))
+            true_bearing = get_true_bearing(s, top)
+
+            delta_x = length_proj * math.sin(math.radians(true_bearing))
+            delta_y = length_proj * math.cos(math.radians(true_bearing))
+
+            pnt_from = frompoints[s['from']]
+            pnt_to = (pnt_from[0] + delta_x, pnt_from[1] - delta_y)
+
+            if not is_splay:
+                frompoints[s['to']] = pnt_to
+                legs.append((pnt_from, pnt_to))
+            else:
+                splays.append((pnt_from, pnt_to))
+
+            return True
+
+        for s in leg_shots:
+            if not process_shot(s, False):
+                defer.append(s)
+
+        while defer:
+            for s in defer:
+                if process_shot(s, False):
+                    defer.remove(s)
+                    break
+            else:
+                print('{} unconnected subsurveys'.format(len(defer)))
+                break
+
+        for s in top['shots']:
+            process_shot(s, True)
+
+        def write_legs(legs):
+            file.write('set XVIshots {\n')
+            for (pnt_from, pnt_to) in legs:
+                file.write('    {{{0[0]:g} {0[1]:g} {1[0]:g} {1[1]:g}}}\n'.format(pnt2xvi(pnt_from), pnt2xvi(pnt_to)))
+            file.write('}\n')
+
+        write_legs(splays + legs)
+
+        return frompoints
+
+    def write_stationlabels(frompoints):
+        file.write('set XVIstations {\n')
+        for key, pnt in frompoints.items():
+            file.write('    {{{0[0]:g} {0[1]:g} {1}}}\n'.format(pnt2xvi(pnt), key))
+        file.write('}\n')
+
+    def write_shots_and_stations(top, view="outline"):
+        stations = write_shots(top, view == 'sideview')
+
+        write_stationlabels(stations)
+
+    def write_sketchlines(top, view="outline"):
+        file.write('set XVIsketchlines {\n')
+
+        for poly in top[view]['polys']:
+            coord = poly['coord']
+
+            file.write('    {' + poly[KEY_COLOR])
+
+            for pnt in coord:
+                file.write(' {:g} {:g}'.format(*pnt2xvi(pnt)))
+
+            file.write('}\n')
+
+        file.write('}\n')
+
+    def write_grid(top, view="outline"):
+        min_x, min_y, max_x, max_y = get_bbox(top[view]['polys'])
+        min_x, min_y = pnt2xvi([min_x, min_y])
+        max_x, max_y = pnt2xvi([max_x, max_y])
+
+        dx = FACTOR
+        dy = FACTOR
+
+        nx = int(1.5 + (max_x - min_x) / dx)
+        ny = int(1.5 + (min_y - max_y) / dy)
+
+        file.write(f'set XVIgrid {{{min_x-dx/2:g} {max_y-dy/2:g} {dx} 0 0 {dy} {nx} {ny}}}\n')
+
+    def write_grid_spacing():
+        file.write('set XVIgrids {1.0 m}\n')
+
+    write_grid_spacing()
+    write_shots_and_stations(top)
+    write_sketchlines(top)
+    write_grid(top)
+
+
 def dump_info(top):
     '''Print some stats
     '''
@@ -741,7 +875,7 @@ def view_inkscape(top, tmpname='', exe='inkscape'):
 def main(argv=None):
     import argparse
     argparser = argparse.ArgumentParser()
-    argparser.add_argument("--dump", help="dump file to stdout", choices=('json', 'svg', 'svx', 'th', 'tro'))
+    argparser.add_argument("--dump", help="dump file to stdout", choices=('json', 'svg', 'svx', 'th', 'tro', 'xvi'))
     argparser.add_argument("--view", help="open viewer application", choices=('aven', 'inkscape'))
     argparser.add_argument("--surveyname", help="survey name for survex dump", default="")
     argparser.add_argument("--prefixadd", help="station name prefix to add", default="")
@@ -772,6 +906,8 @@ def main(argv=None):
                         prefixadd=args.prefixadd)
             elif args.dump == 'svg':
                 dump_svg(top)
+            elif args.dump == 'xvi':
+                dump_xvi(top)
             elif args.dump == 'tro':
                 dump_tro(top)
             elif not args.view:
