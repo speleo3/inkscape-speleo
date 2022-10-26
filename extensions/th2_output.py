@@ -442,7 +442,12 @@ class Th2Output(Th2Effect):
 		if node.tag == svg_text:
 			# restore text for labels etc.
 			key = text_keys_output.get(type, 'text')
-			options[key] = self.get_point_text(node).strip()
+			text = self.get_point_text(node).strip()
+
+			if type == "station" and "." in text and "@" not in text:
+				text = name_survex2therion(text)
+
+			options[key] = text
 			if options[key] == "":
 				# inkex.errormsg("dropping empty text element (point %s)" % (type))
 				return
