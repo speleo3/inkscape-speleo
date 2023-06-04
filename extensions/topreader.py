@@ -631,20 +631,42 @@ def dump_svg(top, hidesideview=False, file=sys.stdout, showbbox=True):
                 })
             elem_text.text = key
 
+    outer_padding = 5.0
+
     def write_layer(parent: etree.Element,
                     top: dict,
                     view: str,
                     label: str = "",
                     *,
+                    xoffset: int = 0,
                     display: str = 'inline',
-                    padding: float = 1.0):
+                    padding: float = 1.0) -> tuple:
+        """
+        Returns:
+          Width and height of the bounding box
+        """
         drawing = top[view]
+
+        if not label:
+            label = view
+
+        try:
+            min_x, min_y, max_x, max_y = get_bbox(drawing['polys'])
+        except ValueError:
+            min_x, min_y, max_x, max_y = 0, 0, 0, 0
+
+        width = max_x - min_x
+        height = max_y - min_y
+
+        xoffset += -min_x + outer_padding
+        yoffset = -min_y + outer_padding
 
         g_layer = etree.SubElement(
             parent, "g", {
                 CLARK_INKSCAPE_GROUPMODE: "layer",
-                CLARK_INKSCAPE_LABEL: label or view,
+                CLARK_INKSCAPE_LABEL: label,
                 "style": f"display:{display}",
+                "transform": f"translate({xoffset},{yoffset})",
             })
 
         g_drawing = etree.SubElement(g_layer, "g", {
@@ -676,19 +698,14 @@ def dump_svg(top, hidesideview=False, file=sys.stdout, showbbox=True):
         write_stationlabels(g_shots, stations)
 
         if showbbox:
-            try:
-                min_x, min_y, max_x, max_y = get_bbox(drawing['polys'])
-            except ValueError:
-                pass
-            else:
+            if width or height:
                 color = '#f0f'
-                padding = 1.0
                 etree.SubElement(
                     g_layer, "rect", {
                         "x": f"{min_x - padding}",
                         "y": f"{min_y - padding}",
-                        "width": f"{max_x - min_x + padding * 2}",
-                        "height": f"{max_y - min_y + padding * 2}",
+                        "width": f"{width + padding * 2}",
+                        "height": f"{height + padding * 2}",
                         "style": f"fill:none;stroke:{color};stroke-width:0.04",
                     })
                 if 'filename' in top:
@@ -698,16 +715,9 @@ def dump_svg(top, hidesideview=False, file=sys.stdout, showbbox=True):
                             "y": f"{min_y - 0.2}",
                             "style": f"fill:{color}",
                         })
-                    elem_text.text = os.path.basename(top['filename'])
+                    elem_text.text = f"{os.path.basename(top['filename'])} ({label})"
 
-    for view in ('outline', 'sideview'):
-        try:
-            min_x, min_y, max_x, max_y = get_bbox(top[view]['polys'])
-            break
-        except ValueError:
-            min_x, min_y, max_x, max_y = 0, 0, 0, 0
-
-    padding = 5.0
+        return width, height
 
     root = etree.fromstring("""<?xml version="1.0" ?>
 <svg
@@ -739,17 +749,19 @@ text {
 </svg>
 """)
 
-    minx = min_x - padding
-    miny = min_y - padding
-    width = max_x - min_x + padding * 2
-    height = max_y - min_y + padding * 2
+    width1, height1 = write_layer(root, top, 'outline', 'planview')
+
+    if width1:
+        width1 += outer_padding
+
+    width2, height2 = write_layer(root, top, 'sideview', display='none' if hidesideview else 'inline', xoffset=width1)
+
+    width = width1 + width2 + 2 * outer_padding
+    height = max(height1, height2) + 2 * outer_padding
 
     root.set("width", f"{width}cm")
     root.set("height", f"{height}cm")
-    root.set("viewBox", f"{minx} {miny} {width} {height}")
-
-    write_layer(root, top, 'sideview', display='none' if hidesideview else 'inline')
-    write_layer(root, top, 'outline', 'planview')
+    root.set("viewBox", f"0 0 {width} {height}")
 
     file.write(etree.tostring(root).decode("utf-8"))
 
