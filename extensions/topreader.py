@@ -323,6 +323,9 @@ def load(fp):
     top['outline'] = _read_drawing(fp)
     top['sideview'] = _read_drawing(fp)
 
+    remaining = fp.read()
+    assert remaining == b'\0\0\0\0'
+
     return top
 
 
