@@ -23,7 +23,12 @@ from lxml import etree
 from inkex import NSS
 
 
-def xvi2svg(handle, fullsvg=True, strokewidth=3, XVIroot=''):
+def xvi2svg(handle, fullsvg=True, strokewidth=3, XVIroot='',
+			scale: float = 200.0):
+	"""
+	Args:
+	  scale: Scale as 1:scale
+	"""
 	# file contents
 	filecontents = ''.join(handle)
 	tk_instance = Tkinter.Tcl().tk.eval
@@ -97,9 +102,12 @@ def xvi2svg(handle, fullsvg=True, strokewidth=3, XVIroot=''):
 			root_translate = -float(x), -float(y)
 	
 	if not XVIroot:
-		x, y, dx, _, _, dy, nx, ny = grid
+		x, y, dx, _, _, dy, nx, ny = map(float, grid)
 		height = float(dy) * float(ny)
 		if fullsvg:
+			scale /= 100  # cm
+			root.set('width', f"{nx/scale}cm")
+			root.set('height', f"{ny/scale}cm")
 			root.set('viewBox', '%s %f %f %f' % (x, -float(y)-height,
 				float(dx) * float(nx), height))
 		else:
