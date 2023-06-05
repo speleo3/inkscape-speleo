@@ -45,6 +45,10 @@ KEY_COLOR = 'colour'
 KEY_DECLINATION = 'dec'
 KEY_X = 0
 KEY_Y = 1
+KEY_EXTEND = 'direction'
+
+EXTEND_LEFT = "<"
+EXTEND_RIGHT = ">"
 
 
 def distmm(mm):
@@ -126,6 +130,7 @@ def average_shots(shots, ignore_splays=True):
             # copy from first
             'trip': dups[0]['trip'],
             'comment': dups[0].get('comment', ''),
+            KEY_EXTEND: dups[0][KEY_EXTEND],
         }
 
 
@@ -203,9 +208,9 @@ def _read_shot(F):
 
     # bit 1 of flags is flip (left or right)
     if flags[0] & 0b00000001:
-        shot['direction'] = '<'
+        shot[KEY_EXTEND] = EXTEND_LEFT
     else:
-        shot['direction'] = '>'
+        shot[KEY_EXTEND] = EXTEND_RIGHT
 
     # bit 2 of flags indicates a comment
     if flags[0] & 0b00000010:
@@ -559,6 +564,10 @@ def dump_svg(top, hidesideview=False, file=sys.stdout, showbbox=True):
                         compass_delta = compass_splay_rel / compass_out_rel * 2 - 1
                         # I would expect sin transformation, but looks like PocketTopo doesn't do that
                         # compass_delta = math.sin(math.radians(compass_delta * 90))
+
+
+                if s[KEY_EXTEND] == EXTEND_LEFT:
+                    compass_delta *= -1
 
                 delta_x = length_proj * compass_delta
                 delta_y = s[KEY_TAPE] * math.sin(math.radians(s['clino']))
