@@ -495,10 +495,20 @@ def get_bbox(polys):
     ]
 
 
-def dump_svg(top, hidesideview=False, file=sys.stdout, showbbox=True):
-    '''Dump drawing as SVG in 1:100 scale.
+def dump_svg(top: dict,
+             *,
+             hidesideview: bool = False,
+             file=sys.stdout,
+             showbbox: bool = True,
+             scale: float = 200.0):
+    '''Dump drawing as SVG.
+
     Plan and side views go into separate layers.
+
+    Args:
+      scale: Scale as 1:scale
     '''
+    scale /= 100  # cm
 
     leg_shots = list(average_shots(top['shots']))
 
@@ -728,33 +738,37 @@ def dump_svg(top, hidesideview=False, file=sys.stdout, showbbox=True):
 
         return width, height
 
-    root = etree.fromstring("""<?xml version="1.0" ?>
+    root = etree.fromstring(f"""<?xml version="1.0" ?>
 <svg
-   width="210mm"
-   height="297mm"
-   viewBox="0 0 21 29.7"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns="http://www.w3.org/2000/svg">
 <defs>
 <style type="text/css">
-path {
+path {{
     fill:none;
-    stroke-width:0.05;
+    stroke-width:{scale*0.05};
     stroke-linecap:round;
     stroke-linejoin:round;
-}
-text {
-    font: 0.5px sans-serif;
+}}
+text {{
+    font: {scale*1.27/3} sans-serif;
     fill:#999;
-}
-.xsecconnector {
+}}
+.xsecconnector {{
     stroke-dasharray:0.05,0.15;
     stroke:#bbb;
-}
+}}
 </style>
 </defs>
-<sodipodi:namedview inkscape:document-units="cm" />
+<sodipodi:namedview
+   inkscape:document-units="cm"
+   pagecolor="#ffffff">
+  <inkscape:grid type="xygrid" empspacing="10"
+     spacingx="1"
+     spacingy="1"
+     units="cm" />
+</sodipodi:namedview>
 </svg>
 """)
 
@@ -768,8 +782,8 @@ text {
     width = width1 + width2 + 2 * outer_padding
     height = max(height1, height2) + 2 * outer_padding
 
-    root.set("width", f"{width}cm")
-    root.set("height", f"{height}cm")
+    root.set("width", f"{width/scale}cm")
+    root.set("height", f"{height/scale}cm")
     root.set("viewBox", f"0 0 {width} {height}")
 
     file.write(etree.tostring(root).decode("utf-8"))
