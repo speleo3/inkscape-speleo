@@ -23,7 +23,7 @@ from lxml import etree
 from inkex import NSS
 
 
-def xvi2svg(handle, fullsvg=True, strokewidth=3, XVIroot='',
+def xvi2svg(handle, fullsvg=True, strokewidth=6, XVIroot='',
 			scale: float = 200.0):
 	"""
 	Args:
@@ -55,11 +55,33 @@ def xvi2svg(handle, fullsvg=True, strokewidth=3, XVIroot='',
 	sketchlines = list_tcl2py('XVIsketchlines')
 	grid = list_tcl2py('XVIgrid')
 	root_translate = None
+	stationcoords = set(tuple(line.split()[:2]) for line in stations)
 
 	if fullsvg:
 		root = etree.Element('svg', nsmap=NSS)
 	else:
 		root = etree.Element('g', nsmap=NSS)
+
+	g_shots = etree.SubElement(root, 'g', {th2ex.inkscape_label: 'Shots'})
+
+	def process_shots(splays: bool):
+		style = (f"stroke:#f00;stroke-width:{strokewidth / 2}" if (not splays) else
+				 f"stroke:#fc0;stroke-width:{strokewidth / 4}")
+		for line in shots:
+			coords = line.split()
+			is_leg = (tuple(coords[0:2]) in stationcoords and
+					  tuple(coords[2:4]) in stationcoords)
+			if is_leg == splays:
+				continue
+			coords[1::2] = map(invert_str, coords[1::2])
+			coords_str = ' '.join(coords)
+			e = etree.SubElement(g_shots, 'path', {
+				'd': 'M ' + coords_str,
+				'style': f'fill:none;' + style,
+			})
+
+	process_shots(True)
+	process_shots(False)
 
 	for line in sketchlines:
 		color, coords_str = line.split(None, 1)
@@ -78,16 +100,6 @@ def xvi2svg(handle, fullsvg=True, strokewidth=3, XVIroot='',
 				'd': 'M ' + coords_str,
 				'style': 'fill:none;stroke:%s;stroke-width:%f' % (color, strokewidth),
 			})
-
-	g_shots = etree.SubElement(root, 'g', {th2ex.inkscape_label: 'Shots'})
-	for line in shots:
-		coords = line.split()
-		coords[1::2] = map(invert_str, coords[1::2])
-		coords_str = ' '.join(coords)
-		e = etree.SubElement(g_shots, 'path', {
-			'd': 'M ' + coords_str,
-			'style': 'fill:none;stroke:#999;stroke-width:%f' % (strokewidth),
-		})
 
 	g_stations = etree.SubElement(root, 'g', {th2ex.inkscape_label: 'Stations'})
 	for line in stations:
@@ -114,6 +126,8 @@ def xvi2svg(handle, fullsvg=True, strokewidth=3, XVIroot='',
 			root.set('transform', 'translate(%f,%f)' % (-float(x), -float(y)))
 	elif root_translate is not None:
 		root.set('transform', 'translate(%f,%f)' % root_translate)
+
+	root.set("style", "stroke-linecap:round;stroke-linejoin:round")
 
 	return root
 
