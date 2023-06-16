@@ -50,7 +50,11 @@ continuous control over the scale (bearing likewise).
     <item value="ignore">ignore</item>
   </param>
   <param name="annotate" type="boolean" _gui-text="Annotate Clones for Therion Export">true</param>
-  <param name="stationnames" type="boolean" _gui-text="Draw Station Names">true</param>
+  <param name="stationnames" type="enum" _gui-text="Draw Station Names">
+    <option value="0">Off</option>
+    <option value="1">No Survey</option>
+    <option value="full">Full</option>
+  </param>
   <param name="scalebar" type="boolean" _gui-text="Draw Scalebar">true</param>
   <!--
 	<param name="dpi" type="int" min="1" max="1200" _gui-text="DPI">90</param>

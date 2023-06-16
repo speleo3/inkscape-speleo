@@ -1,26 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # vi: noexpandtab:sw=4:ts=4
 '''
-Copyright (C) 2008 Thomas Holder, http://sf.net/users/speleo3/
+Copyright (C) 2008-2023 Thomas Holder, https://github.com/speleo3
 Distributed under the terms of the GNU General Public License v2 or later
 
 Converts Survex 3D files (*.3d) to SVG.
-Usage: python 3dtosvg.py [OPTIONS] FILE.3d
-
-  --scale=ARG        Import with a scale of 1:ARG (default 100)
-  --view=[0,1,2]     0: Plan (default), 1: Profile, 2: Extend
-  --bearing=[0-359]  Bearing in degrees north (default 0)
-  --markers=[0-2]    0: No station markers, 1: Display stations as small
-                     circles (default), 2: ditto as triangles
-  --extend-cmd=ARG   The "extend" program is part of Survex and required
-                     for --view=2. If it is not found inside PATH, you may
-                     specify the absolute path for the binary with ARG.
-                     Example: --extend-cmd="C:\Programme\Survex\extend.exe"
-                     Example: --extend-cmd="/usr/local/bin/extend"
-  --scalebar=[0,1]   1: Draw scalebar
-  --annotate=[0,1]   1: Annotate for Therion Export
-  --filter=prefix    Filter by label prefix and trim prefix off (TODO: implement and check therion book)
 
 If you select extend view and there is a *.espec file with same
 basename as the *.3d file, it will be passed to the extend binary
@@ -28,34 +13,65 @@ with the --specfile option. See "extend" manpage for details.
 
 Related:
  * https://survex.com/docs/3dformat.htm
-
-Changelog:
- * 2011-01-23: New args use_inkscape_label, use_therion_attribs
 '''
 
-from __future__ import print_function
-
-import sys, math, os
+import argparse
+import math
+import os
+import sys
 from struct import unpack
 
-args = {
-	'scale': 100,
-	'view': 0,
-	'bearing': 0,
-	'markers': 1,
-	'extend-cmd': 'extend',
-	'scalebar': 1,
-	'stationnames': 0,
 
-	'annotate': 1,
-	'use_inkscape_label': 1,
-	'use_therion_attribs': 0,
+def boolchoice(choices=()) -> dict:
+	"""
+	Helper for boolean or choice arguments which is compatible with Inkscape's
+	boolean inx type.
 
-	'filter': '',
-	'surveys': 'create',
-}
+	Args:
+		choices: Values which are accepted in addition to the standard boolean
+		values.
+	"""
+	mapper = {
+		"0": False,
+		"1": True,
+		"false": False,
+		"true": True,
+	} | {
+		key: key
+		for key in choices
+	}
 
-infile = ''
+	meta = "{" + ",".join(("0", "1") + tuple(choices)) + "}"
+
+	return {"metavar": meta, "type": mapper.__getitem__}
+
+
+STATIONNAMES_FULL = "full"
+
+argparser = argparse.ArgumentParser(epilog=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+argparser.add_argument("--scale", type=int, default=100, help="Import with a scale of 1:ARG (default %(default)s)")
+argparser.add_argument("--view", type=int, default=0, choices=(0, 1, 2), help="0: Plan (default), 1: Profile, 2: Extend")
+argparser.add_argument("--bearing", metavar="[0-359]", type=int, default=0, help="Bearing in degrees north (default %(default)s)")
+argparser.add_argument("--markers", type=int, default=1, choices=(0, 1, 2, 3), help="0: No station markers, "
+					   "1: Display stations as small circles (default), 2: ditto as triangles, 3: triangles as clones")
+argparser.add_argument(
+    "--extend-cmd",
+    default="extend",
+    help='The "extend" program is part of Survex and required for --view=2. '
+    'If it is not found inside PATH, you may specify the absolute path for the binary with ARG.\n'
+    'Example: --extend-cmd="C:\\Programme\\Survex\\extend.exe"\n'
+    'Example: --extend-cmd="/usr/local/bin/extend"')
+argparser.add_argument("--scalebar", default=True, **boolchoice(), help="1: Draw scalebar")
+argparser.add_argument("--annotate", default=True, **boolchoice(), help="1: Annotate for Therion Export")
+argparser.add_argument("--filter", metavar="prefix", default='', help="Filter by label prefix and trim prefix off (TODO: implement and check therion book)")
+argparser.add_argument("--stationnames", default=True, **boolchoice([STATIONNAMES_FULL]), help="Draw station names")
+argparser.add_argument("--use_inkscape_label", default=True, **boolchoice(), help="Use inkscape:label for therion annotation")
+argparser.add_argument("--use_therion_attribs", default=True, **boolchoice(), help="Use therion:... attributes for annotation")
+argparser.add_argument("--surveys", default="create", choices=("create", "ignore"))
+argparser.add_argument("infile", help="Input .3d file")
+args = vars(argparser.parse_args())
+
+infile = args["infile"]
 
 # from th2ex
 def name_survex2therion(name):
@@ -68,31 +84,12 @@ def name_survex2therion(name):
 
 def die(msg):
 	sys.stderr.write(msg + "\n")
-	sys.stderr.write(__doc__)
+	sys.stderr.write(argparser.format_help())
 	sys.exit(1)
-
-sys.argv.pop(0)
-for arg in sys.argv:
-	if arg.startswith('--'):
-		pair = arg[2:].split('=', 2)
-		if pair[0] == 'filter':
-			pass
-		elif pair[1].isdigit():
-			pair[1] = int(pair[1])
-		elif pair[1] == 'true':
-			pair[1] = 1
-		elif pair[1] == 'false':
-			pair[1] = 0
-		args[pair[0]] = pair[1]
-	else:
-		infile = arg
 
 args['use_inkscape_label'] *= args['annotate']
 args['use_therion_attribs'] *= args['annotate']
 filter_len = len(args['filter'])
-
-if len(infile) == 0:
-	die("no filename given")
 
 if args['view'] == 2:
 	if not infile.endswith('_extend.3d'):
@@ -148,12 +145,8 @@ def read_len():
 		length += unpack('<I', f.read(4))[0]
 	return length
 
-if sys.version_info[0] > 2:
-	def _read_label(n):
-		return f.read(n).decode('utf-8', errors='replace')
-else:
-	def _read_label(n):
-		return f.read(n)
+def _read_label(n):
+	return f.read(n).decode('utf-8', errors='replace')
 
 def read_label():
 	len = read_len()
@@ -375,7 +368,7 @@ marker = {
 	2: 'url(#StationTriangle)',
 }.get(args['markers'], 'none')
 
-def print_path(coords, style, scale=1.0):
+def print_path(coords, style, scale=1.0, marker=marker):
 	if not coords:
 		return
 
@@ -420,9 +413,10 @@ def print_points():
 
 def print_stationnames():
 	for label,xy in labels.items():
-		label = label.rsplit('.', 1)[-1]
-		print('<text transform="translate(%f,%f) scale(%f) translate(4,2)"' \
-			% (xy[0] - min_x, xy[1] - min_y, args['scale'] / 50))
+		if args['stationnames'] != STATIONNAMES_FULL:
+			label = label.rsplit('.', 1)[-1]
+		print('<text transform="translate(%f,%f)"' \
+			% (xy[0] - min_x, xy[1] - min_y))
 		if args['use_therion_attribs']:
 			print('  therion:role="point" therion:type="station-name"')
 		if args['use_inkscape_label']:
@@ -440,13 +434,12 @@ print("""<?xml version="1.0" encoding="UTF-8"?>
 	width="%fcm"
 	height="%fcm">
 <sodipodi:namedview
-	inkscape:document-units="mm"
-	units="cm">
+	inkscape:document-units="mm">
 	<inkscape:grid
 		type="xygrid"
 		units="cm"
-		spacingx="10"
-		spacingy="10"
+		spacingx="100"
+		spacingy="100"
 		empspacing="10" />
 </sodipodi:namedview>
 <defs>
@@ -470,7 +463,7 @@ print("""<?xml version="1.0" encoding="UTF-8"?>
 	</symbol>
 </defs>
 <g
-	style="font-size:10"
+	style="font-size:%f"
 	>
 	<!-- imported with scale 1:%d from %s -->
 """ % (
@@ -479,11 +472,12 @@ print("""<?xml version="1.0" encoding="UTF-8"?>
 		width * scale,
 		height * scale,
 		0.1 / scale,
+		args['scale'] / 2.3622,
 		args['scale'],
 		infile,
 	))
 
-print_path(coords_splay, ['stroke:#990'], 0.5)
+print_path(coords_splay, ['stroke:#990'], 0.5, "none")
 print_path(coords, ['stroke:#900'])
 
 if args['markers'] == 3:
