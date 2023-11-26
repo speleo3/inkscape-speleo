@@ -120,7 +120,7 @@ class Th2SetProps(Th2Effect):
 				if self.options.dropstyle:
 					node.set('style', '')
 				for href in ['LPE-' + type + '_' + subtype, 'LPE-' + type]:
-					if href in self.doc_ids:
+					if role == 'line' and href in self.doc_ids:
 						node.set(inkscape_path_effect, '#' + href)
 						if inkscape_original_d not in node.attrib:
 							node.set(inkscape_original_d, node.get('d'))
