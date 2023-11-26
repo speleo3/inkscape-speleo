@@ -445,16 +445,18 @@ align_shortcuts = {
 	'bottom-right': 'br',
 }
 
+align2anchor_default_in = 'middle'
+align2anchor_default_out = 'start'
 align2anchor = {
-	'c': 'middle',
-	't': 'middle',
-	'b': 'middle',
 	'l': 'end',
 	'r': 'start',
-	'tl': 'end',
-	'tr': 'start',
-	'bl': 'end',
-	'br': 'start',
+}
+
+align2baseline_default_in = 'middle'
+align2baseline_default_out = 'auto'
+align2baseline = {
+    't': 'auto',  # 'alphabetic'
+    'b': 'hanging',
 }
 
 text_keys = {

@@ -546,8 +546,6 @@ def parse_line(a):
 	set_props(e, 'line', type_subtype, options)
 	getlayer('line', type).insert(0, e)
 
-align_lossless = ['tr', 't', 'tl']
-
 # like 1:500
 fontscale = {
 	'xl': '17.435',
@@ -582,16 +580,13 @@ def parse_point(a):
 			t.text = line
 			y += 1
 		del options[key]
-		if options.get('align') in align_shortcuts:
-			options['align'] = align_shortcuts[options['align']]
-		fontsize = fontscale.get(options.get('scale'), '12')
-		textanchor = align2anchor.get(options.get('align'), 'middle')
-		if options.get('align') in align_lossless:
-			del options['align']
-		if 'scale' in options:
-			del options['scale']
-		e.set('style', "font-size:%s;text-anchor:%s;text-align:%s" % (fontsize,
-			textanchor, textanchor))
+		fontsize = fontscale.get(options.pop('scale', None), '12')
+		align = options.pop('align', '')
+		align = align_shortcuts.get(align, align)
+		textanchor = align2anchor.get(align.strip('tb'), align2anchor_default_in)
+		baseline = align2baseline.get(align.strip('lr'), align2baseline_default_in)
+		e.set('style', "font-size:%s;text-anchor:%s;text-align:%s;dominant-baseline:%s" % (fontsize,
+			textanchor, textanchor, baseline))
 		e.set(xml_space, 'preserve')
 	elif type in point_symbols:
 		e = etree.Element('use')

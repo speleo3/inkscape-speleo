@@ -395,21 +395,30 @@ class Th2Output(Th2Effect):
 		return text
 	
 	align_rl = {
-		# (append to b/t, single value)
-		'start': ('r', 'r'),
-		'middle': ('', 'c'),
-		'end': ('l', 'l'),
+		'start': 'r',
+		# 'middle': '',  # 'c'
+		'end': 'l',
+	}
+
+	align_tb = {
+		'auto': 't',
+		'alphabetic': 't',
+		'ideographic': 't',
+		# 'middle': '',
+		# 'central': '',
+		'hanging': 'b',
 	}
 
 	def guess_text_align(self, node, style, options):
-		textanchor = self.get_style_attr(node, style, 'text-anchor', 'start')
-		if textanchor in self.align_rl:
-			align = options.get('align', 't')
-			if align[0] in ['t', 'b']:
-				align = align[0] + self.align_rl[textanchor][0]
-			else:
-				align = self.align_rl[textanchor][1]
+		textanchor = self.get_style_attr(node, style, 'text-anchor', align2anchor_default_out)
+		baseline = self.get_style_attr(node, style, 'dominant-baseline', align2baseline_default_out)
+		align = self.align_tb.get(baseline, options.get('align', ''))
+		align = align[0] if align[:1] in ['t', 'b'] else ''
+		align += self.align_rl.get(textanchor, '')
+		if align:
 			options['align'] = align
+		else:
+			options.pop('align', None)
 
 	def guess_text_scale(self, node, style, options, mat):
 		fontsize = self.get_style_attr(node, style, 'font-size', '12')
