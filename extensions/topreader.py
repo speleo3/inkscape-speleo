@@ -24,6 +24,11 @@ import struct
 import time
 import collections
 import math
+from html import escape
+from lxml import etree
+
+CLARK_INKSCAPE_LABEL = "{http://www.inkscape.org/namespaces/inkscape}label"
+CLARK_INKSCAPE_GROUPMODE = "{http://www.inkscape.org/namespaces/inkscape}groupmode"
 
 COLOURS = (
     'black',
@@ -40,6 +45,10 @@ KEY_COLOR = 'colour'
 KEY_DECLINATION = 'dec'
 KEY_X = 0
 KEY_Y = 1
+KEY_EXTEND = 'direction'
+
+EXTEND_LEFT = "<"
+EXTEND_RIGHT = ">"
 
 
 def distmm(mm):
@@ -121,6 +130,7 @@ def average_shots(shots, ignore_splays=True):
             # copy from first
             'trip': dups[0]['trip'],
             'comment': dups[0].get('comment', ''),
+            KEY_EXTEND: dups[0][KEY_EXTEND],
         }
 
 
@@ -136,6 +146,24 @@ def get_true_bearing(shot, top):
         decl = 0
 
     return shot["compass"] + decl
+
+
+def is_consecutive_number(from_: str, to: str) -> bool:
+    """Return true if both stations have the same survey prefix and are
+    consecutively numbered.
+    """
+    p_from = from_.rpartition(".")
+    p_to = to.rpartition(".")
+    return p_from[0] == p_to[0] and abs(int(p_from[2]) - int(p_to[2])) == 1
+
+
+def test_is_consecutive_number():
+    assert is_consecutive_number("0", "1")
+    assert is_consecutive_number("1.0", "1.1")
+    assert not is_consecutive_number("0", "0")
+    assert not is_consecutive_number("0", "2")
+    assert not is_consecutive_number("1.0", "1.0")
+    assert not is_consecutive_number("1.0", "1.2")
 
 
 def _make_Point(x, y):
@@ -198,9 +226,9 @@ def _read_shot(F):
 
     # bit 1 of flags is flip (left or right)
     if flags[0] & 0b00000001:
-        shot['direction'] = '<'
+        shot[KEY_EXTEND] = EXTEND_LEFT
     else:
-        shot['direction'] = '>'
+        shot[KEY_EXTEND] = EXTEND_RIGHT
 
     # bit 2 of flags indicates a comment
     if flags[0] & 0b00000010:
@@ -321,6 +349,9 @@ def load(fp):
     top['transform'] = _read_mapping(fp)
     top['outline'] = _read_drawing(fp)
     top['sideview'] = _read_drawing(fp)
+
+    remaining = fp.read()
+    assert remaining == b'\0\0\0\0'
 
     return top
 
@@ -482,14 +513,24 @@ def get_bbox(polys):
     ]
 
 
-def dump_svg(top, hidesideview=False, file=sys.stdout, showbbox=True):
-    '''Dump drawing as SVG in 1:100 scale.
+def dump_svg(top: dict,
+             *,
+             hidesideview: bool = False,
+             file=sys.stdout,
+             showbbox: bool = True,
+             scale: float = 200.0):
+    '''Dump drawing as SVG.
+
     Plan and side views go into separate layers.
+
+    Args:
+      scale: Scale as 1:scale
     '''
+    scale /= 100  # cm
 
     leg_shots = list(average_shots(top['shots']))
 
-    def write_shots(shots, sideview=False):
+    def write_shots(parent: etree.Element, shots, sideview=False) -> dict:
         suppresswarnings = sideview
         frompoints = {}
         compass_from = collections.defaultdict(list)
@@ -524,9 +565,12 @@ def dump_svg(top, hidesideview=False, file=sys.stdout, showbbox=True):
                 compass_delta = 1.0
 
                 if not is_splay:
-                    compass_from[s['from']].append(true_bearing)
-                    compass_to[s['to']].append(true_bearing)
+                    if s[KEY_TAPE] and is_consecutive_number(s["from"], s["to"]):
+                        compass_from[s['from']].append(true_bearing)
+                    if s[KEY_TAPE]:
+                        compass_to[s['to']].append(true_bearing)
                 else:
+                    assert s[KEY_TAPE]
                     compass_out = compass_from.get(s['from'])
                     compass_in = compass_to.get(s['from'], compass_out)
 
@@ -551,6 +595,10 @@ def dump_svg(top, hidesideview=False, file=sys.stdout, showbbox=True):
                         compass_delta = compass_splay_rel / compass_out_rel * 2 - 1
                         # I would expect sin transformation, but looks like PocketTopo doesn't do that
                         # compass_delta = math.sin(math.radians(compass_delta * 90))
+
+
+                if s[KEY_EXTEND] == EXTEND_LEFT:
+                    compass_delta *= -1
 
                 delta_x = length_proj * compass_delta
                 delta_y = s[KEY_TAPE] * math.sin(math.radians(s['clino']))
@@ -585,34 +633,85 @@ def dump_svg(top, hidesideview=False, file=sys.stdout, showbbox=True):
         for s in top['shots']:
             process_shot(s, True)
 
-        def write_legs(legs, style):
-            file.write('<path style="{}" d="'.format(style))
-            for (pnt_from, pnt_to) in legs:
-                file.write('M {0[0]},{0[1]} {1[0]},{1[1]} '.format(pnt_from, pnt_to))
-            file.write('" />\n')
+        def write_legs(legs: list, style: str):
+            path_data = " ".join(
+                f"M{pnt_from[0]},{pnt_from[1]} {pnt_to[0]},{pnt_to[1]}"
+                for (pnt_from, pnt_to) in legs)
+            etree.SubElement(parent, "path", {
+                CLARK_INKSCAPE_LABEL: "line survey",
+                "style": style,
+                "d": path_data,
+            })
 
         write_legs(splays, 'stroke:#fc0;stroke-width:0.02')
         write_legs(legs, 'stroke:#f00;stroke-width:0.03')
 
         return frompoints
 
-    def write_xsections(frompoints, drawing):
+    def write_xsections(parent: etree.Element, frompoints, drawing):
         for xsec in drawing['xsec']:
             pnt_stn = frompoints[xsec[2]]
-            file.write('<path class="xsecconnector" '
-                    'd="M {0[0]} {0[1]} {1[0]} {1[1]}" />\n'.format(pnt_stn, xsec))
+            etree.SubElement(
+                parent, "path", {
+                    CLARK_INKSCAPE_LABEL: "line section",
+                    "class": "xsecconnector",
+                    "d": f"M{pnt_stn[0]} {pnt_stn[1]} {xsec[0]} {xsec[1]}",
+                })
 
-    def write_stationlabels(frompoints):
+    def write_stationlabels(parent: etree.Element, frompoints: dict):
         for key, pnt in frompoints.items():
-            file.write('<text x="{0[0]}" y="{0[1]}">{1}</text>\n'.format(pnt, key))
+            survey, _, station = key.rpartition(".")
+            name = "{}@{}".format(station, survey) if survey else key
+            assert name == escape(name)
+            elem_text = etree.SubElement(
+                parent, "text", {
+                    "x": str(pnt[0]),
+                    "y": str(pnt[1]),
+                    CLARK_INKSCAPE_LABEL: f"point station -name {name}",
+                })
+            elem_text.text = key
 
-    def write_layer(top, view, label=None, display='inline'):
-        file.write('<g inkscape:groupmode="layer" inkscape:label="{}" '
-                'style="display:{}">\n'.format(label or view, display))
+    outer_padding = 5.0
 
+    def write_layer(parent: etree.Element,
+                    top: dict,
+                    view: str,
+                    label: str = "",
+                    *,
+                    xoffset: int = 0,
+                    display: str = 'inline',
+                    padding: float = 1.0) -> tuple:
+        """
+        Returns:
+          Width and height of the bounding box
+        """
         drawing = top[view]
 
-        file.write('<g inkscape:label="drawing">\n')
+        if not label:
+            label = view
+
+        try:
+            min_x, min_y, max_x, max_y = get_bbox(drawing['polys'])
+        except ValueError:
+            min_x, min_y, max_x, max_y = 0, 0, 0, 0
+
+        width = max_x - min_x
+        height = max_y - min_y
+
+        xoffset += -min_x + outer_padding
+        yoffset = -min_y + outer_padding
+
+        g_layer = etree.SubElement(
+            parent, "g", {
+                CLARK_INKSCAPE_GROUPMODE: "layer",
+                CLARK_INKSCAPE_LABEL: label,
+                "style": f"display:{display}",
+                "transform": f"translate({xoffset},{yoffset})",
+            })
+
+        g_drawing = etree.SubElement(g_layer, "g", {
+            CLARK_INKSCAPE_LABEL: "drawing",
+        })
 
         for poly in drawing['polys']:
             coord = poly['coord']
@@ -621,79 +720,94 @@ def dump_svg(top, hidesideview=False, file=sys.stdout, showbbox=True):
             if len(coord) == 1:
                 coord = coord + coord
 
-            file.write('<path style="stroke:{}" d="M'.format(poly[KEY_COLOR]))
+            path_data = "M" + " ".join(f" {pnt[KEY_X]},{pnt[KEY_Y]}"
+                                       for pnt in coord)
 
-            for pnt in coord:
-                file.write(' {},{}'.format(pnt[KEY_X], pnt[KEY_Y]))
+            etree.SubElement(g_drawing, "path", {
+                "style": f"stroke:{poly[KEY_COLOR]}",
+                "d": path_data,
+            })
 
-            file.write('" />\n')
+        g_shots = etree.SubElement(g_layer, "g", {
+            CLARK_INKSCAPE_LABEL: "shots",
+        })
 
-        file.write('</g>\n')
-        file.write('<g inkscape:label="shots">\n')
+        stations = write_shots(g_shots, top, view == 'sideview')
 
-        stations = write_shots(top, view == 'sideview')
-
-        write_xsections(stations, drawing)
-        write_stationlabels(stations)
-
-        file.write('</g>\n')
+        write_xsections(g_shots, stations, drawing)
+        write_stationlabels(g_shots, stations)
 
         if showbbox:
-            try:
-                min_x, min_y, max_x, max_y = get_bbox(drawing['polys'])
-            except ValueError:
-                pass
-            else:
+            if width or height:
                 color = '#f0f'
-                padding = 1.0
-                file.write('<rect x="{x}" y="{y}" width="{w}" height="{h}" '
-                        'style="fill:none;stroke:{color};stroke-width:0.04" />\n'.format(
-                            x=min_x - padding, w=max_x - min_x + padding * 2,
-                            y=min_y - padding, h=max_y - min_y + padding * 2,
-                            color=color))
-
+                etree.SubElement(
+                    g_layer, "rect", {
+                        "x": f"{min_x - padding}",
+                        "y": f"{min_y - padding}",
+                        "width": f"{width + padding * 2}",
+                        "height": f"{height + padding * 2}",
+                        "style": f"fill:none;stroke:{color};stroke-width:0.04",
+                    })
                 if 'filename' in top:
-                    file.write('<text x="{x}" y="{y}" style="fill:{color}">{}</text>\n'.format(
-                        os.path.basename(top['filename']), color=color,
-                        x=min_x - 0.7, y=min_y - 0.2))
+                    elem_text = etree.SubElement(
+                        g_layer, "text", {
+                            "x": f"{min_x - 0.7}",
+                            "y": f"{min_y - 0.2}",
+                            "style": f"fill:{color}",
+                        })
+                    elem_text.text = f"{os.path.basename(top['filename'])} ({label})"
 
-        file.write('</g>\n')
+        return width, height
 
-    for view in ('outline', 'sideview'):
-        try:
-            min_x, min_y, max_x, max_y = get_bbox(top[view]['polys'])
-            break
-        except ValueError:
-            min_x, min_y, max_x, max_y = 0, 0, 0, 0
+    root = etree.fromstring(f"""<?xml version="1.0" ?>
+<svg
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns="http://www.w3.org/2000/svg">
+<defs>
+<style type="text/css">
+path {{
+    fill:none;
+    stroke-width:{scale*0.05};
+    stroke-linecap:round;
+    stroke-linejoin:round;
+}}
+text {{
+    font: {scale*1.27/3} sans-serif;
+    fill:#999;
+}}
+.xsecconnector {{
+    stroke-dasharray:0.05,0.15;
+    stroke:#bbb;
+}}
+</style>
+</defs>
+<sodipodi:namedview
+   inkscape:document-units="cm"
+   pagecolor="#ffffff">
+  <inkscape:grid type="xygrid" empspacing="10"
+     spacingx="1"
+     spacingy="1"
+     units="cm" />
+</sodipodi:namedview>
+</svg>
+""")
 
-    padding = 5.0
+    width1, height1 = write_layer(root, top, 'outline', 'planview')
 
-    file.write('<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n')
-    file.write('<svg xmlns="http://www.w3.org/2000/svg" '
-            'xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" '
-            'xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" '
-            'width="{width}cm" height="{height}cm" '
-            'viewBox="{minx} {miny} {width} {height}">\n'.format(
-                minx=min_x - padding,
-                miny=min_y - padding,
-                width=max_x - min_x + padding * 2,
-                height=max_y - min_y + padding * 2))
+    if width1:
+        width1 += outer_padding
 
-    file.write('<defs>'
-            '<style type="text/css">\n'
-            'path {fill:none;stroke-width:0.05;'
-            'stroke-linecap:round;stroke-linejoin:round}\n'
-            'text {font: 0.5px sans-serif;fill:#999}\n'
-            '.xsecconnector {stroke-dasharray:0.05,0.15;stroke:#bbb}\n'
-            '</style>'
-            '</defs>\n')
+    width2, height2 = write_layer(root, top, 'sideview', display='none' if hidesideview else 'inline', xoffset=width1)
 
-    file.write('<sodipodi:namedview inkscape:document-units="cm" units="cm" />\n')
+    width = width1 + width2 + 2 * outer_padding
+    height = max(height1, height2) + 2 * outer_padding
 
-    write_layer(top, 'sideview', display='none' if hidesideview else 'inline')
-    write_layer(top, 'outline', 'planview')
+    root.set("width", f"{width/scale}cm")
+    root.set("height", f"{height/scale}cm")
+    root.set("viewBox", f"0 0 {width} {height}")
 
-    file.write('</svg>')
+    file.write(etree.tostring(root).decode("utf-8"))
 
 
 def dump_xvi(top, *, file=sys.stdout):
