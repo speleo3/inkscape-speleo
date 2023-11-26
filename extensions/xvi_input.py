@@ -106,6 +106,7 @@ def xvi2svg(handle, fullsvg=True, strokewidth=6, XVIroot='',
 		x, y, label = line.split()
 		y = invert_str(y)
 		e = etree.SubElement(g_stations, 'text', {
+			'style': f'font-size: {strokewidth*10}',
 			'x': x,
 			'y': y,
 		})
