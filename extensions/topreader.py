@@ -148,6 +148,24 @@ def get_true_bearing(shot, top):
     return shot["compass"] + decl
 
 
+def is_consecutive_number(from_: str, to: str) -> bool:
+    """Return true if both stations have the same survey prefix and are
+    consecutively numbered.
+    """
+    p_from = from_.rpartition(".")
+    p_to = to.rpartition(".")
+    return p_from[0] == p_to[0] and abs(int(p_from[2]) - int(p_to[2])) == 1
+
+
+def test_is_consecutive_number():
+    assert is_consecutive_number("0", "1")
+    assert is_consecutive_number("1.0", "1.1")
+    assert not is_consecutive_number("0", "0")
+    assert not is_consecutive_number("0", "2")
+    assert not is_consecutive_number("1.0", "1.0")
+    assert not is_consecutive_number("1.0", "1.2")
+
+
 def _make_Point(x, y):
     return distmm(x), distmm(y)
 
@@ -547,9 +565,12 @@ def dump_svg(top: dict,
                 compass_delta = 1.0
 
                 if not is_splay:
-                    compass_from[s['from']].append(true_bearing)
-                    compass_to[s['to']].append(true_bearing)
+                    if s[KEY_TAPE] and is_consecutive_number(s["from"], s["to"]):
+                        compass_from[s['from']].append(true_bearing)
+                    if s[KEY_TAPE]:
+                        compass_to[s['to']].append(true_bearing)
                 else:
+                    assert s[KEY_TAPE]
                     compass_out = compass_from.get(s['from'])
                     compass_in = compass_to.get(s['from'], compass_out)
 
