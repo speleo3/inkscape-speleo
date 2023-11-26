@@ -287,7 +287,7 @@ def parse_XTHERION(a):
 			try:
 				import xvi_input
 				with open(href) as handle:
-					g_xvi = xvi_input.xvi2svg(handle, False, 2, XVIroot)
+					g_xvi = xvi_input.xvi2svg(handle, False, 6, XVIroot)
 				img = etree.Element('g')
 				img.append(g_xvi)
 				img.set('transform', 'scale(1,-1) translate(%s,%s)' % (x, y))
