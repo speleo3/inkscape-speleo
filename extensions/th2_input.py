@@ -159,6 +159,8 @@ f_enum = enumerate(f_handle)
 doc_x = 0
 doc_y = 0
 doc_width = 0
+doc_height = 0
+cm_per_dots = 0.0254
 scrap_transform = ''
 scrap_transform_inv = ''
 encoding = 'UTF-8'
@@ -248,7 +250,9 @@ def parse_INKSCAPE(a):
 
 def parse_XTHERION(a):
 	global doc_width, doc_x, doc_y
+	global doc_height, cm_per_dots
 	global scrap_transform, scrap_transform_inv
+
 	if a[1] == 'xth_me_image_insert':
 		href, XVIroot = '', ''
 		try:
@@ -295,6 +299,11 @@ def parse_XTHERION(a):
 				img.set(therion_options, format_options({'href': href,
 						'XVIroot': XVIroot}))
 				root.xpath('svg:g[@id="layer-scan"]', namespaces=inkex.NSS)[0].append(img)
+
+				dx = g_xvi.get(therion_xvi_dx)
+				if dx:
+					cm_per_dots = 1 / float(dx)
+
 			except BaseException as e:
 				errormsg('xvi2svg failed ({})'.format(e))
 		elif href != '':
@@ -315,8 +324,6 @@ def parse_XTHERION(a):
 		scrap_transform = 'translate(%f,%f)' % (-doc_x, doc_y)
 		scrap_transform_inv = 'translate(%f,%f)' % (doc_x, -doc_y)
 
-		root.set('width', str(doc_width))
-		root.set('height', str(doc_height))
 
 def parse_scrap(a):
 	e = etree.Element('g')
@@ -637,6 +644,11 @@ while True:
 	parse(a)
 
 f_handle.close()
+
+if doc_width and doc_height:
+	root.set('width', f"{doc_width * cm_per_dots}cm")
+	root.set('height', f"{doc_height * cm_per_dots}cm")
+	root.set('viewBox', f"0 0 {doc_width} {doc_height}")
 
 e = root.xpath('svg:g[@id="layer-scan"]', namespaces=inkex.NSS)[0]
 e.set('transform', scrap_transform + ' scale(1,-1) scale(%f)' % (1./th2pref.basescale))

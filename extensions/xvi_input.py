@@ -27,7 +27,7 @@ def xvi2svg(handle, fullsvg=True, strokewidth=6, XVIroot='',
 			scale: float = 200.0):
 	"""
 	Args:
-	  scale: Scale as 1:scale
+	  scale: Scale as 1:scale (ignored with XVIroot or fullsvg=False)
 	"""
 	# file contents
 	filecontents = ''.join(handle)
@@ -111,22 +111,27 @@ def xvi2svg(handle, fullsvg=True, strokewidth=6, XVIroot='',
 			'y': y,
 		})
 		e.text = label
-		if XVIroot == label:
+		# station could exist multiple times, take first one
+		if root_translate is None and XVIroot == label:
 			root_translate = -float(x), -float(y)
 	
-	if not XVIroot:
-		x, y, dx, _, _, dy, nx, ny = map(float, grid)
-		height = float(dy) * float(ny)
-		if fullsvg:
-			scale /= 100  # cm
-			root.set('width', f"{nx/scale}cm")
-			root.set('height', f"{ny/scale}cm")
-			root.set('viewBox', '%s %f %f %f' % (x, -float(y)-height,
-				float(dx) * float(nx), height))
-		else:
-			root.set('transform', 'translate(%f,%f)' % (-float(x), -float(y)))
-	elif root_translate is not None:
+	x, y, dx, _, _, dy, nx, ny = map(float, grid)
+	width = dx * nx
+	height = dy * ny
+	y_top = -y - height
+
+	root.set(th2ex.therion_xvi_dx, str(dx))
+	root.set(th2ex.therion_xvi_dy, str(dy))
+
+	if root_translate is not None:
 		root.set('transform', 'translate(%f,%f)' % root_translate)
+	elif fullsvg:
+		scale /= 100  # cm
+		root.set('width', f"{nx/scale}cm")
+		root.set('height', f"{ny/scale}cm")
+		root.set('viewBox', '%f %f %f %f' % (x, y_top, width, height))
+	else:
+		root.set('transform', 'translate(%f,%f)' % (-float(x), -float(y)))
 
 	root.set("style", "stroke-linecap:round;stroke-linejoin:round")
 
