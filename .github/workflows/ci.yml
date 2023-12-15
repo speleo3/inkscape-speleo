@@ -1,0 +1,23 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    - name: Dummy dependencies
+      run: |
+        python3 _pip_install_dummy.py PyGObject 3.99
+        python3 _pip_install_dummy.py pySerial 3.5
+        python3 _pip_install_dummy.py Pillow 7.1
+        python3 _pip_install_dummy.py scour 0.37
+        python3 _pip_install_dummy.py tinycss2 1.0
+    - run: pip install -r requirements.txt pytest
+    - name: Test
+      run: |
+        python3 -m pytest
