@@ -646,6 +646,12 @@ while True:
 f_handle.close()
 
 if doc_width and doc_height:
+	root.set('width', str(doc_width))
+	root.set('height', str(doc_height))
+
+# FIXME: Metric scaling breaks round tripping th2 -> svg -> th2, the final th2
+# will be scaled wrong and not fit XVI background images anymore.
+if False:
 	root.set('width', f"{doc_width * cm_per_dots}cm")
 	root.set('height', f"{doc_height * cm_per_dots}cm")
 	root.set('viewBox', f"0 0 {doc_width} {doc_height}")
