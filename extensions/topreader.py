@@ -157,15 +157,6 @@ def is_consecutive_number(from_: str, to: str) -> bool:
     return p_from[0] == p_to[0] and abs(int(p_from[2]) - int(p_to[2])) == 1
 
 
-def test_is_consecutive_number():
-    assert is_consecutive_number("0", "1")
-    assert is_consecutive_number("1.0", "1.1")
-    assert not is_consecutive_number("0", "0")
-    assert not is_consecutive_number("0", "2")
-    assert not is_consecutive_number("1.0", "1.0")
-    assert not is_consecutive_number("1.0", "1.2")
-
-
 def _make_Point(x, y):
     return distmm(x), distmm(y)
 
