@@ -1,0 +1,9 @@
+# https://help.github.com/articles/dealing-with-line-endings/
+
+*       text=auto eol=lf
+*.py    text
+*.svg   text
+*.th2   text
+
+*.svx   text
+*.3d    binary

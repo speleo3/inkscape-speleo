@@ -253,7 +253,7 @@ class Survex3D(object):
         self.flags_leg_exclude = flags_leg_exclude
         if filename is None:
             pass
-        elif isinstance(filename, basestring):
+        elif isinstance(filename, basestring) or hasattr(filename, "__fspath__"):
             self.load(filename)
         else:
             # assume iterable with stations

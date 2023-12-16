@@ -1,0 +1,5 @@
+*title "Höhle mit Umlaut"
+
+*data normal from to length clino compass
+1 2 1.2 +0 000
+2 3 3.4 +0 090
