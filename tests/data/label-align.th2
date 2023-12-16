@@ -1,0 +1,49 @@
+encoding  utf-8
+##XTHERION## xth_me_area_adjust 0 0 290.000000 260.000000
+##XTHERION## xth_me_area_zoom_to 100
+
+
+
+scrap scrap1 -projection plan -scale [0 0 96 0 0 0 200 0 inch]
+
+line u:unknown -clip off
+  228.018 201.9699
+  228.018 60.5
+endline
+
+line u:unknown -clip off
+  0.5 96.7525
+  273.0948 96.7525
+endline
+
+line u:unknown -clip off
+  0.5 151.6229
+  273.0948 151.6229
+endline
+
+line u:unknown -clip off
+  107.2873 201.9699
+  107.2873 60.5
+endline
+
+point 107.288 151.623 label -align bl -text bottom-left
+
+point 107.288 96.753 label -align l -text left
+
+point 107.288 96.753 label -align t -text top
+
+point 228.018 96.753 label -text center
+
+point 107.288 96.753 label -align b -text bottom
+
+point 107.288 96.753 label -align r -text right
+
+point 107.288 151.623 label -align br -text bottom-right
+
+point 107.288 151.623 label -align tr -text top-right
+
+point 107.288 151.623 label -align tl -text top-left
+
+endscrap
+
+
