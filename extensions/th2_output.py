@@ -195,11 +195,12 @@ class Th2Output(Th2Effect):
 		th2pref_load_from_xml(root)
 		th2pref.xyascenter = self.options.xyascenter
 
-		self.r2d = [[1, 0, 0],[0, -1, doc_height]]
+		self.r2d = [[1, 0, 0],[0, -1, 0]]
 		viewBox = root.get('viewBox')
-		if viewBox and doc_width and doc_height:
-			m1 = parseViewBox(viewBox, doc_width, doc_height)
-			self.r2d = simpletransform.composeTransform(self.r2d, m1)
+		if viewBox:
+			doc_x, doc_y, doc_width, doc_height = [float(i) for i in viewBox.split()]
+		else:
+			doc_x, doc_y = 0, 0
 
 		self.classes = {}
 		stylenodes = self.document.xpath('//svg:style', namespaces=inkex.NSS)
@@ -211,9 +212,12 @@ class Th2Output(Th2Effect):
 
 		print('encoding  utf-8')
 		if doc_width and doc_height:
-			print('##XTHERION## xth_me_area_adjust 0 0 %s %s' % (
-				fstr2(doc_width * th2pref.basescale),
-				fstr2(doc_height * th2pref.basescale)))
+			params = [
+				th2pref.basescale * param
+				for param in [doc_x, (doc_y + doc_height), (doc_x + doc_width), doc_y]
+			]
+			print('##XTHERION## xth_me_area_adjust %s %s %s %s' %
+				tuple(map(fstr2, transformParams(self.r2d, params))))
 		print('##XTHERION## xth_me_area_zoom_to 100')
 
 		# text on path

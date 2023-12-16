@@ -1,5 +1,5 @@
 encoding  utf-8
-##XTHERION## xth_me_area_adjust 0 0 748.125 749.88
+##XTHERION## xth_me_area_adjust -131.0 -120.0 623.627 621.0
 ##XTHERION## xth_me_area_zoom_to 100
 ##XTHERION## xth_me_image_insert {456.253 1 1.0} {60.18 0@create.} "create.xvi" 0 {}
 

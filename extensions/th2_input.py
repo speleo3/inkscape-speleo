@@ -161,8 +161,6 @@ doc_y = 0
 doc_width = 0
 doc_height = 0
 cm_per_dots = 0.0254
-scrap_transform = ''
-scrap_transform_inv = ''
 encoding = 'UTF-8'
 
 def flipY_old(a):
@@ -251,7 +249,6 @@ def parse_INKSCAPE(a):
 def parse_XTHERION(a):
 	global doc_width, doc_x, doc_y
 	global doc_height, cm_per_dots
-	global scrap_transform, scrap_transform_inv
 
 	if a[1] == 'xth_me_image_insert':
 		href, XVIroot = '', ''
@@ -321,14 +318,11 @@ def parse_XTHERION(a):
 		doc_y = floatscale(a[5])
 		doc_width = floatscale(a[4]) - doc_x
 		doc_height = doc_y - floatscale(a[3])
-		scrap_transform = 'translate(%f,%f)' % (-doc_x, doc_y)
-		scrap_transform_inv = 'translate(%f,%f)' % (doc_x, -doc_y)
 
 
 def parse_scrap(a):
 	e = etree.Element('g')
 	e.set(inkscape_groupmode, "layer")
-	e.set('transform', scrap_transform)
 	
 	# e.set(inkscape_label, ' '.join(a))
 	e.set(inkscape_label, a[1])
@@ -429,8 +423,6 @@ def parse_BLOCK2TEXT(a):
 	global textblock_count
 	role = a[0]
 	e = etree.Element('text')
-	if currentlayer != root:
-		e.set('transform', scrap_transform_inv)
 	e.set(therion_role, 'textblock')
 	e.set('style', 'font-size:8;fill:#900')
 	e.set('x', str(doc_width + 20))
@@ -646,22 +638,16 @@ while True:
 f_handle.close()
 
 if doc_width and doc_height:
-	root.set('width', str(doc_width))
-	root.set('height', str(doc_height))
-
-# FIXME: Metric scaling breaks round tripping th2 -> svg -> th2, the final th2
-# will be scaled wrong and not fit XVI background images anymore.
-if False:
 	root.set('width', f"{doc_width * cm_per_dots}cm")
 	root.set('height', f"{doc_height * cm_per_dots}cm")
-	root.set('viewBox', f"0 0 {doc_width} {doc_height}")
+	root.set('viewBox', f"{doc_x} {-doc_y} {doc_width} {doc_height}")
 
 e = root.xpath('svg:g[@id="layer-scan"]', namespaces=inkex.NSS)[0]
-e.set('transform', scrap_transform + ' scale(1,-1) scale(%f)' % (1./th2pref.basescale))
+e.set('transform', ' scale(1,-1) scale(%f)' % (1./th2pref.basescale))
 
 e = root.xpath('svg:g[@id="layer-scrap0"]', namespaces=inkex.NSS)[0]
 if len(e) > 0:
-	e.set('transform', scrap_transform)
+	pass
 else:
 	root.remove(e)
 
