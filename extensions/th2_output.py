@@ -39,7 +39,33 @@ def orientation(mat):
 		return 0.0
 
 def fstr(x):
+	"""
+	Format float with 4 digits after the period
+	"""
 	s = "%.4f" % x
+	return fstr_trim_zeros(s)
+
+
+def fstr2(x: float, dbl_dig=15, max_dig=20) -> str:
+	"""
+	Format float with a maximum of max_dig digits after the period, and taking
+	the number of significant digits (dbl_dig) into account.
+	"""
+	try:
+		digits = dbl_dig - math.ceil(math.log10(abs(x)))
+	except ValueError:
+		digits = 0
+	digits = max(0, min(digits, max_dig))
+	s = f"{x:.{digits}f}"
+	if digits == 0:
+		s += ".0"
+	return fstr_trim_zeros(s)
+
+
+def fstr_trim_zeros(s: str) -> str:
+	"""
+	Strip trailing zeros from a string that represents a floating point number.
+	"""
 	i = len(s) - 1
 	while s[i] == '0': i -= 1
 	if s[i] == '.': i += 1
@@ -170,9 +196,9 @@ class Th2Output(Th2Effect):
 
 		print('encoding  utf-8')
 		if doc_width and doc_height:
-			print('##XTHERION## xth_me_area_adjust 0 0 %f %f' % (
-				doc_width * th2pref.basescale,
-				doc_height * th2pref.basescale))
+			print('##XTHERION## xth_me_area_adjust 0 0 %s %s' % (
+				fstr2(doc_width * th2pref.basescale),
+				fstr2(doc_height * th2pref.basescale)))
 		print('##XTHERION## xth_me_area_zoom_to 100')
 
 		# text on path
@@ -209,8 +235,8 @@ class Th2Output(Th2Effect):
 					continue
 				if href.startswith('file://'):
 					href = href[7:]
-				print('##XTHERION## xth_me_image_insert {%f 1 1.0} {%f %s} "%s" 0 {}' % \
-						(paramsTrans[0], paramsTrans[1], XVIroot, href))
+				print('##XTHERION## xth_me_image_insert {%s 1 1.0} {%s %s} "%s" 0 {}' % \
+						(fstr2(paramsTrans[0]), fstr2(paramsTrans[1]), XVIroot, href))
 
 		self.print_scrap_begin('scrap1', not self.options.lay2scr)
 

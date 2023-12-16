@@ -16,7 +16,7 @@ def _find_script(name: str) -> str:
 
 
 def _non_empty_lines(buf: AnyStr) -> list[AnyStr]:
-    return [line for line in buf.splitlines() if line]
+    return [line.rstrip() for line in buf.splitlines() if line]
 
 
 def _assert_non_empty_lines_equal(left: AnyStr, right: AnyStr):
@@ -29,9 +29,11 @@ script_th2_output = _find_script("th2_output")
 
 @pytest.mark.parametrize("stem", [
     ("label-align"),
+    ("create"),
 ])
-def test_th2_round_trip(stem):
-    path_input = TESTS_DATA / f"{stem}.th2"
+def test_th2_round_trip(stem, monkeypatch):
+    monkeypatch.chdir(TESTS_DATA)
+    path_input = Path(f"{stem}.th2")
     svgcontent = subprocess.check_output([
         sys.executable,
         script_th2_input,
