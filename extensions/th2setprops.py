@@ -18,11 +18,11 @@ def asunicode(s):
 class Th2SetProps(Th2Effect):
 	def __init__(self):
 		inkex.Effect.__init__(self)
-		self.OptionParser.add_option("--role", type="string", dest="role", default="")
-		self.OptionParser.add_option("--type", type="string", dest="type", default="")
-		self.OptionParser.add_option("--options", type="string", dest="options", default="")
-		self.OptionParser.add_option("--merge", type="inkbool", dest="merge", default=True)
-		self.OptionParser.add_option("--dropstyle", type="inkbool", dest="dropstyle", default=False)
+		self.arg_parser.add_argument("--role", type=str, dest="role", default="")
+		self.arg_parser.add_argument("--type", type=str, dest="type", default="")
+		self.arg_parser.add_argument("--options", type=str, dest="options", default="")
+		self.arg_parser.add_argument("--merge", type=inkex.Boolean, dest="merge", default=True)
+		self.arg_parser.add_argument("--dropstyle", type=inkex.Boolean, dest="dropstyle", default=False)
 
 	def update_options(self, options):
 		'''Subclasses can update options here'''
