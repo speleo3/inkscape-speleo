@@ -7,11 +7,11 @@
   <param name="type" gui-hidden="true" type="string">station</param>
 
   <param name="stationname" type="string"
-    _gui-text="First station name"
-    _gui-description="If multiple stations are selected, increment name for every station. Field can be empty if plugin is run a second time."
+    gui-text="First station name"
+    gui-description="If multiple stations are selected, increment name for every station. Field can be empty if plugin is run a second time."
     >1@my.cave</param>
 
-  <param name="dropstyle" type="boolean" _gui-text="Drop Style">true</param>
+  <param name="dropstyle" type="bool" gui-text="Drop Style">true</param>
 
   <effect>
     <object-type>all</object-type>

@@ -4,49 +4,49 @@
   <id>speleo.th2setline</id>
   <dependency type="executable" location="extensions">th2setprops.py</dependency>
   <param name="role" gui-hidden="true" type="string">line</param>
-  <param name="type" type="enum" _gui-text="Type">
-    <item value="abyss-entrance">abyss-entrance</item>
-    <item value="arrow">arrow</item>
-    <item value="border">border</item>
-    <item value="ceiling-meander">ceiling-meander</item>
-    <item value="ceiling-step">ceiling-step</item>
-    <item value="chimney">chimney</item>
-    <item value="contour">contour</item>
-    <item value="dripline">dripline</item>
-    <item value="fault">fault</item>
-    <item value="fixed-ladder">fixed-ladder</item>
-    <item value="floor-meander">floor-meander</item>
-    <item value="floor-step">floor-step</item>
-    <item value="flowstone">flowstone</item>
-    <item value="gradient">gradient</item>
-    <item value="handrail">handrail</item>
-    <item value="joint">joint</item>
-    <item value="label">label</item>
-    <item value="low-ceiling">low-ceiling</item>
-    <item value="map-connection">map-connection</item>
-    <item value="moonmilk">moonmilk</item>
-    <item value="overhang">overhang</item>
-    <item value="pit">pit</item>
-    <item value="pit-chimney">pit-chimney</item>
-    <item value="rimstone-dam">rimstone-dam</item>
-    <item value="rimstone-pool">rimstone-pool</item>
-    <item value="rock-border">rock-border</item>
-    <item value="rock-edge">rock-edge</item>
-    <item value="rope">rope</item>
-    <item value="rope-ladder">rope-ladder</item>
-    <item value="section">section</item>
-    <item value="slope">slope</item>
-    <item value="steps">steps</item>
-    <item value="survey">survey</item>
-    <item value="u">user</item>
-    <item value="via-ferrata">via-ferrata</item>
-    <item value="walkway">walkway</item>
-    <item value="wall">wall</item>
-    <item value="water-flow">water-flow</item>
+  <param name="type" type="optiongroup" appearance="combo" gui-text="Type">
+    <option value="abyss-entrance">abyss-entrance</option>
+    <option value="arrow">arrow</option>
+    <option value="border">border</option>
+    <option value="ceiling-meander">ceiling-meander</option>
+    <option value="ceiling-step">ceiling-step</option>
+    <option value="chimney">chimney</option>
+    <option value="contour">contour</option>
+    <option value="dripline">dripline</option>
+    <option value="fault">fault</option>
+    <option value="fixed-ladder">fixed-ladder</option>
+    <option value="floor-meander">floor-meander</option>
+    <option value="floor-step">floor-step</option>
+    <option value="flowstone">flowstone</option>
+    <option value="gradient">gradient</option>
+    <option value="handrail">handrail</option>
+    <option value="joint">joint</option>
+    <option value="label">label</option>
+    <option value="low-ceiling">low-ceiling</option>
+    <option value="map-connection">map-connection</option>
+    <option value="moonmilk">moonmilk</option>
+    <option value="overhang">overhang</option>
+    <option value="pit">pit</option>
+    <option value="pit-chimney">pit-chimney</option>
+    <option value="rimstone-dam">rimstone-dam</option>
+    <option value="rimstone-pool">rimstone-pool</option>
+    <option value="rock-border">rock-border</option>
+    <option value="rock-edge">rock-edge</option>
+    <option value="rope">rope</option>
+    <option value="rope-ladder">rope-ladder</option>
+    <option value="section">section</option>
+    <option value="slope">slope</option>
+    <option value="steps">steps</option>
+    <option value="survey">survey</option>
+    <option value="u">user</option>
+    <option value="via-ferrata">via-ferrata</option>
+    <option value="walkway">walkway</option>
+    <option value="wall">wall</option>
+    <option value="water-flow">water-flow</option>
   </param>
-  <param name="options" type="string" _gui-text="Options" />
-  <param name="merge" type="boolean" _gui-text="Merge with existing Options">true</param>
-  <param name="dropstyle" type="boolean" _gui-text="Drop Style">true</param>
+  <param name="options" type="string" gui-text="Options" />
+  <param name="merge" type="bool" gui-text="Merge with existing Options">true</param>
+  <param name="dropstyle" type="bool" gui-text="Drop Style">true</param>
   <effect>
     <object-type>all</object-type>
     <effects-menu>

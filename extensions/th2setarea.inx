@@ -4,32 +4,32 @@
   <id>speleo.th2setarea</id>
   <dependency type="executable" location="extensions">th2setprops.py</dependency>
   <param name="role" gui-hidden="true" type="string">area</param>
-  <param name="type" type="enum" _gui-text="Type">
-    <item>water</item>
-    <item>clay</item>
-    <item>sand</item>
-    <item>debris</item>
-    <item>sump</item>
-    <item>blocks</item>
-    <item>snow</item>
-    <item>ice</item>
-    <item>pebbles</item>
-    <item>bedrock</item>
-    <item>flowstone</item>
-    <item>moonmilk</item>
-    <item>pillar</item>
-    <item>pillar_with_curtains</item>
-    <item>stalactite</item>
-    <item>stalactite-stalagmite</item>
-    <item>stalagmite</item>
+  <param name="type" type="optiongroup" appearance="combo" gui-text="Type">
+    <option>water</option>
+    <option>clay</option>
+    <option>sand</option>
+    <option>debris</option>
+    <option>sump</option>
+    <option>blocks</option>
+    <option>snow</option>
+    <option>ice</option>
+    <option>pebbles</option>
+    <option>bedrock</option>
+    <option>flowstone</option>
+    <option>moonmilk</option>
+    <option>pillar</option>
+    <option>pillar_with_curtains</option>
+    <option>stalactite</option>
+    <option>stalactite-stalagmite</option>
+    <option>stalagmite</option>
   </param>
 
-  <param name="options" type="enum" _gui-text="Line Visibility">
-    <item value="-line-visibility on">on</item>
-    <item value="-line-visibility off">off</item>
+  <param name="options" type="optiongroup" appearance="radio" gui-text="Line Visibility">
+    <option value="-line-visibility on">on</option>
+    <option value="-line-visibility off">off</option>
   </param>
 
-  <param name="dropstyle" type="boolean" _gui-text="Drop Style">true</param>
+  <param name="dropstyle" type="bool" gui-text="Drop Style">true</param>
   <effect>
     <object-type>all</object-type>
     <effects-menu>
