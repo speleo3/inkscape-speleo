@@ -4,15 +4,15 @@
   <id>speleo.th2setprops</id>
   <dependency type="executable" location="extensions">th2setprops.py</dependency>
   <!-- param name="role" type="string" _gui-text="Role" / -->
-  <param name="role" type="enum" _gui-text="Role">
-    <item value="_none_">(undefined)</item>
-    <item value="line">Line</item>
-    <item value="point">Point</item>
+  <param name="role" type="optiongroup" appearance="combo" gui-text="Role">
+    <option value="_none_">(undefined)</option>
+    <option value="line">Line</option>
+    <option value="point">Point</option>
   </param>
-  <param name="type" type="string" _gui-text="Type" />
-  <param name="options" type="string" _gui-text="Options" />
-  <param name="merge" type="boolean" _gui-text="Merge with existing Options">true</param>
-  <param name="dropstyle" type="boolean" _gui-text="Drop Style">true</param>
+  <param name="type" type="string" gui-text="Type" />
+  <param name="options" type="string" gui-text="Options" />
+  <param name="merge" type="bool" gui-text="Merge with existing Options">true</param>
+  <param name="dropstyle" type="bool" gui-text="Drop Style">true</param>
   <effect>
     <object-type>all</object-type>
     <effects-menu>
