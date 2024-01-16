@@ -22,19 +22,29 @@ def to_base(n, b=len(BS)):
 
 class StationName:
     def __init__(self, name):
-        m = re.match(r'(.*?)([0-9a-zA-Z]+)($|@.*)', name)
+        name = name.strip()
+        m = re.match(r'([0-9a-zA-Z]+)($|@.*)', name)
         if m is None:
             raise ValueError("can't increment station name '{}'".format(name))
 
-        self.pre = m.group(1)
-        num = m.group(2)
-        self.post = m.group(3)
+        stationName = m.group(1)
+        self.post = m.group(2)
 
-        self.base = 10 if num.isdigit() else 36
-        self.number = int(num, self.base)
+        self.pre, incrementingPart = SeparateStationNameParts(stationName)
+
+        if incrementingPart.isdigit():
+            self.base = 10
+            self.convertToLower = False
+        else:
+            self.base = 36
+            self.convertToLower = incrementingPart.islower()
+        self.number = int(incrementingPart, self.base)
 
     def __str__(self):
-        return self.pre + to_base(self.number, self.base) + self.post
+        incrementingPart = to_base(self.number, self.base)
+        if self.convertToLower:
+            incrementingPart = incrementingPart.lower()
+        return self.pre + incrementingPart + self.post
 
     def __iter__(self):
         return self
@@ -46,12 +56,28 @@ class StationName:
 
     next = __next__
 
+def SeparateStationNameParts(s):
+    part1, part2 = '', ''
+
+    # Check if the string is entirely alphabetic or numeric
+    if s.isalpha() or s.isdigit():
+        return '', s
+
+    # Start from the end of the string and look for the transition point
+    for i in range(len(s) - 1, 0, -1):
+        if (s[i].isdigit() and s[i-1].isalpha()) or (s[i].isalpha() and s[i-1].isdigit()):
+            part1 = s[:i]
+            part2 = s[i:]
+            break
+
+    return part1, part2
+
 
 class Th2EnumerateStations(Th2SetProps):
     def __init__(self):
         Th2SetProps.__init__(self)
-        self.OptionParser.add_option(
-            "--stationname", type="string", dest="stationname")
+        self.arg_parser.add_argument(
+            "--stationname", type=str, dest="stationname")
 
     def update_options(self, options):
         options['name'] = next(self.stationnames)
