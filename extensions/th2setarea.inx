@@ -14,8 +14,14 @@
     <item>snow</item>
     <item>ice</item>
     <item>pebbles</item>
+    <item>bedrock</item>
     <item>flowstone</item>
     <item>moonmilk</item>
+    <item>pillar</item>
+    <item>pillar_with_curtains</item>
+    <item>stalactite</item>
+    <item>stalactite-stalagmite</item>
+    <item>stalagmite</item>
   </param>
 
   <param name="options" type="enum" _gui-text="Line Visibility">
