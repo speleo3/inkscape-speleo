@@ -20,7 +20,6 @@ else:
 	binarystdout = sys.stdout.buffer
 
 from lxml import etree
-from inkex import NSS
 
 
 def xvi2svg(handle, fullsvg=True, strokewidth=6, XVIroot='',
@@ -57,12 +56,19 @@ def xvi2svg(handle, fullsvg=True, strokewidth=6, XVIroot='',
 	root_translate = None
 	stationcoords = set(tuple(line.split()[:2]) for line in stations)
 
-	if fullsvg:
-		root = etree.Element('svg', nsmap=NSS)
-	else:
-		root = etree.Element('g', nsmap=NSS)
+	root = etree.fromstring("""<?xml version="1.0" ?>
+<svg
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:therion="http://therion.speleo.sk/therion"
+   xmlns="http://www.w3.org/2000/svg">
+</svg>
+""")
 
-	g_shots = etree.SubElement(root, 'g', {th2ex.inkscape_label: 'Shots'})
+	if not fullsvg:
+		root = etree.SubElement(root, th2ex.svg_g)
+
+	g_shots = etree.SubElement(root, th2ex.svg_g, {th2ex.inkscape_label: 'Shots'})
 
 	def process_shots(splays: bool):
 		style = (f"stroke:#f00;stroke-width:{strokewidth / 2}" if (not splays) else
@@ -75,7 +81,7 @@ def xvi2svg(handle, fullsvg=True, strokewidth=6, XVIroot='',
 				continue
 			coords[1::2] = map(invert_str, coords[1::2])
 			coords_str = ' '.join(coords)
-			e = etree.SubElement(g_shots, 'path', {
+			etree.SubElement(g_shots, th2ex.svg_path, {
 				'd': 'M ' + coords_str,
 				'style': f'fill:none;' + style,
 			})
@@ -89,23 +95,23 @@ def xvi2svg(handle, fullsvg=True, strokewidth=6, XVIroot='',
 		coords[1::2] = map(invert_str, coords[1::2])
 		coords_str = ' '.join(coords)
 		if len(coords) == 2:
-			e = etree.SubElement(root, 'circle', {
+			e = etree.SubElement(root, th2ex.svg_circle, {
 				'cx': coords[0],
 				'cy': coords[1],
 				'r': str(strokewidth),
 				'style': 'fill:%s;stroke:none' % (color),
 			})
 		elif len(coords) > 2:
-			e = etree.SubElement(root, 'path', {
+			e = etree.SubElement(root, th2ex.svg_path, {
 				'd': 'M ' + coords_str,
 				'style': 'fill:none;stroke:%s;stroke-width:%f' % (color, strokewidth),
 			})
 
-	g_stations = etree.SubElement(root, 'g', {th2ex.inkscape_label: 'Stations'})
+	g_stations = etree.SubElement(root, th2ex.svg_g, {th2ex.inkscape_label: 'Stations'})
 	for line in stations:
 		x, y, label = line.split()
 		y = invert_str(y)
-		e = etree.SubElement(g_stations, 'text', {
+		e = etree.SubElement(g_stations, th2ex.svg_text, {
 			'style': f'font-size: {strokewidth*10}',
 			'x': x,
 			'y': y,
