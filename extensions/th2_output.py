@@ -66,10 +66,13 @@ def fstr_trim_zeros(s: str) -> str:
 	"""
 	Strip trailing zeros from a string that represents a floating point number.
 	"""
+	assert '.' in s
 	i = len(s) - 1
 	while s[i] == '0': i -= 1
 	if s[i] == '.': i += 1
-	return s[:i+1]
+	s = s[:i+1]
+	return "0.0" if s == "-0.0" else s
+
 
 class Th2Line:
 	def __init__(self, type = 'wall'):
