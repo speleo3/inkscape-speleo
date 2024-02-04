@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="10cm"
+   height="10cm"
+   viewBox="0 0 100 100"
+   version="1.1"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     inkscape:document-units="cm"
+     showgrid="true">
+    <inkscape:grid
+       units="cm"
+       originx="0"
+       originy="0"
+       spacingx="10"
+       spacingy="10"
+       empcolor="#0099e5"
+       empopacity="0.25"
+       color="#0099e5"
+       opacity="0.2"
+       empspacing="5"
+       visible="true" />
+  </sodipodi:namedview>
+  <g
+     inkscape:label="scrap1"
+     inkscape:groupmode="layer">
+    <text x="10" y="20" style="font-size:5">{ALTITUDE}</text>
+    <text x="10" y="40" style="font-size:5;line-height:2">
+      <tspan sodipodi:role="line" x="10" y="40">&lt;lang:de&gt;German</tspan>
+      <tspan sodipodi:role="line" x="10" y="50">&lt;lang:en&gt;English</tspan>
+      <tspan sodipodi:role="line" x="10" y="60">&lt;lang:fr&gt;French</tspan>
+    </text>
+  </g>
+</svg>

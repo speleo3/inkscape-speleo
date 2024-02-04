@@ -1,5 +1,11 @@
 import th2_output as m
+import re
 import pytest
+import subprocess
+import sys
+from pathlib import Path
+
+TESTS_DATA = Path(__file__).resolve().parent / "data"
 
 
 def test_fstr():
@@ -27,3 +33,13 @@ def test_fstr_trim_zeros():
     assert m.fstr_trim_zeros("-0.000") == "0.0"
     with pytest.raises(Exception):
         m.fstr_trim_zeros("123")
+
+
+def test_th2_output(tmp_path):
+    path_input = TESTS_DATA / "ink1.svg"
+    th2content = subprocess.check_output(
+        [sys.executable, m.__file__, str(path_input)], encoding="utf-8")
+    assert re.search(r"point .* altitude", th2content) is not None
+    assert re.search(
+        r'point .* label .* -text "<lang:de>German<lang:en>English<lang:fr>French"',
+        th2content) is not None

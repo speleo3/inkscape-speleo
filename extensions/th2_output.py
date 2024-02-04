@@ -421,6 +421,8 @@ class Th2Output(Th2Effect):
 				text += self.get_point_text(child)
 			if isinstance(child.tail, basestring) and len(child.tail.strip()) > 0:
 				text += child.tail.replace('\n', ' ')
+		# strip newlines between language alternatives
+		text = text.replace("<br><lang:", "<lang:")
 		return text
 	
 	align_rl = {
