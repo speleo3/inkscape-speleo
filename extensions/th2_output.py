@@ -498,6 +498,14 @@ class Th2Output(Th2Effect):
 			if type == 'altitude' and options[key].isdigit():
 				options[key] = "[fix " + options[key] + "]"
 
+			if type in ('altitude', 'label') and text == '{ALTITUDE}':
+				type = 'altitude'
+				del options[key]
+
+			if type in ('station-name', 'label') and text == '{STATION-NAME}':
+				type = 'station-name'
+				del options[key]
+
 		# restore orientation from transform
 		orient = orientation(mat)
 		if orient > 0.05:
