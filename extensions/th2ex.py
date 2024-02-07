@@ -294,6 +294,16 @@ def parse_options_new(a):
 
 parse_options = parse_options_new
 
+
+def key_options_item(item: tuple) -> tuple:
+	"""
+	Sort key for options. Alphabetic with some exceptions.
+	"""
+	if item[0] == 'id':
+		return '0' + item[0], item[1]
+	return item
+
+
 # TODO this fails for -text "[foo bar]" (will be -text [foo bar], no quotes)
 def format_options(options):
 	'''
@@ -334,7 +344,7 @@ def format_options(options):
 		return ret
 
 	ret = []
-	for key,value in sorted(options.items()):
+	for key,value in sorted(options.items(), key=key_options_item):
 		if key in repeatable_options and isinstance(value, list):
 			for v in value:
 				ret.append(format_option(key, v))

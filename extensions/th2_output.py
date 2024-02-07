@@ -74,6 +74,16 @@ def fstr_trim_zeros(s: str) -> str:
 	return "0.0" if s == "-0.0" else s
 
 
+def format_options_leading_space(options):
+	"""
+	Like format_options() but with a leading space if non-empty.
+	"""
+	formatted = format_options(options)
+	if formatted:
+		return " " + formatted
+	return ""
+
+
 class Th2Line:
 	def __init__(self, type = 'wall'):
 		self.type = type
@@ -92,7 +102,8 @@ class Th2Line:
 				self._last.split()[-2:] != self.points[0].split()):
 			self.points.append(self.points[0])
 	def output(self):
-		print_utf8("line %s %s" % (self.type, format_options(self.options)))
+		formatted_options = format_options_leading_space(self.options)
+		print_utf8(f"line {self.type}{formatted_options}")
 		print("  " + "\n  ".join(self.points))
 		print("endline\n")
 
@@ -126,7 +137,8 @@ class Th2Area:
 			line.output()
 
 		# output area
-		print_utf8("area %s %s" % (self.type, format_options(self.options)))
+		formatted_options = format_options_leading_space(self.options)
+		print_utf8(f"area {self.type}{formatted_options}")
 		for lineid in ids:
 			print_utf8("  " + lineid)
 		print("endarea\n")
@@ -172,7 +184,7 @@ class Th2Output(Th2Effect):
 
 	def print_scrap_end(self, test):
 		if test:
-			print("endscrap\n")
+			print("endscrap\n\n")
 
 	def output(self):
 		root = self.document.getroot()
@@ -240,6 +252,8 @@ class Th2Output(Th2Effect):
 					href = href[7:]
 				print('##XTHERION## xth_me_image_insert {%s 1 1.0} {%s %s} "%s" 0 {}' % \
 						(fstr2(paramsTrans[0]), fstr2(paramsTrans[1]), XVIroot, href))
+
+		print('\n')
 
 		self.print_scrap_begin('scrap1', not self.options.lay2scr)
 
@@ -514,7 +528,8 @@ class Th2Output(Th2Effect):
 			options['orientation'] = orient
 
 		# output in therion format
-		print_utf8("point %s %s %s %s" % (fstr(params[0]), fstr(params[1]), type, format_options(options)))
+		formatted_options = format_options_leading_space(options)
+		print_utf8("point %s %s %s%s\n" % (fstr(params[0]), fstr(params[1]), type, formatted_options))
 
 	def output_area(self, node):
 		mat = self.i2d_affine(node)
