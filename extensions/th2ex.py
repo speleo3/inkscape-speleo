@@ -168,6 +168,7 @@ sodipodi_cx = inkex.addNS('cx', 'sodipodi')
 sodipodi_cy = inkex.addNS('cy', 'sodipodi')
 sodipodi_role = inkex.addNS('role', 'sodipodi')
 sodipodi_insensitive = inkex.addNS('insensitive', 'sodipodi')
+sodipodi_nodetypes   = inkex.addNS('nodetypes', 'sodipodi')
 
 
 def title_node(parent):

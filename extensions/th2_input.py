@@ -488,6 +488,9 @@ def parse_line(a):
     insensitive = False
     lossless_repr = ''
 
+    nodetypes = []
+    nodetype = "c"
+
     d = ""
     started = False
     while True:
@@ -500,16 +503,19 @@ def parse_line(a):
             break
         lossless_repr += line
         if a[0] == 'smooth':
-            # ignore smooth option
+            nodetype = "c" if a[1] == "off" else "s"
             continue
         if a[0][0].isdigit() or a[0][0] == '-':
+            nodetypes.append(nodetype)
             if not started:
                 d += 'M'
                 started = True
             elif len(a) == 2:
                 d += ' L'
+                nodetype = "c"
             elif len(a) == 6:
                 d += ' C'
+                nodetype = "s"
             else:
                 insensitive = True
                 errormsg('error: length = %d' % len(a))
@@ -522,6 +528,9 @@ def parse_line(a):
     if len(d) == 0:
         errormsg('warning: empty line')
         return
+
+    nodetypes.pop(0)
+    nodetypes.append(nodetype)
 
     e = etree.Element('path')
     e.set('class', 'line %s %s' % (type, subtype))
@@ -536,6 +545,7 @@ def parse_line(a):
         d = reverseD(d)
         if not insensitive:
             del options['reverse']
+        nodetypes.reverse()
 
     if options.get('close', 'off') == 'on':
         d += ' z'
@@ -550,6 +560,9 @@ def parse_line(a):
         e.set(inkscape_original_d, d)
     else:
         e.set('d', d)
+
+    if not insensitive:
+        e.set(sodipodi_nodetypes, "".join(nodetypes))
 
     this.id_count += 1
     e_id = 'line_%s_%d' % (type, this.id_count)

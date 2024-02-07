@@ -34,5 +34,9 @@
       <tspan sodipodi:role="line" x="10" y="50">&lt;lang:en&gt;English</tspan>
       <tspan sodipodi:role="line" x="10" y="60">&lt;lang:fr&gt;French</tspan>
     </text>
+    <path
+       style="fill:none;stroke-width:0.5"
+       d="m 10,70 c 0,0 10,20 20,20 10 ,0 10,-10 20,-20 10,10 10,20 20,20 10,0 20,-20 20,-20"
+       sodipodi:nodetypes="cscsc" />
   </g>
 </svg>

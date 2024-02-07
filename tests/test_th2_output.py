@@ -35,6 +35,19 @@ def test_fstr_trim_zeros():
         m.fstr_trim_zeros("123")
 
 
+TH2_LINE_SMOOTH_OFF = """
+line u:unknown
+  10.0 -70.0
+  10.0 -70.0 20.0 -90.0 30.0 -90.0
+  40.0 -90.0 40.0 -80.0 50.0 -70.0
+  smooth off
+  60.0 -80.0 60.0 -90.0 70.0 -90.0
+  80.0 -90.0 90.0 -70.0 90.0 -70.0
+  smooth off
+endline
+"""
+
+
 def test_th2_output(tmp_path):
     path_input = TESTS_DATA / "ink1.svg"
     th2content = subprocess.check_output(
@@ -43,3 +56,4 @@ def test_th2_output(tmp_path):
     assert re.search(
         r'point .* label .* -text "<lang:de>German<lang:en>English<lang:fr>French"',
         th2content) is not None
+    assert TH2_LINE_SMOOTH_OFF in th2content

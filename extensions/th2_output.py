@@ -394,6 +394,13 @@ class Th2Output(Th2Effect):
                 d = 'M{0},{1}h{2}v{3}h-{2}v-{3}z'.format(node.get('x', '0'), node.get('y', '0'), width, height)
         return d or ''
 
+    @staticmethod
+    def _get_smooth_node_options(node, p: list, node_options: dict):
+        nodetypes = node.get(sodipodi_nodetypes, "")
+        for ((cmd, params), (node_count, nodetype)) in zip(p, enumerate(nodetypes, 1)):
+            if len(params) == 6 and nodetype == "c":
+                node_options.setdefault(node_count, []).append("smooth off")
+
     def output_line(self, node):
         mat = self.i2d_affine(node)
 
@@ -431,6 +438,7 @@ class Th2Output(Th2Effect):
             node_options = ret
         else:
             node_options = {}
+            self._get_smooth_node_options(node, p, node_options)
 
         node_count = 0
         th2line = None
