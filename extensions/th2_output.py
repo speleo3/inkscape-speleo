@@ -290,6 +290,9 @@ class Th2Output(Th2Effect):
 			for layer in layers:
 				if layer.get(therion_role) == 'none':
 					continue
+				if layer.get(therion_role) == 'input':
+					self.output_input(layer)
+					continue
 				if self.options.layers == 'visible':
 					style = self.get_style(layer)
 					if style.get('display') == 'none':
@@ -579,6 +582,12 @@ class Th2Output(Th2Effect):
 			else:
 				th2area.current_line().append(transformParams(mat, params))
 		th2area.output(self.current_scrap_id)
+
+	def output_input(self, node):
+		label = node.get(inkscape_label)
+		file_name = label.removeprefix('input ')
+		inkex.errormsg(f"Info: input {file_name!r}")
+		print_utf8(f"input {file_name}")
 
 
 if __name__ == '__main__':

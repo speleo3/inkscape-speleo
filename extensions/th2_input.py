@@ -148,14 +148,22 @@ node.set('x', '%d' % (-2 * spacing))
 node.set('height', '%d' % (x))
 node.set('width', '%d' % (2 * spacing))
 
-# currentlayer = root
-currentlayer = root.xpath('svg:g[@id="layer-scrap0"]', namespaces=inkex.NSS)[0]
+currentlayer = root
+layer_stack = [currentlayer]
+file_stack: list["FileRecord"] = []
+
+class FileRecord:
+	def __init__(self, patharg: str):
+		searchpath = [file_stack[-1].dirname] if file_stack else []
+		self.filename = find_in_pwd(patharg, searchpath)
+		self.dirname = os.path.dirname(self.filename)
+		self.f_handle = open(self.filename, 'rb')
+		self.f_enum = enumerate(self.f_handle)
+	def __del__(self):
+		self.f_handle.close()
 
 # open th2 file
-filename = find_in_pwd(th2pref.argv[0])
-dirname = os.path.dirname(filename)
-f_handle = open(filename, 'rb')
-f_enum = enumerate(f_handle)
+file_stack.append(FileRecord(th2pref.argv[0]))
 
 doc_x = 0
 doc_y = 0
@@ -224,9 +232,13 @@ line_nr = 0
 def f_readline():
 	global line_nr
 	try:
-		line_nr, line = next(f_enum)
+		line_nr, line = next(file_stack[-1].f_enum)
 	except StopIteration:
-		return ''
+		file_stack.pop()
+		layer_stack.pop()
+		global currentlayer
+		currentlayer = layer_stack[-1] if layer_stack else root
+		return f_readline() if file_stack else ''
 	line = line.rstrip(b'\r\n')
 	line = line.decode(encoding)
 	if line.endswith('\\'):
@@ -293,7 +305,7 @@ def parse_XTHERION(a):
 				y = str(-1 * float(m.group(2)))
 		if href != '':
 			try:
-				href = find_in_pwd(href, [dirname])
+				href = find_in_pwd(href, [file_stack[-1].dirname])
 			except IOError:
 				errormsg('image not found: ' + repr(href[:128]))
 		if href.endswith('.xvi'):
@@ -356,9 +368,10 @@ def parse_scrap(a):
 		'labe': etree.SubElement(e, 'g', {inkscape_groupmode: 'layer', inkscape_label: u'Labels'}),
 	}
 
-	root.append(e)
 	global currentlayer
+	currentlayer.append(e)
 	currentlayer = e
+	layer_stack.append(e)
 
 	while True:
 		line = f_readline()
@@ -370,7 +383,8 @@ def parse_scrap(a):
 			break
 		parse(a)
 	
-	currentlayer = root
+	layer_stack.pop()
+	currentlayer = layer_stack[-1]
 
 def parse_area(a_in):
 	lines = []
@@ -627,6 +641,23 @@ def parse_point(a):
 	set_props(e, 'point', a[3], options)
 	getlayer('point', type).insert(0, e)
 
+
+def parse_input(a):
+	assert a[0] == "input"
+	assert len(a) == 2
+	file_stack.append(FileRecord(a[1]))
+
+	e = etree.Element('g')
+	e.set(inkscape_groupmode, "layer")
+	e.set(inkscape_label, ' '.join(a))
+	e.set(therion_role, "input")
+
+	global currentlayer
+	currentlayer.append(e)
+	currentlayer = e
+	layer_stack.append(e)
+
+
 parsedict = {
 	'##XTHERION##':	parse_XTHERION,
 	'##INKSCAPE##':	parse_INKSCAPE,
@@ -638,7 +669,7 @@ parsedict = {
 	'map':			parse_BLOCK2COMMENT,
 	'centerline':	parse_BLOCK2COMMENT,
 	'centreline':	parse_BLOCK2COMMENT,
-	'input':		parse_LINE2COMMENT,
+	'input':		parse_input,
 }
 
 while True:
@@ -653,7 +684,7 @@ while True:
 	
 	parse(a)
 
-f_handle.close()
+assert not file_stack
 
 if doc_width and doc_height:
 	root.set('width', f"{doc_width * m_per_dots}cm")
@@ -663,11 +694,15 @@ if doc_width and doc_height:
 e = root.xpath('svg:g[@id="layer-scan"]', namespaces=inkex.NSS)[0]
 e.set('transform', ' scale(1,-1) scale(%f)' % (1./th2pref.basescale))
 
+# scrap0:
+# Mostly obsolete, we currently don't populate it.
+# Keep it when opening an empty file.
 e = root.xpath('svg:g[@id="layer-scrap0"]', namespaces=inkex.NSS)[0]
-if len(e) > 0:
-	pass
-else:
+others = root.xpath('/svg:svg/g[not(@therion:role="none")]', namespaces=inkex.NSS)
+if len(e) == 0 and others:
 	root.remove(e)
+else:
+	e.set(therion_role, "scrap")
 
 out = sys.stdout.buffer if PY3 else sys.stdout
 document.write(out)
