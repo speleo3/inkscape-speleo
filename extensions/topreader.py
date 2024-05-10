@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # PocketTopo file parser and converter
 #
@@ -14,18 +14,19 @@
 # (at your option) any later version.
 # --------------------------------------------------------------------
 
-from __future__ import division as _
-from __future__ import print_function as _
-from __future__ import absolute_import as _
-
+import io
 import os
 import sys
 import struct
 import time
+import calendar
 import collections
 import math
 from html import escape
 from lxml import etree
+from typing import Any, BinaryIO, Iterable, Callable
+
+EtreeElement = etree._Element
 
 CLARK_INKSCAPE_LABEL = "{http://www.inkscape.org/namespaces/inkscape}label"
 CLARK_INKSCAPE_GROUPMODE = "{http://www.inkscape.org/namespaces/inkscape}groupmode"
@@ -47,18 +48,39 @@ KEY_X = 0
 KEY_Y = 1
 KEY_EXTEND = 'direction'
 
+KEY_XSEC_POS = "position"
+KEY_XSEC_DIR = "compass"
+KEY_XSEC_STN = "station"
+
+KEY_REF_STN = 0
+KEY_REF_X = 1
+KEY_REF_Y = 2
+KEY_REF_Z = 3
+KEY_REF_COMMENT = 4
+
 EXTEND_LEFT = "<"
 EXTEND_RIGHT = ">"
 
 
-def distmm(mm):
+def distmm(mm: int) -> float:
     '''convert millimeters to meters'''
+    assert isinstance(mm, int)
     return mm / 1000.0
 
 
-def adegrees(angle, divisor=0xFFFF):
+def distmm_inv(m: float) -> int:
+    '''convert meters to millimeters'''
+    return round(m * 1000)
+
+
+def adegrees(angle: int, divisor=0xFFFF) -> float:
     '''convert angle from internal units to degrees'''
     return float(angle) / divisor * 360.0
+
+
+def adegrees_inv(degrees: float, divisor=0xFFFF) -> int:
+    '''convert angle from degrees to internal units'''
+    return round((degrees * divisor) / 360.0)
 
 
 def posdeg(deg):
@@ -157,21 +179,33 @@ def is_consecutive_number(from_: str, to: str) -> bool:
     return p_from[0] == p_to[0] and abs(int(p_from[2]) - int(p_to[2])) == 1
 
 
-def _make_Point(x, y):
+def _make_Point(x: int, y: int) -> tuple[float, float]:
     return distmm(x), distmm(y)
 
 
-def _read_date(F):
+def _make_Point_inv(x: float, y: float) -> tuple[int, int]:
+    return distmm_inv(x), distmm_inv(y)
+
+
+# Need to convert this date from .NET
+NANOSEC = 10000000
+
+# Number of python tick since 1/1/1 00:00
+PTICKS = 62135596800
+
+
+def _read_date(F: BinaryIO) -> time.struct_time:
     ticks = struct.unpack('<Q', F.read(8))
-    # Need to convert this date from .NET
-    NANOSEC = 10000000
-    # Number of python tick since 1/1/1 00:00
-    PTICKS = 62135596800
     tripdate = time.gmtime((ticks[0] / NANOSEC) - PTICKS)
     return tripdate
 
 
-def _read_comments(F):
+def _write_date(tripdate: time.struct_time) -> Iterable[bytes]:
+    ticks = round((calendar.timegm(tripdate) + PTICKS) * NANOSEC)
+    yield struct.pack('<Q', ticks)
+
+
+def _read_comments(F: BinaryIO) -> str:
     commentlength = struct.unpack('<B', F.read(1))[0]
     if commentlength >= 0x80:
         commentlength2 = struct.unpack('<B', F.read(1))[0]
@@ -182,7 +216,20 @@ def _read_comments(F):
     return C.decode('utf-8')
 
 
-def _read_trip(F):
+def _write_comment(comment: str) -> Iterable[bytes]:
+    bc = comment.encode("utf-8")
+    commentlength = len(bc)
+    if commentlength >= 0x80:
+        commentlength2 = commentlength // 0x80
+        commentlength -= 0x80 * (commentlength2 - 1)
+        assert commentlength2 < 0x100
+        yield struct.pack('<BB', commentlength, commentlength2)
+    else:
+        yield struct.pack('<B', commentlength)
+    yield bc
+
+
+def _read_trip(F: BinaryIO):
     # First 8 (int64) is the date in ticks
     tdate = _read_date(F)
     comment = _read_comments(F)
@@ -194,8 +241,14 @@ def _read_trip(F):
     }
 
 
-def _read_shot(F):
-    shot = {'from': _read_station(F)}
+def _write_trip(trip) -> Iterable[bytes]:
+    yield from _write_date(trip["date"])
+    yield from _write_comment(trip["comment"])
+    yield struct.pack('<H', adegrees_inv(trip[KEY_DECLINATION]))
+
+
+def _read_shot(F: BinaryIO):
+    shot: dict[str, Any] = {'from': _read_station(F)}
     shot['to'] = _read_station(F)
 
     Dist = struct.unpack('<L', F.read(4))
@@ -228,8 +281,41 @@ def _read_shot(F):
     return shot
 
 
-def _read_reference(F):
-    # Totally untested
+def _write_shot(shot: dict) -> Iterable[bytes]:
+    yield from _write_station(shot["from"])
+    yield from _write_station(shot["to"])
+
+    Dist = distmm_inv(shot[KEY_TAPE])
+    yield struct.pack('<L', Dist)
+
+    azimuth = adegrees_inv(shot['compass'])
+    yield struct.pack('<H', azimuth)
+
+    inclination = adegrees_inv(shot['clino'])
+    yield struct.pack('<h', inclination)
+
+    flags = 0
+
+    if shot.get(KEY_EXTEND, EXTEND_RIGHT) == EXTEND_LEFT:
+        flags |= 0b00000001
+
+    comment = shot.get('comment', '')
+    if comment:
+        flags |= 0b00000010
+
+    yield struct.pack('<B', flags)
+
+    rawroll = adegrees_inv(shot['rollangle'], 0xFF)
+    yield struct.pack('<B', rawroll)
+
+    tripindex = shot['trip']
+    yield struct.pack('<h', tripindex)
+
+    if comment:
+        yield from _write_comment(comment)
+
+
+def _read_reference(F: BinaryIO) -> list:
     stnid = _read_station(F)
     east, west, altitude = struct.unpack('<QQL', F.read(20))
     comment = _read_comments(F)
@@ -242,12 +328,27 @@ def _read_reference(F):
     ]
 
 
-def _read_Point(F):
+def _write_reference(ref: list) -> Iterable[bytes]:
+    yield from _write_station(ref[KEY_REF_STN])
+    yield struct.pack(
+        '<QQL',
+        distmm_inv(ref[KEY_REF_X]),
+        distmm_inv(ref[KEY_REF_Y]),
+        distmm_inv(ref[KEY_REF_Z]),
+    )
+    yield from _write_comment(ref[KEY_REF_COMMENT])
+
+
+def _read_Point(F: BinaryIO):
     x, y = struct.unpack('<ll', F.read(8))
     return _make_Point(x, y)
 
 
-def _read_Polygon(F):
+def _write_Point(point: tuple[float, float]) -> Iterable[bytes]:
+    yield struct.pack('<ll', *_make_Point_inv(*point))
+
+
+def _read_Polygon(F: BinaryIO):
     numpoints = struct.unpack('<L', F.read(4))[0]
     poly = [_read_Point(F) for _ in range(numpoints)]
     colour = struct.unpack('<B', F.read(1))[0]
@@ -257,7 +358,14 @@ def _read_Polygon(F):
     }
 
 
-def _read_station(F):
+def _write_Polygon(poly: dict) -> Iterable[bytes]:
+    yield struct.pack('<L', len(poly["coord"]))
+    for point in poly["coord"]:
+        yield from _write_Point(point)
+    yield struct.pack('<B', COLOURS.index(poly[KEY_COLOR]) + 1)
+
+
+def _read_station(F: BinaryIO) -> str:
     # id's split into major.decimal(minor)
     idd, idm = struct.unpack('<HH', F.read(4))
     if idd == 0xffff:
@@ -272,7 +380,19 @@ def _read_station(F):
     return ""
 
 
-def _read_xsection(F):
+def _write_station(shot: str) -> Iterable[bytes]:
+    idm, dot, idd = shot.rpartition(".")
+    if dot:
+        iidd, iidm = int(idd), int(idm)
+    elif shot:
+        iidd, iidm = int(idd) + 1, 0x8000
+    else:
+        assert not (idd or idm)
+        iidd, iidm = 0, 0x8000
+    yield struct.pack('<HH', iidd, iidm)
+
+
+def _read_xsection(F: BinaryIO) -> dict:
     pnt = _read_Point(F)
     stn = _read_station(F)
     # Need to look up the coordinate of the station
@@ -280,15 +400,23 @@ def _read_xsection(F):
     # -1: horizontal, >=0; projection azimuth (internal angle units)
     if direction != -1:
         direction = adegrees(direction)
-    return [
-        pnt[KEY_X],
-        pnt[KEY_Y],
-        stn,
-        direction,
-    ]
+    return {
+        KEY_XSEC_POS: pnt,
+        KEY_XSEC_STN: stn,
+        KEY_XSEC_DIR: direction,
+    }
 
 
-def _read_mapping(F):
+def _write_xsection(xsec: dict) -> Iterable[bytes]:
+    yield from _write_Point(xsec[KEY_XSEC_POS])
+    yield from _write_station(xsec[KEY_XSEC_STN])
+    direction = xsec[KEY_XSEC_DIR]
+    if direction != -1:
+        direction = adegrees_inv(direction)
+    yield struct.pack('<l', direction)
+
+
+def _read_mapping(F: BinaryIO) -> dict:
     x, y, scale = struct.unpack('<iii', F.read(12))
     return {
         'center': _make_Point(x, y),
@@ -296,7 +424,12 @@ def _read_mapping(F):
     }
 
 
-def _read_drawing(F):
+def _write_mapping(mapping: dict) -> Iterable[bytes]:
+    x, y = _make_Point_inv(*mapping['center'])
+    yield struct.pack('<iii', x, y, mapping['scale'])
+
+
+def _read_drawing(F: BinaryIO) -> dict:
     transform = _read_mapping(F)
     polys = []
     xsec = []
@@ -321,12 +454,37 @@ def _read_drawing(F):
     }
 
 
-def _read_fsection(F, readfun):
+def _write_drawing(drawing: dict) -> Iterable[bytes]:
+    yield from _write_mapping(drawing["transform"])
+
+    for poly in drawing["polys"]:
+        yield struct.pack('<B', 1)
+        yield from _write_Polygon(poly)
+
+    for xsec_ in drawing["xsec"]:
+        yield struct.pack('<B', 3)
+        yield from _write_xsection(xsec_)
+
+    yield struct.pack('<B', 0)
+
+
+def _read_fsection(F: BinaryIO, readfun: Callable) -> list:
     count = struct.unpack('<L', F.read(4))[0]
     return [readfun(F) for _ in range(count)]
 
 
-def load(fp):
+def _write_one(fp: BinaryIO, sec, writefunc: Callable):
+    for chunk in writefunc(sec):
+        fp.write(chunk)
+
+
+def _write_fsection(fp: BinaryIO, section: list, writefunc: Callable):
+    fp.write(struct.pack('<L', len(section)))
+    for sec in section:
+        _write_one(fp, sec, writefunc)
+
+
+def load(fp: BinaryIO) -> dict:
     '''Read PocketTopo data from `fp` (readable binary-mode file-like object)
     and return it as a dictionary.
     '''
@@ -345,6 +503,31 @@ def load(fp):
     assert remaining == b'\0\0\0\0'
 
     return top
+
+
+def loads(content: bytes) -> dict:
+    '''Load PocketTopo data from byte string'''
+    return load(io.BytesIO(content))
+
+
+def dump(top: dict, fp: BinaryIO):
+    '''Write PocketTopo data to file'''
+    fp.write(b"Top")
+    fp.write(struct.pack('B', top['version']))
+    _write_fsection(fp, top["trips"], _write_trip)
+    _write_fsection(fp, top["shots"], _write_shot)
+    _write_fsection(fp, top["ref"], _write_reference)
+    _write_one(fp, top["transform"], _write_mapping)
+    _write_one(fp, top["outline"], _write_drawing)
+    _write_one(fp, top["sideview"], _write_drawing)
+    fp.write(b'\x00\x00\x00\x00')
+
+
+def dumps(top: dict) -> bytes:
+    '''Serialize PocketTopo data to byte string'''
+    fp = io.BytesIO()
+    dump(top, fp)
+    return fp.getvalue()
 
 
 def dump_json(top, file=sys.stdout):
@@ -394,6 +577,8 @@ def dump_svx(top,
             file.write('*begin ' + surveyname)
         file.write(end * 2)
 
+    skip_trip_date = False
+
     file.write(P + 'data normal from to tape compass clino')
     file.write(end)
 
@@ -412,7 +597,7 @@ def dump_svx(top,
         if not s[KEY_TAPE] and not s['to']:
             return
 
-        if tripidx[0] != s['trip'] and s['trip'] != -1:
+        if not skip_trip_date and tripidx[0] != s['trip'] and s['trip'] != -1:
             tripidx[0] = s['trip']
             trip = top['trips'][tripidx[0]]
 
@@ -521,8 +706,7 @@ def dump_svg(top: dict,
 
     leg_shots = list(average_shots(top['shots']))
 
-    def write_shots(parent: etree.Element, shots, sideview=False) -> dict:
-        suppresswarnings = sideview
+    def write_shots(parent: EtreeElement, shots, sideview=False) -> dict:
         frompoints = {}
         compass_from = collections.defaultdict(list)
         compass_to = collections.defaultdict(list)
@@ -639,17 +823,18 @@ def dump_svg(top: dict,
 
         return frompoints
 
-    def write_xsections(parent: etree.Element, frompoints, drawing):
+    def write_xsections(parent: EtreeElement, frompoints, drawing):
         for xsec in drawing['xsec']:
-            pnt_stn = frompoints[xsec[2]]
+            pnt = xsec[KEY_XSEC_POS]
+            pnt_stn = frompoints[xsec[KEY_XSEC_STN]]
             etree.SubElement(
                 parent, "path", {
                     CLARK_INKSCAPE_LABEL: "line section",
                     "class": "xsecconnector",
-                    "d": f"M{pnt_stn[0]} {pnt_stn[1]} {xsec[0]} {xsec[1]}",
+                    "d": f"M{pnt_stn[0]} {pnt_stn[1]} {pnt[0]} {pnt[1]}",
                 })
 
-    def write_stationlabels(parent: etree.Element, frompoints: dict):
+    def write_stationlabels(parent: EtreeElement, frompoints: dict):
         for key, pnt in frompoints.items():
             survey, _, station = key.rpartition(".")
             name = "{}@{}".format(station, survey) if survey else key
@@ -664,7 +849,7 @@ def dump_svg(top: dict,
 
     outer_padding = 5.0
 
-    def write_layer(parent: etree.Element,
+    def write_layer(parent: EtreeElement,
                     top: dict,
                     view: str,
                     label: str = "",
@@ -816,10 +1001,7 @@ def dump_xvi(top, *, file=sys.stdout):
     leg_shots = list(average_shots(top['shots']))
 
     def write_shots(shots, sideview=False):
-        suppresswarnings = sideview
         frompoints = {}
-        compass_from = collections.defaultdict(list)
-        compass_to = collections.defaultdict(list)
         legs = []
         splays = []
         defer = []
