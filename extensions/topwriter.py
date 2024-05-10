@@ -15,6 +15,7 @@
 # --------------------------------------------------------------------
 
 import io
+import copy
 import sys
 import struct
 import time
@@ -143,7 +144,7 @@ def _read_date(F) -> time.struct_time:
     return tripdate
 
 
-def _write_date(tripdate: tuple) -> Iterable[bytes]:
+def _write_date(tripdate: time.struct_time) -> Iterable[bytes]:
     ticks = int((time.mktime(tripdate) + PTICKS) * NANOSEC)
     yield struct.pack('<Q', ticks)
 
@@ -303,13 +304,13 @@ def _read_station(F) -> str:
 def _write_station(shot: str) -> bytes:
     idm, dot, idd = shot.rpartition(".")
     if dot:
-        idd, idm = int(idd), int(idm)
+        iidd, iidm = int(idd), int(idm)
     elif shot:
-        idd, idm = int(idd) + 1, 0x8000
+        iidd, iidm = int(idd) + 1, 0x8000
     else:
         assert not (idd or idm)
-        idd, idm = 0, 0x8000
-    return struct.pack('<HH', idd, idm)
+        iidd, iidm = 0, 0x8000
+    return struct.pack('<HH', iidd, iidm)
 
 
 def _read_xsection(F):
@@ -587,12 +588,12 @@ def read_tro_shots(filename: Path) -> List[dict]:
 
 
 def shots_to_top(shots: list) -> dict:
-    top = TOP_EMPTY.copy()
-    top["shots"][:] = shots
+    top = copy.deepcopy(TOP_EMPTY)
+    top["shots"] = list(shots)
     return top
 
 
-def read_tro(filename: Path) -> Iterable[dict]:
+def read_tro(filename: Path) -> dict:
     shots = read_tro_shots(filename)
 
     surveys = defaultdict(list)
