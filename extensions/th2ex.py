@@ -115,7 +115,7 @@ sodipodi_insensitive = inkex.addNS('insensitive', 'sodipodi')
 def title_node(parent):
 	title = parent.find(svg_title)
 	if title is None:
-		title = etree.Element(svg_title)
+		title = etree.SubElement(parent, svg_title)
 		title.text = ""
 		# if <title> is last child of <text>, Inkscape screws up when
 		# appending lines and inserts <title> instead of <tspan> elements.
