@@ -1116,6 +1116,120 @@ def dump_xvi(top, *, file=sys.stdout):
     write_grid(top)
 
 
+def dump_th2(top, *, file=sys.stdout):
+    '''Dump drawing as TH2.
+    '''
+    SCALE = 200
+    RESOLUTION_DPI = 200
+    METER_PER_INCH = 0.0254
+    FACTOR = RESOLUTION_DPI / METER_PER_INCH / SCALE
+
+    from th2_output import fstr2 as fstr
+
+    def to_th2_space(pnt: tuple[float, float]) -> tuple[float, float]:
+        return (
+            FACTOR * pnt[KEY_X],
+            -FACTOR * pnt[KEY_Y],
+        )
+
+    leg_shots = list(average_shots(top['shots']))
+
+    def write_shots(sideview: bool = False) -> dict[str, tuple[float, float]]:
+        if sideview:
+            raise NotImplementedError
+
+        frompoints: dict[str, tuple[float, float]] = {}
+        defer: list[dict] = []
+
+        for s in top['shots']:
+            frompoints[s['from']] = (0, 0)
+            break
+
+        def process_shot(s: dict) -> bool:
+            is_splay = not s['to']
+
+            if is_splay:
+                return True
+
+            if s['from'] not in frompoints:
+                if s['to'] not in frompoints:
+                    return False
+                s = reverse_shot(s)
+
+            length_proj = s[KEY_TAPE] * math.cos(math.radians(s['clino']))
+            true_bearing = get_true_bearing(s, top)
+
+            delta_x = length_proj * math.sin(math.radians(true_bearing))
+            delta_y = length_proj * math.cos(math.radians(true_bearing))
+
+            pnt_from = frompoints[s['from']]
+            pnt_to = (pnt_from[0] + delta_x, pnt_from[1] - delta_y)
+
+            frompoints[s['to']] = pnt_to
+
+            return True
+
+        for s in leg_shots:
+            if not process_shot(s):
+                defer.append(s)
+
+        while defer:
+            for s in defer:
+                if process_shot(s):
+                    defer.remove(s)
+                    break
+            else:
+                print('{} unconnected subsurveys'.format(len(defer)))
+                break
+
+        return frompoints
+
+    def write_stationlabels(frompoints):
+        for key, pnt in frompoints.items():
+            x, y = to_th2_space(pnt)
+            out.append(f'point {fstr(x)} {fstr(y)} station -name {key}')
+
+    def write_shots_and_stations(view="outline"):
+        stations = write_shots(view == 'sideview')
+        write_stationlabels(stations)
+
+    def write_sketchlines(view="outline"):
+        for poly in top[view]['polys']:
+            out.append(f"line u:{poly[KEY_COLOR]}")
+            for pnt in poly['coord']:
+                x, y = to_th2_space(pnt)
+                out.append(f'  {fstr(x)} {fstr(y)}')
+            out.append("endline")
+
+    def write_grid(view="outline"):
+        min_x, min_y, max_x, max_y = get_bbox(top[view]['polys'])
+        min_x, min_y = to_th2_space((min_x, min_y))
+        max_x, max_y = to_th2_space((max_x, max_y))
+        min_y, max_y = sorted([min_y, max_y])
+        BBOX_PADDING_PX = 10
+        out.insert(1, (f"##XTHERION## xth_me_area_adjust"
+                       f" {fstr(min_x - BBOX_PADDING_PX)}"
+                       f" {fstr(min_y - BBOX_PADDING_PX)}"
+                       f" {fstr(max_x + BBOX_PADDING_PX)}"
+                       f" {fstr(max_y + BBOX_PADDING_PX)}"))
+
+    stem = os.path.basename(top.get('filename', 'unknown.top').removesuffix(".top"))
+    projection = "plan"
+
+    out = [
+        "encoding  utf-8",
+        "##XTHERION## xth_me_area_zoom_to 50",
+        f"scrap s_{projection}_{stem} -projection {projection}",
+    ]
+
+    write_shots_and_stations()
+    write_sketchlines()
+    write_grid()
+
+    out += ["endscrap", ""]
+    file.write("\n".join(out))
+
+
 def dump_info(top):
     '''Print some stats
     '''
@@ -1162,7 +1276,11 @@ def view_inkscape(top, tmpname='', exe='inkscape'):
 def main(argv=None):
     import argparse
     argparser = argparse.ArgumentParser()
-    argparser.add_argument("--dump", help="dump file to stdout", choices=('json', 'svg', 'svx', 'th', 'tro', 'xvi'))
+    argparser.add_argument(
+        "--dump",
+        help="dump file to stdout",
+        choices=('json', 'svg', 'svx', 'th', 'th2', 'tro', 'xvi'),
+    )
     argparser.add_argument("--view", help="open viewer application", choices=('aven', 'inkscape'))
     argparser.add_argument("--surveyname", help="survey name for survex dump", default="")
     argparser.add_argument("--prefixadd", help="station name prefix to add", default="")
@@ -1195,6 +1313,8 @@ def main(argv=None):
                 dump_svg(top)
             elif args.dump == 'xvi':
                 dump_xvi(top)
+            elif args.dump == 'th2':
+                dump_th2(top)
             elif args.dump == 'tro':
                 dump_tro(top)
             elif not args.view:

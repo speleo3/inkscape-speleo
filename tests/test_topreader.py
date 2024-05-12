@@ -1,5 +1,7 @@
 import topreader as m
 
+import io
+from lxml import etree
 from pathlib import Path
 from pytest import approx
 import pytest
@@ -82,3 +84,49 @@ def test_load():
     content = m.dumps(top)
     top = m.loads(content)
     _assert_top_test1(top)
+
+
+def test_dump_svg():
+    with open(TESTS_DATA / "test1.top", "rb") as handle:
+        top = m.load(handle)
+    out = io.StringIO()
+    m.dump_svg(top, file=out)
+    content = out.getvalue()
+    xml = etree.fromstring(content)
+    assert xml is not None
+
+
+def test_dump_th2():
+    with open(TESTS_DATA / "test1.top", "rb") as handle:
+        top = m.load(handle)
+    out = io.StringIO()
+    m.dump_th2(top, file=out)
+    content = out.getvalue()
+    assert "line u:black" in content
+
+
+def test_dump_svx():
+    with open(TESTS_DATA / "test1.top", "rb") as handle:
+        top = m.load(handle)
+    out = io.StringIO()
+    m.dump_svx(top, file=out)
+    content = out.getvalue()
+    assert "*data normal " in content
+
+
+def test_dump_tro():
+    with open(TESTS_DATA / "test1.top", "rb") as handle:
+        top = m.load(handle)
+    out = io.StringIO()
+    m.dump_tro(top, file=out)
+    content = out.getvalue()
+    assert "Param Deca Degd Clino Degd" in content
+
+
+def test_dump_xvi():
+    with open(TESTS_DATA / "test1.top", "rb") as handle:
+        top = m.load(handle)
+    out = io.StringIO()
+    m.dump_xvi(top, file=out)
+    content = out.getvalue()
+    assert "set XVIshots {" in content
