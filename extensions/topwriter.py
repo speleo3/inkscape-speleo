@@ -256,7 +256,13 @@ def read_tro(filename: Path) -> dict:
 
 
 def main():
-    top = read_tro("/Users/thomas/Survex/Janima/Daniel/Janima 1 sep 2020.tro")
+    import sys
+
+    filename = Path(sys.argv[1] if (
+        len(sys.argv) > 1
+    ) else "/Users/thomas/Survex/Janima/Daniel/Janima 1 sep 2020.tro")
+
+    top = read_tro(filename)
 
     with open("/tmp/janima.top", "wb") as handle:
         dump(top, handle)
