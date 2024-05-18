@@ -523,9 +523,10 @@ class Th2Output(Th2Effect):
 				del options[key]
 
 		# restore orientation from transform
-		orient = orientation(mat)
-		if orient > 0.05:
-			options['orientation'] = orient
+		if type not in ['station']:
+			orient = orientation(mat)
+			if orient > 0.05:
+				options['orientation'] = orient
 
 		# output in therion format
 		formatted_options = format_options_leading_space(options)
