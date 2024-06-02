@@ -121,41 +121,65 @@ def write_shots(parent: etree.Element, data: dict, bbox: BBox, is_ext: bool):
         station["name"]: station["eeDirection"]
         for station in data["stations"]
     }
-    for station in data["stations"]:
-        for leg in station["legs"]:
-            if not name2pos:
-                pos = name2pos.setdefault(station["name"], (0, 0, 0))
-            else:
-                pos = name2pos[station["name"]]
-            distxy = leg["distance"] * cos(radians(leg["inclination"]))
-            distz = leg["distance"] * sin(radians(leg["inclination"]))
-            distx = distxy * sin(radians(leg["azimuth"]))
-            disty = distxy * cos(radians(leg["azimuth"]))
 
-            if leg["destination"] == STATION_NAME_SPLAY:
-                ee_dir = station["eeDirection"]
-            else:
-                ee_dir = ee_directions[leg["destination"]]
+    postpone = [(station, leg) for station in data["stations"]
+                for leg in station["legs"]]
 
-            if not is_ext:
-                posdest = (pos[0] + distx, pos[1] - disty, pos[2] + distz)
-            elif ee_dir == EE_DIRECTION_RIGHT:
-                posdest = (pos[0] + distxy, pos[1] - distz, 0)
-            else:
-                assert ee_dir == EE_DIRECTION_LEFT
-                posdest = (pos[0] - distxy, pos[1] - distz, 0)
-            d_frag = f"M {pos[0]} {pos[1]} L {posdest[0]} {posdest[1]}"
-            if leg["destination"] != STATION_NAME_SPLAY:
-                assert leg["destination"] not in name2pos
-                name2pos[leg["destination"]] = posdest
-                d_legs.append(d_frag)
-            elif abs(distz) < distxy:
-                d_splays.append(d_frag)
-            else:
-                d_splays_vertical.append(d_frag)
+    def process_leg(station, leg):
+        pos_is_dest = False
+        if not name2pos:
+            pos = name2pos.setdefault(station["name"], (0, 0, 0))
+        elif station["name"] in name2pos:
+            pos = name2pos[station["name"]]
+        elif leg["destination"] in name2pos:
+            pos = name2pos[leg["destination"]]
+            pos_is_dest = True
+        else:
+            postpone.append((station, leg))
+            return
 
-            bbox.add_point(pos[0], pos[1])
-            bbox.add_point(posdest[0], posdest[1])
+        distxy = leg["distance"] * cos(radians(leg["inclination"]))
+        distz = leg["distance"] * sin(radians(leg["inclination"]))
+        distx = distxy * sin(radians(leg["azimuth"]))
+        disty = distxy * cos(radians(leg["azimuth"]))
+
+        if leg["destination"] == STATION_NAME_SPLAY:
+            ee_dir = station["eeDirection"]
+        else:
+            ee_dir = ee_directions[leg["destination"]]
+
+        if not is_ext:
+            posdest = (pos[0] + distx, pos[1] - disty, pos[2] + distz)
+        elif ee_dir == EE_DIRECTION_RIGHT:
+            posdest = (pos[0] + distxy, pos[1] - distz, 0)
+        else:
+            assert ee_dir == EE_DIRECTION_LEFT
+            posdest = (pos[0] - distxy, pos[1] - distz, 0)
+
+        if pos_is_dest:
+            pos, posdest = (
+                tuple((2 * a - b) for (a, b) in zip(pos, posdest)),
+                pos,
+            )
+
+        d_frag = f"M {pos[0]} {pos[1]} L {posdest[0]} {posdest[1]}"
+        if leg["destination"] != STATION_NAME_SPLAY:
+            assert leg["destination"] not in name2pos
+            name2pos[leg["destination"]] = posdest
+            d_legs.append(d_frag)
+        elif abs(distz) < distxy:
+            d_splays.append(d_frag)
+        else:
+            d_splays_vertical.append(d_frag)
+
+        bbox.add_point(pos[0], pos[1])
+        bbox.add_point(posdest[0], posdest[1])
+
+    while postpone:
+        postpone, postpone_prev = [], postpone
+
+        for station, leg in postpone_prev:
+            process_leg(station, leg)
 
     d = " ".join(d_splays_vertical)
     etree.SubElement(
@@ -178,6 +202,14 @@ def write_shots(parent: etree.Element, data: dict, bbox: BBox, is_ext: bool):
             "style": f"stroke:#f00;stroke-width:{STROKE_WIDTH_PX/2}",
             CLARK_INKSCAPE_LABEL: "survey",
         })
+
+    for name, pos in name2pos.items():
+        elem_text = etree.SubElement(parent, "text", {
+            "x": str(pos[0]),
+            "y": str(pos[1]),
+            "style": f"font-size:0.5;fill:#933",
+        })
+        elem_text.text = name
 
 
 def main(args=None):

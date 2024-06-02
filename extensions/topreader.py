@@ -16,6 +16,7 @@
 
 import io
 import os
+import re
 import sys
 import struct
 import time
@@ -579,6 +580,17 @@ def dump_svx(top,
 
     skip_trip_date = False
 
+    # Grotte Asperge convention: Date in file name
+    if 'filename' in top:
+        m = re.search(r"[-_.](23-0\d-\d\d|2[3-5][01]\d\d\d)[-_.]", top['filename'])
+        if m is None:
+            m = re.search(r"_(23\.0\d\.\d\d)_", top['filename'])
+        if m is not None:
+            yymmdd = m.group(1).replace("-", "").replace(".", "")
+            file.write(P + f'date 20{yymmdd[0:2]}.{yymmdd[2:4]}.{yymmdd[4:6]}')
+            file.write(end * 2)
+            skip_trip_date = True
+
     file.write(P + 'data normal from to tape compass clino')
     file.write(end)
 
@@ -802,7 +814,7 @@ def dump_svg(top: dict,
                     defer.remove(s)
                     break
             else:
-                print('{} unconnected subsurveys'.format(len(defer)))
+                print('{} unconnected subsurveys'.format(len(defer)), file=sys.stderr)
                 break
 
         for s in top['shots']:
@@ -986,15 +998,18 @@ text {{
     file.write(etree.tostring(root).decode("utf-8"))
 
 
+# Factor for xvi and th2 scaling
+# Scales observed in the wild:
+# FACTOR = 1 / 0.0254 # ~39.37 # 1.0 world-inch per px
+# FACTOR = 2 / 0.0254 # ~78.74 # 0.5 world-inch per px
+# Scales that I prefer (metric):
+FACTOR = 100  # 1.0 world-cm per px
+FACTOR = 50   # 2.0 world-cm per px
+
+
 def dump_xvi(top, *, file=sys.stdout):
     '''Dump drawing as XVI.
     '''
-    # Default XTherion PocketTopo Import Settings
-    SCALE = 200
-    RESOLUTION_DPI = 200
-    METER_PER_INCH = 0.0254
-    FACTOR = RESOLUTION_DPI / METER_PER_INCH / SCALE
-
     def pnt2xvi(pnt):
         return FACTOR * pnt[KEY_X], -FACTOR * pnt[KEY_Y]
 
@@ -1052,7 +1067,7 @@ def dump_xvi(top, *, file=sys.stdout):
                     defer.remove(s)
                     break
             else:
-                print('{} unconnected subsurveys'.format(len(defer)))
+                print('{} unconnected subsurveys'.format(len(defer)), file=sys.stderr)
                 break
 
         for s in top['shots']:
@@ -1078,8 +1093,9 @@ def dump_xvi(top, *, file=sys.stdout):
         stations = write_shots(top, view == 'sideview')
 
         write_stationlabels(stations)
+        return stations
 
-    def write_sketchlines(top, view="outline"):
+    def write_sketchlines(top, view="outline", frompoints=None):
         file.write('set XVIsketchlines {\n')
 
         for poly in top[view]['polys']:
@@ -1092,7 +1108,16 @@ def dump_xvi(top, *, file=sys.stdout):
 
             file.write('}\n')
 
+        if frompoints:
+            write_xsections(frompoints, top[view])
+
         file.write('}\n')
+
+    def write_xsections(frompoints, drawing):
+        for xsec in drawing['xsec']:
+            pnt = pnt2xvi(xsec[KEY_XSEC_POS])
+            pnt_stn = pnt2xvi(frompoints[xsec[KEY_XSEC_STN]])
+            file.write("  {yellow " + f"{pnt_stn[0]} {pnt_stn[1]} {pnt[0]} {pnt[1]}" + "}\n")
 
     def write_grid(top, view="outline"):
         min_x, min_y, max_x, max_y = get_bbox(top[view]['polys'])
@@ -1111,19 +1136,14 @@ def dump_xvi(top, *, file=sys.stdout):
         file.write('set XVIgrids {1.0 m}\n')
 
     write_grid_spacing()
-    write_shots_and_stations(top)
-    write_sketchlines(top)
+    frompoints = write_shots_and_stations(top)
+    write_sketchlines(top, frompoints=frompoints)
     write_grid(top)
 
 
-def dump_th2(top, *, file=sys.stdout):
+def dump_th2(top, *, file=sys.stdout, with_xvi: bool = False):
     '''Dump drawing as TH2.
     '''
-    SCALE = 200
-    RESOLUTION_DPI = 200
-    METER_PER_INCH = 0.0254
-    FACTOR = RESOLUTION_DPI / METER_PER_INCH / SCALE
-
     from th2_output import fstr2 as fstr
 
     def to_th2_space(pnt: tuple[float, float]) -> tuple[float, float]:
@@ -1179,7 +1199,7 @@ def dump_th2(top, *, file=sys.stdout):
                     defer.remove(s)
                     break
             else:
-                print('{} unconnected subsurveys'.format(len(defer)))
+                print('{} unconnected subsurveys'.format(len(defer)), file=sys.stderr)
                 break
 
         return frompoints
@@ -1189,13 +1209,34 @@ def dump_th2(top, *, file=sys.stdout):
             x, y = to_th2_space(pnt)
             out.append(f'point {fstr(x)} {fstr(y)} station -name {key}')
 
+    def write_background_xvi(frompoints):
+        if not with_xvi:
+            return
+
+        if not top.get("filename"):
+            return
+
+        try:
+            station = next(station for (station, pos) in frompoints.items()
+                           if pos == (0, 0))
+        except StopIteration:
+            return
+
+        out.insert(1, (
+            '##XTHERION## xth_me_image_insert {0 1 1.0} {0 %s} "../../data/%s.top.xvi" 0 {}'
+            % (station, stem)))
+
     def write_shots_and_stations(view="outline"):
         stations = write_shots(view == 'sideview')
+        write_background_xvi(stations)
         write_stationlabels(stations)
 
     def write_sketchlines(view="outline"):
+        if with_xvi:
+            return
+
         for poly in top[view]['polys']:
-            out.append(f"line u:{poly[KEY_COLOR]}")
+            out.append(f"line u:{poly[KEY_COLOR]} -clip off")
             for pnt in poly['coord']:
                 x, y = to_th2_space(pnt)
                 out.append(f'  {fstr(x)} {fstr(y)}')
@@ -1206,7 +1247,7 @@ def dump_th2(top, *, file=sys.stdout):
         min_x, min_y = to_th2_space((min_x, min_y))
         max_x, max_y = to_th2_space((max_x, max_y))
         min_y, max_y = sorted([min_y, max_y])
-        BBOX_PADDING_PX = 10
+        BBOX_PADDING_PX = FACTOR * 2
         out.insert(1, (f"##XTHERION## xth_me_area_adjust"
                        f" {fstr(min_x - BBOX_PADDING_PX)}"
                        f" {fstr(min_y - BBOX_PADDING_PX)}"
@@ -1218,8 +1259,8 @@ def dump_th2(top, *, file=sys.stdout):
 
     out = [
         "encoding  utf-8",
-        "##XTHERION## xth_me_area_zoom_to 50",
-        f"scrap s_{projection}_{stem} -projection {projection}",
+        "##XTHERION## xth_me_area_zoom_to 25",
+        f"scrap s_{projection}_{stem} -projection {projection} -scale [{FACTOR} 1 m]",
     ]
 
     write_shots_and_stations()
@@ -1279,7 +1320,7 @@ def main(argv=None):
     argparser.add_argument(
         "--dump",
         help="dump file to stdout",
-        choices=('json', 'svg', 'svx', 'th', 'th2', 'tro', 'xvi'),
+        choices=('json', 'svg', 'svx', 'th', 'th2', 'tro', 'xvi', 'th2-xvi'),
     )
     argparser.add_argument("--view", help="open viewer application", choices=('aven', 'inkscape'))
     argparser.add_argument("--surveyname", help="survey name for survex dump", default="")
@@ -1315,6 +1356,11 @@ def main(argv=None):
                 dump_xvi(top)
             elif args.dump == 'th2':
                 dump_th2(top)
+            elif args.dump == 'th2-xvi':
+                with open(f"{filename}.xvi", "w") as handle:
+                    dump_xvi(top, file=handle)
+                with open(f"{filename}.th2", "w") as handle:
+                    dump_th2(top, file=handle, with_xvi=True)
             elif args.dump == 'tro':
                 dump_tro(top)
             elif not args.view:
