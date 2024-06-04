@@ -13,6 +13,7 @@ from th2ex import *
 from lxml import etree
 import simplepath, simpletransform, simplestyle, math, re
 import collections
+import os
 
 def parse_options_node(node):
 	options = node.get(therion_options, '')
@@ -249,6 +250,9 @@ class Th2Output(Th2Effect):
 					continue
 				if href.startswith('file://'):
 					href = href[7:]
+				document_path = os.getenv("DOCUMENT_PATH")
+				if document_path:
+					href = os.path.relpath(href, os.path.dirname(document_path))
 				print('##XTHERION## xth_me_image_insert {%s 1 1.0} {%s %s} "%s" 0 {}' % \
 						(fstr2(paramsTrans[0]), fstr2(paramsTrans[1]), XVIroot, href))
 
