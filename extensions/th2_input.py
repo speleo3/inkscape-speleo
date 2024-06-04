@@ -160,8 +160,19 @@ doc_x = 0
 doc_y = 0
 doc_width = 0
 doc_height = 0
-cm_per_dots = 0.0254
+m_per_dots = 0.0254
+m_per_dots_set = False
 encoding = 'UTF-8'
+
+
+def set_m_per_dots(value: float, overwrite: bool = False):
+	global m_per_dots, m_per_dots_set
+	if m_per_dots_set and not (0.9 < (value / m_per_dots) < 1.1):
+		errormsg(f"Warning: m/dots {value} vs {m_per_dots}")
+	if overwrite or not m_per_dots_set:
+		m_per_dots = value
+		m_per_dots_set = True
+
 
 def flipY_old(a):
 	for i in range(1, len(a), 2):
@@ -248,7 +259,7 @@ def parse_INKSCAPE(a):
 
 def parse_XTHERION(a):
 	global doc_width, doc_x, doc_y
-	global doc_height, cm_per_dots
+	global doc_height
 
 	if a[1] == 'xth_me_image_insert':
 		href, XVIroot = '', ''
@@ -299,7 +310,7 @@ def parse_XTHERION(a):
 
 				dx = g_xvi.get(therion_xvi_dx)
 				if dx:
-					cm_per_dots = 1 / float(dx)
+					set_m_per_dots(1 / float(dx), overwrite=True)
 
 			except BaseException as e:
 				errormsg('xvi2svg failed ({})'.format(e))
@@ -320,6 +331,54 @@ def parse_XTHERION(a):
 		doc_height = doc_y - floatscale(a[3])
 
 
+def distance(lhs: tuple | list, rhs: tuple | list) -> float:
+	'''Euclidean distance'''
+	return sum((a - b)**2 for (a, b) in zip(lhs, rhs))**0.5
+
+
+METERS_PER = {
+    'in': 0.0254,
+    'inch': 0.0254,
+    'inches': 0.0254,
+    'cm': 0.01,
+    'centimeter': 0.01,
+    'centimeters': 0.01,
+    'm': 1.0,
+    'meter': 1.0,
+    'meters': 1.0,
+    'yd': 0.9144,
+    'yard': 0.9144,
+    'yards': 0.9144,
+    'ft': 0.3048,
+    'feet': 0.3048,
+    'feets': 0.3048,
+}
+
+
+def parse_scrap_scale_m_per_dots(scale: str) -> float:
+	if scale.startswith("["):
+		assert scale.endswith("]")
+		scale = scale[1:-1]
+	dots = 1
+	unit = "m"
+	a = scale.split()
+	if len(a) in (1, 2, 3):
+		if len(a) == 3:
+			dots = float(a.pop(0))
+		reality_units = float(a[0])
+		if len(a) == 2:
+			unit = a[1]
+	elif len(a) in (8, 9):
+		dots = distance((float(a[0]), float(a[1])), (float(a[2]), float(a[3])))
+		reality_units = distance((float(a[4]), float(a[5])), (float(a[6]), float(a[7])))
+		if len(a) == 9:
+			unit = a[8]
+	else:
+		raise ValueError(a)
+	meters = reality_units * METERS_PER[unit]
+	return meters / dots
+
+
 def parse_scrap(a):
 	e = etree.Element('g')
 	e.set(inkscape_groupmode, "layer")
@@ -328,6 +387,10 @@ def parse_scrap(a):
 	e.set(inkscape_label, a[1])
 	e.set(therion_role, 'scrap')
 	e.set(therion_options, ' '.join(a[2:]))
+
+	options = parse_options(a[2:])
+	if "scale" in options:
+		set_m_per_dots(parse_scrap_scale_m_per_dots(options["scale"]))
 
 	global sublayers
 	if th2pref.sublayers:
@@ -638,8 +701,8 @@ while True:
 f_handle.close()
 
 if doc_width and doc_height:
-	root.set('width', f"{doc_width * cm_per_dots}cm")
-	root.set('height', f"{doc_height * cm_per_dots}cm")
+	root.set('width', f"{doc_width * m_per_dots}cm")
+	root.set('height', f"{doc_height * m_per_dots}cm")
 	root.set('viewBox', f"{doc_x} {-doc_y} {doc_width} {doc_height}")
 
 e = root.xpath('svg:g[@id="layer-scan"]', namespaces=inkex.NSS)[0]
