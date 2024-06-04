@@ -25,6 +25,7 @@ except NameError:
 	basestring = str
 
 from lxml import etree
+from typing import Sequence
 import sys, os, math, re, optparse
 import inkex
 import warnings
@@ -36,6 +37,59 @@ PY3 = sys.version_info[0] > 2
 
 def as_unicode(s):
 	return s.decode('utf-8') if isinstance(s, bytes) else s
+
+
+def distance(lhs: Sequence[float], rhs: Sequence[float]) -> float:
+	'''
+	Euclidean distance
+	'''
+	return sum((a - b)**2 for (a, b) in zip(lhs, rhs))**0.5
+
+
+METERS_PER = {
+    'in': 0.0254,
+    'inch': 0.0254,
+    'inches': 0.0254,
+    'cm': 0.01,
+    'centimeter': 0.01,
+    'centimeters': 0.01,
+    'm': 1.0,
+    'meter': 1.0,
+    'meters': 1.0,
+    'yd': 0.9144,
+    'yard': 0.9144,
+    'yards': 0.9144,
+    'ft': 0.3048,
+    'feet': 0.3048,
+    'feets': 0.3048,
+}
+
+
+def parse_scrap_scale_m_per_dots(scale: str) -> float:
+	"""
+	Parse the value of a scrap's `-scale` option
+	"""
+	if scale.startswith("["):
+		assert scale.endswith("]")
+		scale = scale[1:-1]
+	dots = 1
+	unit = "m"
+	a = scale.split()
+	if len(a) in (1, 2, 3):
+		if len(a) == 3:
+			dots = float(a.pop(0))
+		reality_units = float(a[0])
+		if len(a) == 2:
+			unit = a[1]
+	elif len(a) in (8, 9):
+		dots = distance((float(a[0]), float(a[1])), (float(a[2]), float(a[3])))
+		reality_units = distance((float(a[4]), float(a[5])), (float(a[6]), float(a[7])))
+		if len(a) == 9:
+			unit = a[8]
+	else:
+		raise ValueError(a)
+	meters = reality_units * METERS_PER[unit]
+	return meters / dots
 
 
 # some prefs

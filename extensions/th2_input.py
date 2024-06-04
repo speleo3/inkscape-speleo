@@ -160,8 +160,19 @@ doc_x = 0
 doc_y = 0
 doc_width = 0
 doc_height = 0
-cm_per_dots = 0.0254
+m_per_dots = 0.0254
+m_per_dots_set = False
 encoding = 'UTF-8'
+
+
+def set_m_per_dots(value: float, overwrite: bool = False):
+	global m_per_dots, m_per_dots_set
+	if m_per_dots_set and not (0.9 < (value / m_per_dots) < 1.1):
+		errormsg(f"Warning: m/dots {value} vs {m_per_dots}")
+	if overwrite or not m_per_dots_set:
+		m_per_dots = value
+		m_per_dots_set = True
+
 
 def flipY_old(a):
 	for i in range(1, len(a), 2):
@@ -248,7 +259,7 @@ def parse_INKSCAPE(a):
 
 def parse_XTHERION(a):
 	global doc_width, doc_x, doc_y
-	global doc_height, cm_per_dots
+	global doc_height
 
 	if a[1] == 'xth_me_image_insert':
 		href, XVIroot = '', ''
@@ -299,7 +310,7 @@ def parse_XTHERION(a):
 
 				dx = g_xvi.get(therion_xvi_dx)
 				if dx:
-					cm_per_dots = 1 / float(dx)
+					set_m_per_dots(1 / float(dx), overwrite=True)
 
 			except BaseException as e:
 				errormsg('xvi2svg failed ({})'.format(e))
@@ -328,6 +339,10 @@ def parse_scrap(a):
 	e.set(inkscape_label, a[1])
 	e.set(therion_role, 'scrap')
 	e.set(therion_options, ' '.join(a[2:]))
+
+	options = parse_options(a[2:])
+	if "scale" in options:
+		set_m_per_dots(parse_scrap_scale_m_per_dots(options["scale"]))
 
 	global sublayers
 	if th2pref.sublayers:
@@ -638,8 +653,8 @@ while True:
 f_handle.close()
 
 if doc_width and doc_height:
-	root.set('width', f"{doc_width * cm_per_dots}cm")
-	root.set('height', f"{doc_height * cm_per_dots}cm")
+	root.set('width', f"{doc_width * m_per_dots}cm")
+	root.set('height', f"{doc_height * m_per_dots}cm")
 	root.set('viewBox', f"{doc_x} {-doc_y} {doc_width} {doc_height}")
 
 e = root.xpath('svg:g[@id="layer-scan"]', namespaces=inkex.NSS)[0]
