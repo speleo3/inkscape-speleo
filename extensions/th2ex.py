@@ -626,6 +626,13 @@ class Th2Effect(inkex.Effect):
 		'''Override inkex.Effect.getDocumentUnit'''
 		return 'px'
 
+	@property
+	def r2d(self) -> list:
+		return [
+			[th2pref.basescale, 0.0, 0.0],
+			[0.0, -th2pref.basescale, 0.0],
+		]
+
 	bbox_cache = {}
 	i2d_cache = {}
 
@@ -647,8 +654,6 @@ class Th2Effect(inkex.Effect):
 			m2 = simpletransform.composeTransform(m1, m2)
 		else:
 			m2 = simpletransform.composeTransform(self.r2d, m2)
-			m2 = simpletransform.composeTransform([[th2pref.basescale, 0.0, 0.0],
-				[0.0, th2pref.basescale, 0.0]], m2)
 
 		self.i2d_cache[node] = m2
 		return m2

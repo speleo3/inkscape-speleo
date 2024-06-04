@@ -20,7 +20,6 @@ def parse_options_node(node):
 
 def transformParams(mat, params):
 	new = []
-	# params = [float(i) * th2pref.basescale for i in params]
 	for i in range(0, len(params), 2):
 		if i+1 == len(params):
 			inkex.errormsg('params index skewd!!!')
@@ -195,7 +194,6 @@ class Th2Output(Th2Effect):
 		th2pref_load_from_xml(root)
 		th2pref.xyascenter = self.options.xyascenter
 
-		self.r2d = [[1, 0, 0],[0, -1, 0]]
 		viewBox = root.get('viewBox')
 		if viewBox:
 			doc_x, doc_y, doc_width, doc_height = [float(i) for i in viewBox.split()]
@@ -212,10 +210,7 @@ class Th2Output(Th2Effect):
 
 		print('encoding  utf-8')
 		if doc_width and doc_height:
-			params = [
-				th2pref.basescale * param
-				for param in [doc_x, (doc_y + doc_height), (doc_x + doc_width), doc_y]
-			]
+			params = [doc_x, (doc_y + doc_height), (doc_x + doc_width), doc_y]
 			print('##XTHERION## xth_me_area_adjust %s %s %s %s' %
 				tuple(map(fstr2, transformParams(self.r2d, params))))
 		print('##XTHERION## xth_me_area_zoom_to 100')
