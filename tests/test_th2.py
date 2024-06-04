@@ -27,16 +27,18 @@ script_th2_input = _find_script("th2_input")
 script_th2_output = _find_script("th2_output")
 
 
-@pytest.mark.parametrize("stem", [
-    ("label-align"),
-    ("create"),
+@pytest.mark.parametrize("stem,basescale", [
+    ("label-align", 1),
+    ("create", 1),
+    ("create", 2),
 ])
-def test_th2_round_trip(stem, monkeypatch):
+def test_th2_round_trip(stem, basescale, monkeypatch):
     monkeypatch.chdir(TESTS_DATA)
     path_input = Path(f"{stem}.th2")
     svgcontent = subprocess.check_output([
         sys.executable,
         script_th2_input,
+        f"--basescale={basescale}",
         str(path_input),
     ])
     th2content, stderr = subprocess.Popen(
