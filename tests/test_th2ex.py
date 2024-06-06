@@ -1,6 +1,7 @@
 import th2ex
 import th2ex as m
 import pytest
+from pytest import approx
 
 
 def _skipunexpected(s):
@@ -18,6 +19,11 @@ def test_distance():
     assert m.distance((0, 0), (3, 0)) == 3
     assert m.distance((0, 0), (0, 4)) == 4
     assert m.distance((0, 3), (4, 0)) == 5
+
+
+def test_convert_unit():
+	assert m.convert_unit("3m", "m") == approx(3.0)
+	assert m.convert_unit("3m", "cm") == approx(300.0)
 
 
 def test_parse_scrap_scale_m_per_dots():

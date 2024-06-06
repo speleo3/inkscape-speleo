@@ -649,13 +649,29 @@ UUCONV = {
 }
 
 
+def convert_unit(value: str, to_unit: str) -> float:
+	"""
+	Returns value in requested unit
+
+	>>> convert_unit("3m", "m") == 3.0
+	>>> convert_unit("3m", "cm") == 300.0
+	"""
+	m = re.fullmatch(r'(.*?)([a-z]+)', value.rstrip())
+	if m is None:
+		return 0.0
+
+	val, unit = m.groups()
+	try:
+		return float(val) * UUCONV[unit] / UUCONV[to_unit]
+	except (ValueError, KeyError):
+		return 0.0
+
+
 class Th2Effect(inkex.Effect):
 
 	@staticmethod
 	def unittouu(string):
 		"""Returns userunits given a string representation of units in another system"""
-		param = re.compile(r'((?:[-+]?[0-9]+(?:\.[0-9]*)?|[-+]?\.[0-9]+)(?:[eE][-+]?[0-9]+)?)(.*)')
-
 		m = re.match(r'((?:[-+]?[0-9]+(?:\.[0-9]*)?|[-+]?\.[0-9]+)(?:[eE][-+]?[0-9]+)?)(.*)$', string)
 		if m is None:
 			return 0.0

@@ -143,6 +143,13 @@ class Th2Area:
 
 
 class Th2Output(Th2Effect):
+	doc_x = 0
+	doc_y = 0
+	doc_width = 0  # viewBox width
+	doc_height = 0  # viewBox height
+	doc_width_m = 0  # width in meters
+	doc_height_m = 0  # height in meters
+
 	def __init__(self):
 		inkex.Effect.__init__(self)
 		self.OptionParser.add_option("--scale",    type="int",     dest="scale",    default=100)
@@ -171,8 +178,17 @@ class Th2Output(Th2Effect):
 
 		if test:
 			if 'scale' not in options and self.options.scale > 0:
-				dpi = self.options.dpi or self.unittouu('1in')
-				options['scale'] = '[0 0 %d 0 0 0 %d 0 inch]' % (dpi, self.options.scale)
+				if self.options.dpi:
+					inkex.errormsg("--dpi is deprecated, use viewBox and width in cm")
+					options['scale'] = '[%d %d inch]' % (
+						self.options.dpi,
+						self.options.scale,
+					)
+				else:
+					options['scale'] = '[%d %d m]' % (
+						self.doc_width / self.doc_width_m,
+						self.options.scale,
+					)
 			if 'projection' not in options and self.options.projection:
 				options['projection'] = self.options.projection
 			if 'author' not in options and self.options.author:
@@ -186,8 +202,8 @@ class Th2Output(Th2Effect):
 
 	def output(self):
 		root = self.document.getroot()
-		doc_width = self.unittouu(root.get('width') or '0')
-		doc_height = self.unittouu(root.get('height') or '0')
+		self.doc_width_m = convert_unit(root.get('width') or '', "m")
+		self.doc_height_m = convert_unit(root.get('height') or '', "m")
 
 		# load prefs from file
 		th2pref_load_from_xml(root)
@@ -195,9 +211,7 @@ class Th2Output(Th2Effect):
 
 		viewBox = root.get('viewBox')
 		if viewBox:
-			doc_x, doc_y, doc_width, doc_height = [float(i) for i in viewBox.split()]
-		else:
-			doc_x, doc_y = 0, 0
+			self.doc_x, self.doc_y, self.doc_width, self.doc_height = map(float, viewBox.split())
 
 		self.classes = {}
 		stylenodes = self.document.xpath('//svg:style', namespaces=inkex.NSS)
@@ -208,8 +222,13 @@ class Th2Output(Th2Effect):
 					self.classes[x.group(1)] = simplestyle.parseStyle(x.group(2).strip())
 
 		print('encoding  utf-8')
-		if doc_width and doc_height:
-			params = [doc_x, (doc_y + doc_height), (doc_x + doc_width), doc_y]
+		if self.doc_width and self.doc_height:
+			params = [
+				self.doc_x,
+				self.doc_y + self.doc_height,
+				self.doc_x + self.doc_width,
+				self.doc_y,
+			]
 			print('##XTHERION## xth_me_area_adjust %s %s %s %s' %
 				tuple(map(fstr2, transformParams(self.r2d, params))))
 		print('##XTHERION## xth_me_area_zoom_to 100')
