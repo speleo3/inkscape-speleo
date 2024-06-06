@@ -694,8 +694,6 @@ path.area.moonmilk { fill:url(#pattern-moonmilk) }
 path.area.flowstone { fill:url(#pattern-flowstone) }
 
 		path.line {
-			marker-start:url(#PointInStart);
-			marker-end:url(#PointInEnd);
 		}
 		path.line.u {
 			stroke:red;
@@ -711,10 +709,17 @@ path.area.flowstone { fill:url(#pattern-flowstone) }
 
 path.line.u.BLACK { stroke: black }
 path.line.u.BLUE { stroke: blue }
+path.line.u.blue { stroke: blue }
 path.line.u.BROWN { stroke: brown }
+path.line.u.brown { stroke: brown }
 path.line.u.GREEN { stroke: green }
+path.line.u.green { stroke: green }
 path.line.u.ORANGE { stroke: orange }
+path.line.u.orange { stroke: orange }
 path.line.u.RED { stroke: red }
+path.line.u.grey { stroke:grey }
+path.line.u.gray { stroke:gray }
+path.line.u.purple { stroke:purple }
 
 		path.line.wall {
 			stroke-width:1.0;
@@ -778,7 +783,7 @@ path.line.u.RED { stroke: red }
 			stroke-width:0.55;
 			marker-start:none;
 			marker-end:none;
-			fill:white;
+			fill:gray;
 			fill-opacity:0.5;
 		}
 		path.line.rock-edge {
