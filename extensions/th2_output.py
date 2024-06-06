@@ -55,10 +55,8 @@ def fstr2(x: float, dbl_dig=15, max_dig=20) -> str:
 		digits = dbl_dig - math.ceil(math.log10(abs(x)))
 	except ValueError:
 		digits = 0
-	digits = max(0, min(digits, max_dig))
+	digits = max(1, min(digits, max_dig))
 	s = f"{x:.{digits}f}"
-	if digits == 0:
-		s += ".0"
 	return fstr_trim_zeros(s)
 
 
