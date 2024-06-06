@@ -605,6 +605,8 @@ def parse_point(a):
 	elif type in point_symbols:
 		e = etree.Element('use')
 		e.set(xlink_href, "#point-" + type)
+		if type == "station" and False:
+			e.set(sodipodi_insensitive, "true")
 	else:
 		e = etree.Element('circle')
 		e.set('r', '2')
