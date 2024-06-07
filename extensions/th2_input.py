@@ -14,148 +14,163 @@ from th2ex import *
 from lxml import etree
 import simplepath
 
+pointtype2layer = {
+    'altitude': 'labe',
+    'blocks': 'rock',
+    'breakdown-choke': 'rock',
+    'continuation': 'labe',
+    'debris': 'rock',
+    'gradient': 'cont',
+    'height': 'labe',
+    'passage-height': 'labe',
+    'pebbles': 'rock',
+    'station': 'stat',
+    'station-name': 'stat',
+    'label': 'labe',
+    'dimensions': 'labe',
+}
+
+linetype2layer = {
+    'border': 'wall',
+    'ceiling-meander': 'cont',
+    'ceiling-step': 'cont',
+    'chimney': 'cont',
+    'contour': 'cont',
+    'floor-meander': 'cont',
+    'floor-step': 'cont',
+    'gradient': 'cont',
+    'label': 'labe',
+    'overhang': 'cont',
+    'pit': 'cont',
+    'rock-border': 'rock',
+    'rock-edge': 'rock',
+    'slope': 'cont',
+    'survey': 'stat',
+    'wall': 'wall',
+}
+
+# like 1:500
+fontscale = {
+    'xl': '17.435',
+    'l': '12.435',
+    'm': '9.963',
+    's': '8.717',
+    'xs': '7.472',
+}
+
+point_colors = {
+    'station-name': 'orange',
+    'altitude': '#f0f',
+    'u': 'red',
+}
+
+default_line_opts = {
+    'section': {'direction': 'begin'},
+}
+
 # some prefs
 oparser.add_option('--sublayers', action='store', type='inkbool', dest='sublayers', default=False)
 oparser.add_option('--basescale', action='store', type='float', dest='basescale', default=1.0)
 oparser.add_option('--howtostore', action='store', type='choice', dest='howtostore',
                    choices=('inkscape_label', 'title', 'therion_attribs'))
 oparser.add_option('--lock-stations', action='store', type='inkbool', dest='lock_stations', default=False)
-th2pref_reload()
 
-id_count = 0
 
-template = open_in_pythonpath('th2_template.svg')
-document = etree.parse(template)
-template.close()
+class this:
+    line_nr = 0
+    id_count = 0
+    textblock_count = 0
 
-root = document.getroot()
-
-# save input prefs to file
-th2pref_store_to_xml(root)
-
-ids = root.xpath('/svg:svg/svg:defs/*[starts-with(@id, "point-")]/@id', namespaces=inkex.NSS)
-point_symbols = [id[6:] for id in ids]
-
-ids = root.xpath('/svg:svg/svg:defs/*[starts-with(@id, "LPE-")]/@id', namespaces=inkex.NSS)
-LPE_symbols = [id[4:] for id in ids]
-
-currentlayer = root.xpath('svg:g[@id="layer-legend"]', namespaces=inkex.NSS)[0]
-
-# for areas
-borders = {}
-
-if th2pref.sublayers:
+    borders = {}  # for areas
     sublayers = {}
-    pointtype2layer = {
-        'altitude': 'labe',
-        'blocks': 'rock',
-        'breakdown-choke': 'rock',
-        'continuation': 'labe',
-        'debris': 'rock',
-        'gradient': 'cont',
-        'height': 'labe',
-        'passage-height': 'labe',
-        'pebbles': 'rock',
 
-        'station': 'stat',
-        'station-name': 'stat',
-        'label': 'labe',
-        'dimensions': 'labe',
-    }
-    linetype2layer = {
-        'border': 'wall',
-        'ceiling-meander': 'cont',
-        'ceiling-step': 'cont',
-        'chimney': 'cont',
-        'contour': 'cont',
-        'floor-meander': 'cont',
-        'floor-step': 'cont',
-        'gradient': 'cont',
-        'label': 'labe',
-        'overhang': 'cont',
-        'pit': 'cont',
-        'rock-border': 'rock',
-        'rock-edge': 'rock',
-        'slope': 'cont',
-        'survey': 'stat',
-        'wall': 'wall',
-    }
+    doc_x = 0
+    doc_y = 0
+    doc_width = 0
+    doc_height = 0
 
-    def getlayer(role, type):
-        if role == 'point':
-            key = pointtype2layer.get(type, 'misc')
-        else:
-            key = linetype2layer.get(type, 'misc')
-        return sublayers.get(key, currentlayer)
-else:
-    def getlayer(role, type):
-        return currentlayer
+    m_per_dots = 0.0254
+    m_per_dots_set = False
 
-# points legend
-spacing = 40
-max_x = 800
-x = spacing
-y = 0
-for type in point_symbols:
-    node = etree.SubElement(currentlayer, 'text')
-    node.set('transform', 'translate(%d,%d)' % (x, -(y + 0.25) * spacing))
-    node.text = type
-    node = etree.SubElement(currentlayer, 'use')
-    set_props(node, 'point', type)
-    node.set('transform', 'translate(%d,%d)' % (x, -(y + 1) * spacing))
-    node.set(xlink_href, '#point-' + type)
-    x += spacing
-    if x > max_x:
-        x = spacing
-        y += 2
+    encoding = 'UTF-8'
+    file_stack: list["FileRecord"] = []
 
-node = etree.SubElement(currentlayer, 'rect', {'style': 'fill:none;stroke:black', 'transform': 'scale(1,-1)'})
-node.set('height', '%d' % ((2 + y) * spacing))
-if y > 0:
-    node.set('width', '%d' % (max_x + spacing))
-else:
-    node.set('width', '%d' % (x))
+    @classmethod
+    def getcurrentlayer(this):
+        return this.layer_stack[-1] if this.layer_stack else this.root
 
-default_line_opts = {
-    'section': {'direction': 'begin'},
-}
 
-x = spacing
-for type in LPE_symbols:
-    type_uscore = type
-    type = type.replace('_', ':')
-    node = etree.SubElement(currentlayer, 'text')
-    node.set('transform', 'translate(%d,%d)' % (-spacing, x + 0.4 * spacing))
-    node.text = type
-    node = etree.SubElement(currentlayer, 'path')
-    set_props(node, 'line', type, default_line_opts.get(type, {}))
-    node.set(inkscape_original_d, 'M%f,%fh%f' % (-1.5 * spacing, x, spacing))
-    node.set(inkscape_path_effect, '#LPE-' + type_uscore)
-    node.set('class', 'line ' + type.replace(':', ' '))
-    x += spacing
-for type in ('arrow', 'map-connection', 'gradient', 'chimney', 'section'):
-    node = etree.SubElement(currentlayer, 'text')
-    node.set('transform', 'translate(%d,%d)' % (-spacing, x + 0.4 * spacing))
-    node.text = type
-    node = etree.SubElement(currentlayer, 'path')
-    set_props(node, 'line', type, default_line_opts.get(type, {}))
-    node.set('d', 'M%f,%fh%f' % (-1.5 * spacing, x, spacing))
-    node.set('class', 'line ' + type)
-    x += spacing
+def populate_legend():
+    layer_legend = this.root.xpath('svg:g[@id="layer-legend"]', namespaces=inkex.NSS)[0]
 
-node = etree.SubElement(currentlayer, 'rect', {'y': '0', 'style': 'fill:none;stroke:black'})
-node.set('x', '%d' % (-2 * spacing))
-node.set('height', '%d' % (x))
-node.set('width', '%d' % (2 * spacing))
+    # points legend
+    spacing = 40
+    max_x = 800
+    x = spacing
+    y = 0
+    for type in this.point_symbols:
+        node = etree.SubElement(layer_legend, 'text')
+        node.set('transform', 'translate(%d,%d)' % (x, -(y + 0.25) * spacing))
+        node.text = type
+        node = etree.SubElement(layer_legend, 'use')
+        set_props(node, 'point', type)
+        node.set('transform', 'translate(%d,%d)' % (x, -(y + 1) * spacing))
+        node.set(xlink_href, '#point-' + type)
+        x += spacing
+        if x > max_x:
+            x = spacing
+            y += 2
 
-currentlayer = root
-layer_stack = [currentlayer]
-file_stack: list["FileRecord"] = []
+    node = etree.SubElement(layer_legend, 'rect', {'style': 'fill:none;stroke:black', 'transform': 'scale(1,-1)'})
+    node.set('height', '%d' % ((2 + y) * spacing))
+    if y > 0:
+        node.set('width', '%d' % (max_x + spacing))
+    else:
+        node.set('width', '%d' % (x))
+
+    # lines legend
+    x = spacing
+    for type in this.LPE_symbols:
+        type_uscore = type
+        type = type.replace('_', ':')
+        node = etree.SubElement(layer_legend, 'text')
+        node.set('transform', 'translate(%d,%d)' % (-spacing, x + 0.4 * spacing))
+        node.text = type
+        node = etree.SubElement(layer_legend, 'path')
+        set_props(node, 'line', type, default_line_opts.get(type, {}))
+        node.set(inkscape_original_d, 'M%f,%fh%f' % (-1.5 * spacing, x, spacing))
+        node.set(inkscape_path_effect, '#LPE-' + type_uscore)
+        node.set('class', 'line ' + type.replace(':', ' '))
+        x += spacing
+    for type in ('arrow', 'map-connection', 'gradient', 'chimney', 'section'):
+        node = etree.SubElement(layer_legend, 'text')
+        node.set('transform', 'translate(%d,%d)' % (-spacing, x + 0.4 * spacing))
+        node.text = type
+        node = etree.SubElement(layer_legend, 'path')
+        set_props(node, 'line', type, default_line_opts.get(type, {}))
+        node.set('d', 'M%f,%fh%f' % (-1.5 * spacing, x, spacing))
+        node.set('class', 'line ' + type)
+        x += spacing
+
+    node = etree.SubElement(layer_legend, 'rect', {'y': '0', 'style': 'fill:none;stroke:black'})
+    node.set('x', '%d' % (-2 * spacing))
+    node.set('height', '%d' % (x))
+    node.set('width', '%d' % (2 * spacing))
+
+
+def getlayer(role, type):
+    if not th2pref.sublayers:
+        return this.getcurrentlayer()
+    if role == 'point':
+        key = pointtype2layer.get(type, 'misc')
+    else:
+        key = linetype2layer.get(type, 'misc')
+    return this.sublayers.get(key, this.getcurrentlayer())
 
 
 class FileRecord:
     def __init__(self, patharg: str):
-        searchpath = [file_stack[-1].dirname] if file_stack else []
+        searchpath = [this.file_stack[-1].dirname] if this.file_stack else []
         self.filename = find_in_pwd(patharg, searchpath)
         self.dirname = os.path.dirname(self.filename)
         self.f_handle = open(self.filename, 'rb')
@@ -165,25 +180,12 @@ class FileRecord:
         self.f_handle.close()
 
 
-# open th2 file
-file_stack.append(FileRecord(th2pref.argv[0]))
-
-doc_x = 0
-doc_y = 0
-doc_width = 0
-doc_height = 0
-m_per_dots = 0.0254
-m_per_dots_set = False
-encoding = 'UTF-8'
-
-
 def set_m_per_dots(value: float, overwrite: bool = False):
-    global m_per_dots, m_per_dots_set
-    if m_per_dots_set and not (0.9 < (value / m_per_dots) < 1.1):
-        errormsg(f"Warning: m/dots {value} vs {m_per_dots}")
-    if overwrite or not m_per_dots_set:
-        m_per_dots = value
-        m_per_dots_set = True
+    if this.m_per_dots_set and not (0.9 < (value / this.m_per_dots) < 1.1):
+        errormsg(f"Warning: m/dots {value} vs {this.m_per_dots}")
+    if overwrite or not this.m_per_dots_set:
+        this.m_per_dots = value
+        this.m_per_dots_set = True
 
 
 def flipY_old(a):
@@ -201,14 +203,10 @@ def floatscale(x):
     return float(x) / th2pref.basescale
 
 
-def flipY_scaled(a):
-    scalefactor = 0.2
+def flipY(a):
     a[0::2] = ['%f' % (floatscale(i)) for i in a[0::2]]
     a[1::2] = ['%f' % (-floatscale(i)) for i in a[1::2]]
     return a
-
-
-flipY = flipY_scaled
 
 
 def reverseP(p):
@@ -223,7 +221,7 @@ def reverseP(p):
                 prevparams[2],
                 prevparams[3],
                 prevparams[0],
-                prevparams[1]
+                prevparams[1],
             ]
         newparams.extend(params[-2:])
         retval.append([prevcmd, newparams])
@@ -238,28 +236,22 @@ def reverseD(d):
     return simplepath.formatPath(p)
 
 
-line_nr = 0
-
-
 def f_readline():
-    global line_nr
     try:
-        line_nr, line = next(file_stack[-1].f_enum)
+        this.line_nr, line = next(this.file_stack[-1].f_enum)
     except StopIteration:
-        file_stack.pop()
-        layer_stack.pop()
-        global currentlayer
-        currentlayer = layer_stack[-1] if layer_stack else root
-        return f_readline() if file_stack else ''
+        this.file_stack.pop()
+        this.layer_stack.pop()
+        return f_readline() if this.file_stack else ''
     line = line.rstrip(b'\r\n')
-    line = line.decode(encoding)
+    line = line.decode(this.encoding)
     if line.endswith('\\'):
         line = line[:-1] + f_readline()
     return line + '\n'
 
 
 def errormsg(x):
-    print('[line %d]' % (line_nr + 1), x, file=sys.stderr)
+    print('[line %d]' % (this.line_nr + 1), x, file=sys.stderr)
 
 
 def parse(a):
@@ -273,8 +265,7 @@ def parse(a):
 
 
 def parse_encoding(a):
-    global encoding
-    encoding = a[1]
+    this.encoding = a[1]
 
 
 def parse_INKSCAPE(a):
@@ -284,13 +275,10 @@ def parse_INKSCAPE(a):
         img.set('height', a[3])
         img.set('transform', a[4])
         img.set(xlink_href, ' '.join(a[5:]))
-        root.xpath('svg:g[@id="layer-scan"]', namespaces=inkex.NSS)[0].append(img)
+        this.root.xpath('svg:g[@id="layer-scan"]', namespaces=inkex.NSS)[0].append(img)
 
 
 def parse_XTHERION(a):
-    global doc_width, doc_x, doc_y
-    global doc_height
-
     if a[1] == 'xth_me_image_insert':
         href, XVIroot = '', ''
         try:
@@ -318,7 +306,7 @@ def parse_XTHERION(a):
                 y = str(-1 * float(m.group(2)))
         if href != '':
             try:
-                href = find_in_pwd(href, [file_stack[-1].dirname])
+                href = find_in_pwd(href, [this.file_stack[-1].dirname])
             except IOError:
                 errormsg('image not found: ' + repr(href[:128]))
         if href.endswith('.xvi'):
@@ -332,7 +320,7 @@ def parse_XTHERION(a):
                 img.set(therion_type, 'xth_me_image_insert')
                 img.set(therion_options, format_options({'href': href,
                                                          'XVIroot': XVIroot}))
-                root.xpath('svg:g[@id="layer-scan"]', namespaces=inkex.NSS)[0].append(img)
+                this.root.xpath('svg:g[@id="layer-scan"]', namespaces=inkex.NSS)[0].append(img)
 
                 dx = g_xvi.get(therion_xvi_dx)
                 if dx:
@@ -346,15 +334,15 @@ def parse_XTHERION(a):
             img.set('x', x)
             img.set('y', y)
             img.set('transform', 'scale(1,-1)')
-            root.xpath('svg:g[@id="layer-scan"]', namespaces=inkex.NSS)[0].append(img)
+            this.root.xpath('svg:g[@id="layer-scan"]', namespaces=inkex.NSS)[0].append(img)
         else:
             errormsg('skipped: ' + a[1])
 
     if a[1] == 'xth_me_area_adjust':
-        doc_x = floatscale(a[2])
-        doc_y = floatscale(a[5])
-        doc_width = floatscale(a[4]) - doc_x
-        doc_height = doc_y - floatscale(a[3])
+        this.doc_x = floatscale(a[2])
+        this.doc_y = floatscale(a[5])
+        this.doc_width = floatscale(a[4]) - this.doc_x
+        this.doc_height = this.doc_y - floatscale(a[3])
 
 
 def parse_scrap(a):
@@ -370,9 +358,8 @@ def parse_scrap(a):
     if "scale" in options:
         set_m_per_dots(parse_scrap_scale_m_per_dots(options["scale"]))
 
-    global sublayers
     if th2pref.sublayers:
-        sublayers = {
+        this.sublayers = {
             'wall': etree.SubElement(e, 'g', {inkscape_groupmode: 'layer', inkscape_label: u'Walls'}),
             'cont': etree.SubElement(e, 'g', {inkscape_groupmode: 'layer', inkscape_label: u'Contours'}),
             'rock': etree.SubElement(e, 'g', {inkscape_groupmode: 'layer', inkscape_label: u'Boulders'}),
@@ -381,10 +368,8 @@ def parse_scrap(a):
             'labe': etree.SubElement(e, 'g', {inkscape_groupmode: 'layer', inkscape_label: u'Labels'}),
         }
 
-    global currentlayer
-    currentlayer.append(e)
-    currentlayer = e
-    layer_stack.append(e)
+    this.getcurrentlayer().append(e)
+    this.layer_stack.append(e)
 
     while True:
         line = f_readline()
@@ -396,8 +381,7 @@ def parse_scrap(a):
             break
         parse(a)
 
-    layer_stack.pop()
-    currentlayer = layer_stack[-1]
+    this.layer_stack.pop()
 
 
 def parse_area(a_in):
@@ -413,15 +397,15 @@ def parse_area(a_in):
             break
 
     # we can only handle areas with one border line
-    if len(lines) != 2 or lines[0].strip() not in borders:
+    if len(lines) != 2 or lines[0].strip() not in this.borders:
         e = etree.Comment('#therion\n')
         e.text += ' '.join(a_in) + '\n'
         e.text += ''.join(lines)
-        currentlayer.insert(0, e)
+        this.getcurrentlayer().insert(0, e)
         return
 
     # update border line
-    e = borders[lines[0].strip()]
+    e = this.borders[lines[0].strip()]
     role, type, options = get_props(e)
     assert (role, type) == ('line', 'border')
     options.pop('id', None)  # will get a new ID on export
@@ -452,29 +436,25 @@ def parse_BLOCK2COMMENT(a):
         a = line.split()
         if len(a) > 0 and a[0] == 'end%s' % (role):
             break
-    currentlayer.insert(0, e)
+    this.getcurrentlayer().insert(0, e)
 
 
 def parse_LINE2COMMENT(a):
     e = etree.Comment('#therion\n')
     e.text += ' '.join(a) + '\n'
-    currentlayer.insert(0, e)
-
-
-textblock_count = 0
+    this.getcurrentlayer().insert(0, e)
 
 
 def parse_BLOCK2TEXT(a):
     '''
     Currently unused
     '''
-    global textblock_count
     role = a[0]
     e = etree.Element('text')
     e.set(therion_role, 'textblock')
     e.set('style', 'font-size:8;fill:#900')
-    e.set('x', str(doc_width + 20))
-    e.set('y', str(textblock_count * 10 + 20))
+    e.set('x', str(this.doc_width + 20))
+    e.set('y', str(this.textblock_count * 10 + 20))
     e.set(xml_space, 'preserve')
     desc = etree.SubElement(e, 'desc')
     desc.tail = ' '.join(a)
@@ -488,13 +468,11 @@ def parse_BLOCK2TEXT(a):
             desc.text = line
         else:
             desc.text += line
-    currentlayer.insert(0, e)
-    textblock_count += 1
+    this.getcurrentlayer().insert(0, e)
+    this.textblock_count += 1
 
 
 def parse_line(a):
-    global id_count
-
     options = parse_options(a[2:])
     type_subtype = a[1]
     if ':' in type_subtype:
@@ -560,17 +538,17 @@ def parse_line(a):
         if not insensitive:
             del options['close']
 
-    if type + '_' + subtype in LPE_symbols:
+    if type + '_' + subtype in this.LPE_symbols:
         e.set(inkscape_path_effect, '#LPE-%s_%s' % (type, subtype))
         e.set(inkscape_original_d, d)
-    elif type in LPE_symbols:
+    elif type in this.LPE_symbols:
         e.set(inkscape_path_effect, '#LPE-%s' % (type))
         e.set(inkscape_original_d, d)
     else:
         e.set('d', d)
 
-    id_count += 1
-    e_id = 'line_%s_%d' % (type, id_count)
+    this.id_count += 1
+    e_id = 'line_%s_%d' % (type, this.id_count)
     e.set('id', e_id)
 
     if th2pref.textonpath and type == 'label':
@@ -589,31 +567,13 @@ def parse_line(a):
 
     # for areas
     if type == 'border' and 'id' in options:
-        borders[options['id']] = e
+        this.borders[options['id']] = e
 
     set_props(e, 'line', type_subtype, options)
     getlayer('line', type).insert(0, e)
 
 
-# like 1:500
-fontscale = {
-    'xl': '17.435',
-    'l': '12.435',
-    'm': '9.963',
-    's': '8.717',
-    'xs': '7.472',
-}
-
-point_colors = {
-    'station-name': 'orange',
-    'altitude': '#f0f',
-    'u': 'red',
-}
-
-
 def parse_point(a):
-    global id_count
-
     options = parse_options(a[4:])
     type = a[3].split(':')[0]
 
@@ -638,7 +598,7 @@ def parse_point(a):
         e.set('style', "font-size:%s;text-anchor:%s;text-align:%s;dominant-baseline:%s" % (fontsize,
                                                                                            textanchor, textanchor, baseline))
         e.set(xml_space, 'preserve')
-    elif type in point_symbols:
+    elif type in this.point_symbols:
         e = etree.Element('use')
         e.set(xlink_href, "#point-" + type)
         if type == "station" and th2pref.lock_stations:
@@ -656,8 +616,8 @@ def parse_point(a):
         del options['orientation']
     e.set('transform', transform)
 
-    id_count += 1
-    e.set('id', 'point_%s_%d' % (type, id_count))
+    this.id_count += 1
+    e.set('id', 'point_%s_%d' % (type, this.id_count))
 
     set_props(e, 'point', a[3], options)
     getlayer('point', type).insert(0, e)
@@ -666,17 +626,15 @@ def parse_point(a):
 def parse_input(a):
     assert a[0] == "input"
     assert len(a) == 2
-    file_stack.append(FileRecord(a[1]))
+    this.file_stack.append(FileRecord(a[1]))
 
     e = etree.Element('g')
     e.set(inkscape_groupmode, "layer")
     e.set(inkscape_label, ' '.join(a))
     e.set(therion_role, "input")
 
-    global currentlayer
-    currentlayer.append(e)
-    currentlayer = e
-    layer_stack.append(e)
+    this.getcurrentlayer().append(e)
+    this.layer_stack.append(e)
 
 
 parsedict = {
@@ -693,37 +651,65 @@ parsedict = {
     'input': parse_input,
 }
 
-while True:
-    line = f_readline()
-    if len(line) == 0:
-        break
 
-    a = line.split()
+def main():
+    th2pref_reload()
 
-    if len(a) == 0:
-        continue
+    with open_in_pythonpath('th2_template.svg') as template:
+        this.document = etree.parse(template)
 
-    parse(a)
+    this.root = this.document.getroot()
+    this.layer_stack = [this.root]
 
-assert not file_stack
+    # save input prefs to file
+    th2pref_store_to_xml(this.root)
 
-if doc_width and doc_height:
-    root.set('width', f"{doc_width * m_per_dots}cm")
-    root.set('height', f"{doc_height * m_per_dots}cm")
-    root.set('viewBox', f"{doc_x} {-doc_y} {doc_width} {doc_height}")
+    ids = this.root.xpath('/svg:svg/svg:defs/*[starts-with(@id, "point-")]/@id', namespaces=inkex.NSS)
+    this.point_symbols = [id[6:] for id in ids]
 
-e = root.xpath('svg:g[@id="layer-scan"]', namespaces=inkex.NSS)[0]
-e.set('transform', ' scale(1,-1) scale(%f)' % (1. / th2pref.basescale))
+    ids = this.root.xpath('/svg:svg/svg:defs/*[starts-with(@id, "LPE-")]/@id', namespaces=inkex.NSS)
+    this.LPE_symbols = [id[4:] for id in ids]
 
-# scrap0:
-# Mostly obsolete, we currently don't populate it.
-# Keep it when opening an empty file.
-e = root.xpath('svg:g[@id="layer-scrap0"]', namespaces=inkex.NSS)[0]
-others = root.xpath('/svg:svg/g[not(@therion:role="none")]', namespaces=inkex.NSS)
-if len(e) == 0 and others:
-    root.remove(e)
-else:
-    e.set(therion_role, "scrap")
+    populate_legend()
 
-out = sys.stdout.buffer
-document.write(out)
+    # open th2 file
+    this.file_stack.append(FileRecord(th2pref.argv[0]))
+
+    while True:
+        line = f_readline()
+        if len(line) == 0:
+            break
+
+        a = line.split()
+
+        if len(a) == 0:
+            continue
+
+        parse(a)
+
+    assert not this.file_stack
+
+    if this.doc_width and this.doc_height:
+        this.root.set('width', f"{this.doc_width * this.m_per_dots}cm")
+        this.root.set('height', f"{this.doc_height * this.m_per_dots}cm")
+        this.root.set('viewBox', f"{this.doc_x} {-this.doc_y} {this.doc_width} {this.doc_height}")
+
+    e = this.root.xpath('svg:g[@id="layer-scan"]', namespaces=inkex.NSS)[0]
+    e.set('transform', ' scale(1,-1) scale(%f)' % (1. / th2pref.basescale))
+
+    # scrap0:
+    # Mostly obsolete, we currently don't populate it.
+    # Keep it when opening an empty file.
+    e = this.root.xpath('svg:g[@id="layer-scrap0"]', namespaces=inkex.NSS)[0]
+    others = this.root.xpath('/svg:svg/g[not(@therion:role="none")]', namespaces=inkex.NSS)
+    if len(e) == 0 and others:
+        this.root.remove(e)
+    else:
+        e.set(therion_role, "scrap")
+
+    out = sys.stdout.buffer
+    this.document.write(out)
+
+
+if __name__ == "__main__":
+    main()
