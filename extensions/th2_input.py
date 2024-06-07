@@ -20,6 +20,7 @@ oparser.add_option('--sublayers', action='store', type='inkbool', dest='sublayer
 oparser.add_option('--basescale', action='store', type='float', dest='basescale', default=1.0)
 oparser.add_option('--howtostore', action='store', type='choice', dest='howtostore',
 		choices=('inkscape_label', 'title', 'therion_attribs'))
+oparser.add_option('--lock-stations', action='store', type='inkbool', dest='lock_stations', default=False)
 th2pref_reload()
 
 id_count = 0
@@ -605,7 +606,7 @@ def parse_point(a):
 	elif type in point_symbols:
 		e = etree.Element('use')
 		e.set(xlink_href, "#point-" + type)
-		if type == "station" and False:
+		if type == "station" and th2pref.lock_stations:
 			e.set(sodipodi_insensitive, "true")
 	else:
 		e = etree.Element('circle')

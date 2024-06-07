@@ -10,6 +10,7 @@
     <item value="therion_attribs">therion:* attributes (deprecated)</item>
   </param>
   <param name="sublayers" type="boolean" _gui-text="Organize different Symbols in Sublayers">false</param>
+  <param name="lock-stations" type="boolean" _gui-text="Lock Stations">false</param>
   <input>
     <extension>.th2</extension>
     <mimetype>application/x-therion-th2</mimetype>
