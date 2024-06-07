@@ -188,29 +188,33 @@ def set_m_per_dots(value: float, overwrite: bool = False):
         this.m_per_dots_set = True
 
 
-def flipY_old(a):
-    for i in range(1, len(a), 2):
-        a[i] = a[i][1:] if a[i][0] == '-' else '-' + a[i]
-    return a
-
-
-def strscale(x):
-    return str(floatscale(x))
-
-
-def floatscale(x):
-    # TODO scale input coordinates to given base-scale
+def floatscale(x: str) -> float:
+    """
+    Scale input coordinate to base-scale
+    """
     return float(x) / th2pref.basescale
 
 
-def flipY(a):
+def flipY(a: list[str]) -> list[str]:
+    """
+    Transform th2 coordinates to SVG user units, in-place.
+
+    - Scale to base-scale
+    - Invert y
+
+    Args:
+      a: Flat 2D coordinate list
+
+    Returns:
+      Modified input list
+    """
+    # TODO %f rounds to 6 digits, check if sufficient
     a[0::2] = ['%f' % (floatscale(i)) for i in a[0::2]]
     a[1::2] = ['%f' % (-floatscale(i)) for i in a[1::2]]
     return a
 
 
 def reverseP(p):
-    retval = []
     prevcmd = p[-1][0]
     prevparams = p[-1][1]
     retval = [['M', prevparams[-2:]]]
@@ -230,7 +234,7 @@ def reverseP(p):
     return retval
 
 
-def reverseD(d):
+def reverseD(d: str) -> str:
     p = simplepath.parsePath(d)
     p = reverseP(p)
     return simplepath.formatPath(p)

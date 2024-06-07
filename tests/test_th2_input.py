@@ -1,0 +1,20 @@
+import th2_input as m
+import pytest
+
+
+@pytest.fixture(autouse=True, scope="module")
+def setup_basescale():
+    m.th2pref.basescale = 4
+
+
+def test_floatscale():
+    assert m.floatscale("8.0") == 2.0
+
+
+def test_flipY():
+    a = [c.rstrip("0") for c in m.flipY(["1", "2", "4", "6", "8", "10"])]
+    assert a == ["0.25", "-0.5", "1.", "-1.5", "2.", "-2.5"]
+
+
+def test_reverseD():
+    assert m.reverseD("M 1 2 L 3 4 C 5 6 7 8 9 10") == "M 9 10 C 7 8 5 6 3 4 L 1 2"
