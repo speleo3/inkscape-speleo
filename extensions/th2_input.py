@@ -7,9 +7,6 @@ TODO
  * support line options between line data, for example by splitting lines and grouping
 '''
 
-from __future__ import print_function
-from __future__ import absolute_import
-
 import sys, os, re
 from th2ex import *
 from lxml import etree
@@ -282,12 +279,8 @@ def parse_XTHERION(a):
 			# yy = {yy XVIroot}
 			# XVIroot is the station name which defines (0,0)
 			me_image_str = ' '.join(a[2:])
-			if sys.version_info[0] < 3:
-				import Tkinter
-				me_image_str = me_image_str.encode('utf-8')
-			else:
-				import tkinter as Tkinter
-			tk_instance = Tkinter.Tcl().tk.eval
+			import tkinter
+			tk_instance = tkinter.Tcl().tk.eval
 			tk_instance('set xth_me_image {' + me_image_str + '}')
 			href = tk_instance('lindex $xth_me_image 2')
 			x = tk_instance('lindex $xth_me_image 0 0')
@@ -704,7 +697,7 @@ if len(e) == 0 and others:
 else:
 	e.set(therion_role, "scrap")
 
-out = sys.stdout.buffer if PY3 else sys.stdout
+out = sys.stdout.buffer
 document.write(out)
 
 # vi:noexpandtab:sw=4:ts=4

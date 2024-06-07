@@ -6,9 +6,6 @@ Distributed under the terms of the GNU General Public License v2 or later
 This program was inspired by http://www.cavediving.de/svg2th2.py
 '''
 
-from __future__ import print_function
-from __future__ import absolute_import
-
 from th2ex import *
 from lxml import etree
 import simplepath, simpletransform, simplestyle, math, re
@@ -217,7 +214,7 @@ class Th2Output(Th2Effect):
 		stylenodes = self.document.xpath('//svg:style', namespaces=inkex.NSS)
 		pattern = re.compile(r'\.(\w+)\s*\{(.*?)\}')
 		for stylenode in stylenodes:
-			if isinstance(stylenode.text, basestring):
+			if isinstance(stylenode.text, str):
 				for x in pattern.finditer(stylenode.text):
 					self.classes[x.group(1)] = simplestyle.parseStyle(x.group(2).strip())
 
@@ -448,7 +445,7 @@ class Th2Output(Th2Effect):
 
 	def get_point_text(self, node):
 		text = ''
-		if isinstance(node.text, basestring) and len(node.text.strip()) > 0:
+		if isinstance(node.text, str) and len(node.text.strip()) > 0:
 			text = node.text.replace('\n', ' ')
 		for child in node:
 			if child.tag == svg_tspan or \
@@ -456,7 +453,7 @@ class Th2Output(Th2Effect):
 				if len(text) > 0 and child.get(sodipodi_role, '') == 'line':
 					text += '<br>'
 				text += self.get_point_text(child)
-			if isinstance(child.tail, basestring) and len(child.tail.strip()) > 0:
+			if isinstance(child.tail, str) and len(child.tail.strip()) > 0:
 				text += child.tail.replace('\n', ' ')
 		# strip newlines between language alternatives
 		text = text.replace("<br><lang:", "<lang:")

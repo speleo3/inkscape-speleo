@@ -16,23 +16,14 @@ Elements with role annotation "none" are excluded from export.
 Text alignment guess for export is not perfect, but covers the most use cases.
 '''
 
-from __future__ import print_function
-from __future__ import absolute_import
-
-try:
-	basestring
-except NameError:
-	basestring = str
-
 from lxml import etree
 from typing import Sequence
+import shlex
 import sys, os, math, re, optparse
 import inkex
 import warnings
 
 warnings.simplefilter("ignore", DeprecationWarning)
-
-PY3 = sys.version_info[0] > 2
 
 
 def as_unicode(s):
@@ -239,34 +230,8 @@ def splitquoted(ustr, comments=False):
 
 	Returns "[foo bar]" as one string.
 	'''
-
-	if sys.version_info[0] > 2:
-		assert not isinstance(ustr, bytes)
-		return(_splitquoted(ustr, comments))
-	elif isinstance(ustr, bytes):
-		return(_splitquoted(ustr, comments))
-
-	import re
-
-	def myencode(ustr):
-		return re.sub(
-			u'[#\x7F-\U000FFFFF]',  #
-			lambda m: u'#%05X' % ord(m.group(0)),
-			ustr,
-			flags=re.U).encode('ascii')
-
-	def mydecode(bstr):
-		return re.sub(
-			u'#([0-9A-F]{5})',  #
-			lambda m: unichr(int(m.group(1), 16)),
-			bstr.decode('ascii'))
-
-	return [mydecode(b) for b in _splitquoted(myencode(ustr), comments)]
-
-
-def _splitquoted(s, comments=False):
-	import shlex
-	lex = shlex.shlex(s, posix=True)
+	assert not isinstance(ustr, bytes)
+	lex = shlex.shlex(ustr, posix=True)
 	lex.whitespace_split = True
 	if not comments:
 		lex.commenters = ''
@@ -285,7 +250,7 @@ def quote(value):
 	'''
 	Add quotes around value, if needed
 	'''
-	assert isinstance(value, basestring)
+	assert isinstance(value, str)
 	if not value:
 		return '""'
 	if needquote.search(value) is None:
@@ -308,7 +273,7 @@ def parse_options_new(a):
 	 * detection of zero-arg-keys is heuristical
 	'''
 	options = {}
-	if not isinstance(a, basestring):
+	if not isinstance(a, str):
 		a = ' '.join(a)
 	a = splitquoted(a)
 	n = len(a)
@@ -380,7 +345,7 @@ def format_options(options):
 			# multi-value string
 			assert value_count in (None, len(value))
 			ret += ''.join(' ' + quote(v) for v in value)
-		elif not isinstance(value, basestring):
+		elif not isinstance(value, str):
 			# number
 			assert value_count in (None, 1)
 			ret += ' ' + str(value)
@@ -590,7 +555,7 @@ def parseViewBox(viewBox, width, height):
 	'''
 	Returns the 2x3 transformation matrix that a viewBox defines
 	'''
-	if isinstance(viewBox, basestring):
+	if isinstance(viewBox, str):
 		viewBox = [float(i) for i in viewBox.split()]
 	return [[float(width) / viewBox[2], 0, -viewBox[0]], [0, float(height) / viewBox[3], -viewBox[1]]]
 
@@ -614,11 +579,8 @@ def find_in_pythonpath(filename):
 def open_in_pythonpath(filename):
 	return open(find_in_pythonpath(filename))
 
-def print_utf8(x, file=sys.stdout):
-	print(x.encode('UTF-8'), file=file)
 
-if PY3:
-	print_utf8 = print
+print_utf8 = print
 
 
 ######################################
@@ -627,7 +589,6 @@ if PY3:
 try:
 	inkex.errormsg
 except:
-	import sys
 	inkex.errormsg = lambda msg: sys.stderr.write((str(msg) + "\n").encode("UTF-8"))
 
 ######################################

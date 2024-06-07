@@ -6,18 +6,9 @@ Copyright (C) Thomas Holder
 Distributed under the terms of the GNU General Public License v2 or later
 '''
 
-from __future__ import print_function
-from __future__ import absolute_import
-
 import sys
 import th2ex
-
-if sys.version_info[0] < 3:
-	import Tkinter
-	binarystdout = sys.stdout
-else:
-	import tkinter as Tkinter
-	binarystdout = sys.stdout.buffer
+import tkinter
 
 from lxml import etree
 
@@ -30,7 +21,7 @@ def xvi2svg(handle, fullsvg=True, strokewidth=6, XVIroot='',
 	"""
 	# file contents
 	filecontents = ''.join(handle)
-	tk_instance = Tkinter.Tcl().tk.eval
+	tk_instance = tkinter.Tcl().tk.eval
 	tk_instance(filecontents)
 
 	# methods
@@ -150,6 +141,7 @@ if __name__ == '__main__':
 		handle = sys.stdin
 	root = xvi2svg(handle)
 	handle.close()
+	binarystdout = sys.stdout.buffer
 	binarystdout.write(etree.tostring(root, encoding='utf-8', xml_declaration=True))
 	binarystdout.write(b'\n')
 

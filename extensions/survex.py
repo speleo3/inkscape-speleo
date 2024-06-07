@@ -45,14 +45,8 @@ Example usage:
 
 '''
 
-from __future__ import absolute_import
-from __future__ import print_function
-
 import datetime
 import sys
-
-if sys.version_info[0] > 2:
-    basestring = (bytes, str)
 
 
 def autodecode(bytestring):
@@ -253,7 +247,7 @@ class Survex3D(object):
         self.flags_leg_exclude = flags_leg_exclude
         if filename is None:
             pass
-        elif isinstance(filename, basestring) or hasattr(filename, "__fspath__"):
+        elif isinstance(filename, (str, bytes)) or hasattr(filename, "__fspath__"):
             self.load(filename)
         else:
             # assume iterable with stations
@@ -284,7 +278,7 @@ class Survex3D(object):
     def __repr__(self):
         r = '<%s "%s" %d stations>' % (self.__class__.__name__, self.title,
                                        len(self))
-        return r if sys.version_info[0] > 2 else r.encode('utf-8')
+        return r
 
     def __getitem__(self, key):
         if isinstance(key, str):
@@ -491,12 +485,8 @@ class Survex3D(object):
                 length += unpack('<I', f.read(4))[0]
             return length
 
-        if sys.version_info[0] > 2:
-            def _read_label(n):
-                return f.read(n).decode('ascii')
-        else:
-            def _read_label(n):
-                return f.read(n)
+        def _read_label(n):
+            return f.read(n).decode('ascii')
 
         def read_label():
             length = read_len()
