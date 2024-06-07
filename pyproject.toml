@@ -23,6 +23,11 @@ based_on_style = "pep8"
 allow_split_before_dict_value = false
 each_dict_entry_on_separate_line = false
 
+[tool.autopep8]
+ignore = [
+    "E501", # --max-line-length
+    "E731", # lambda
+]
 
 [tool.ruff]
 extend-select = ["W", "B", "Q003"]

@@ -185,21 +185,21 @@ def write_shots(parent: etree.Element, data: dict, bbox: BBox, is_ext: bool):
     etree.SubElement(
         parent, "path", {
             "d": d,
-            "style": f"stroke:#f90;stroke-width:{STROKE_WIDTH_PX/4};stroke-dasharray:0.05 0.1",
+            "style": f"stroke:#f90;stroke-width:{STROKE_WIDTH_PX / 4};stroke-dasharray:0.05 0.1",
             CLARK_INKSCAPE_LABEL: "splays-vertical",
         })
     d = " ".join(d_splays)
     etree.SubElement(
         parent, "path", {
             "d": d,
-            "style": f"stroke:#f90;stroke-width:{STROKE_WIDTH_PX/4}",
+            "style": f"stroke:#f90;stroke-width:{STROKE_WIDTH_PX / 4}",
             CLARK_INKSCAPE_LABEL: "splays",
         })
     d = " ".join(d_legs)
     etree.SubElement(
         parent, "path", {
             "d": d,
-            "style": f"stroke:#f00;stroke-width:{STROKE_WIDTH_PX/2}",
+            "style": f"stroke:#f00;stroke-width:{STROKE_WIDTH_PX / 2}",
             CLARK_INKSCAPE_LABEL: "survey",
         })
 

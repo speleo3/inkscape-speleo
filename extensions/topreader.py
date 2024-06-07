@@ -539,15 +539,15 @@ def dump_json(top, file=sys.stdout):
 
 
 def dump_svx(top,
-        surveyname=None,
-        prefixadd='',
-        prefixstrip='',
-        doavg=True,
-        dosep=False,
-        therion=False,
-        dot='.',
-        file=sys.stdout,
-        end=os.linesep):
+             surveyname=None,
+             prefixadd='',
+             prefixstrip='',
+             doavg=True,
+             dosep=False,
+             therion=False,
+             dot='.',
+             file=sys.stdout,
+             end=os.linesep):
     '''Write a Survex (.svx) or Therion (.th) data file
 
     :param surveyname: Add *begin and *end with surveyname
@@ -594,11 +594,11 @@ def dump_svx(top,
     file.write(P + 'data normal from to tape compass clino')
     file.write(end)
 
-    tripidx = [None] # list as mutable pointer in function scope
+    tripidx = [None]  # list as mutable pointer in function scope
 
     allhaveprefixstrip = prefixstrip and (
-            all(s['from'].startswith(prefixstrip) for s in top['shots']) and
-            all(s['to'].startswith(prefixstrip) for s in top['shots'] if s['to']))
+        all(s['from'].startswith(prefixstrip) for s in top['shots']) and
+        all(s['to'].startswith(prefixstrip) for s in top['shots'] if s['to']))
 
     nstrip = len(prefixstrip) if allhaveprefixstrip else 0
 
@@ -658,8 +658,8 @@ def dump_svx(top,
 
 
 def dump_tro(top,
-        file=sys.stdout,
-        end=os.linesep):
+             file=sys.stdout,
+             end=os.linesep):
     '''Write a Visual Topo (.tro) data file
     '''
     def write_shot(s):
@@ -782,7 +782,6 @@ def dump_svg(top: dict,
                         compass_delta = compass_splay_rel / compass_out_rel * 2 - 1
                         # I would expect sin transformation, but looks like PocketTopo doesn't do that
                         # compass_delta = math.sin(math.radians(compass_delta * 90))
-
 
                 if s[KEY_EXTEND] == EXTEND_LEFT:
                     compass_delta *= -1
@@ -956,12 +955,12 @@ def dump_svg(top: dict,
 <style type="text/css">
 path {{
     fill:none;
-    stroke-width:{scale*0.05};
+    stroke-width:{scale * 0.05};
     stroke-linecap:round;
     stroke-linejoin:round;
 }}
 text {{
-    font: {scale*1.27/3} sans-serif;
+    font: {scale * 1.27 / 3} sans-serif;
     fill:#999;
 }}
 .xsecconnector {{
@@ -991,8 +990,8 @@ text {{
     width = width1 + width2 + 2 * outer_padding
     height = max(height1, height2) + 2 * outer_padding
 
-    root.set("width", f"{width/scale}cm")
-    root.set("height", f"{height/scale}cm")
+    root.set("width", f"{width / scale}cm")
+    root.set("height", f"{height / scale}cm")
     root.set("viewBox", f"0 0 {width} {height}")
 
     file.write(etree.tostring(root).decode("utf-8"))
@@ -1130,7 +1129,7 @@ def dump_xvi(top, *, file=sys.stdout):
         nx = int(1.5 + (max_x - min_x) / dx)
         ny = int(1.5 + (min_y - max_y) / dy)
 
-        file.write(f'set XVIgrid {{{min_x-dx/2:g} {max_y-dy/2:g} {dx} 0 0 {dy} {nx} {ny}}}\n')
+        file.write(f'set XVIgrid {{{min_x - dx / 2:g} {max_y - dy / 2:g} {dx} 0 0 {dy} {nx} {ny}}}\n')
 
     def write_grid_spacing():
         file.write('set XVIgrids {1.0 m}\n')
@@ -1298,7 +1297,7 @@ def view_aven(top, tmpname='', exe='aven', _dump=dump_svx, _ext='.svx'):
 
     try:
         svxfilename = os.path.join(d,
-                os.path.basename(tmpname or 'temp') + _ext)
+                                   os.path.basename(tmpname or 'temp') + _ext)
 
         with open(svxfilename, 'w') as handle:
             _dump(top, file=handle)
@@ -1345,11 +1344,11 @@ def main(argv=None):
                 dump_json(top)
             elif args.dump in ('svx', 'th'):
                 dump_svx(top,
-                        therion=args.dump == 'th',
-                        doavg=not args.no_avg,
-                        dosep=args.do_sep,
-                        prefixstrip=args.prefixstrip,
-                        prefixadd=args.prefixadd)
+                         therion=args.dump == 'th',
+                         doavg=not args.no_avg,
+                         dosep=args.do_sep,
+                         prefixstrip=args.prefixstrip,
+                         prefixadd=args.prefixadd)
             elif args.dump == 'svg':
                 dump_svg(top)
             elif args.dump == 'xvi':

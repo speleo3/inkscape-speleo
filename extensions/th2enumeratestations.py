@@ -56,6 +56,7 @@ class StationName:
 
     next = __next__
 
+
 def SeparateStationNameParts(s):
     part1, part2 = '', ''
 
@@ -65,7 +66,7 @@ def SeparateStationNameParts(s):
 
     # Start from the end of the string and look for the transition point
     for i in range(len(s) - 1, 0, -1):
-        if (s[i].isdigit() and s[i-1].isalpha()) or (s[i].isalpha() and s[i-1].isdigit()):
+        if (s[i].isdigit() and s[i - 1].isalpha()) or (s[i].isalpha() and s[i - 1].isdigit()):
             part1 = s[:i]
             part2 = s[i:]
             break
@@ -101,5 +102,3 @@ class Th2EnumerateStations(Th2SetProps):
 if __name__ == '__main__':
     e = Th2EnumerateStations()
     e.affect()
-
-# vi:expandtab:sw=4

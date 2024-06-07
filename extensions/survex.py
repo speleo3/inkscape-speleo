@@ -69,6 +69,7 @@ class Station(object):
     '''
     Survey station
     '''
+
     def __init__(self, xyz):
         assert isinstance(xyz, tuple)
         self.xyz = xyz
@@ -80,8 +81,8 @@ class Station(object):
 
     def __repr__(self):
         return '<%s %s%s>' % (self.__class__.__name__,
-                ', '.join(self.labels[:3]),
-                ', ...' if len(self.labels) > 3 else '')
+                              ', '.join(self.labels[:3]),
+                              ', ...' if len(self.labels) > 3 else '')
 
     def connect(self, other):
         '''define a leg from other to self'''
@@ -90,7 +91,7 @@ class Station(object):
 
     def distance(self, other):
         '''Euclidean distance to other station'''
-        return sum((a-b)**2 for (a,b) in zip(self.xyz, other.xyz))**0.5
+        return sum((a - b)**2 for (a, b) in zip(self.xyz, other.xyz))**0.5
 
     def distance_vertical(self, other):
         '''Signed altitude difference to other station (if other is below
@@ -156,12 +157,16 @@ class Station(object):
 
     def is_surface(self):
         return bool(self.flag & 0x01)
+
     def is_underground(self):
         return bool(self.flag & 0x02)
+
     def is_entrance(self):
         return bool(self.flag & 0x04)
+
     def is_exported(self):
         return bool(self.flag & 0x08)
+
     def is_fixed(self):
         return bool(self.flag & 0x10)
 
@@ -169,7 +174,7 @@ class Station(object):
         '''
         Shortest Path between two stations. If verbose=2 then print path with
         station names.
-        
+
         Returns tuple of the length of the path (or -1 if no path is found) and
         list of stations along the path.
 
@@ -182,13 +187,13 @@ class Station(object):
                 p.append(current_node)
                 return p
             return [self]
-    
+
         came_from = {}        # Map for backtrace (reconstruct_path)
         closedset = set()     # The set of nodes already evaluated.
-        openset = [ self ]    # List sorted by f_score
-        g_score = { self: 0 } # Distance from self along optimal path.
-        h_score = { self: self.distance(other) } # Estimated lower bound from y to other
-        f_score = { self: h_score[self] }        # Estimated total distance from self to other through y.
+        openset = [self]    # List sorted by f_score
+        g_score = {self: 0}  # Distance from self along optimal path.
+        h_score = {self: self.distance(other)}  # Estimated lower bound from y to other
+        f_score = {self: h_score[self]}        # Estimated total distance from self to other through y.
         while len(openset) > 0:
             x = openset.pop(0)
             if x == other:
@@ -224,6 +229,7 @@ class Station(object):
             print('No path from %s to %s' % (self.label, other.label))
         return -1, []
 
+
 class Survex3D(object):
     '''
     Datastructure to represent a "Survex 3D Image File".
@@ -242,6 +248,7 @@ class Survex3D(object):
     instance, but only makes sense if there are no overlapping station
     names.
     '''
+
     def __init__(self, filename=None, flags_leg_exclude=0):
         self.clear()
         self.flags_leg_exclude = flags_leg_exclude
@@ -258,9 +265,9 @@ class Survex3D(object):
     def clear(self):
         '''Remove all stations'''
         self.title = '<unnamed survey>'
-        self.xyz2sta = {} # Map of xyz to stations
-        self.lab2sta = {} # Map of labels to stations
-        self.passages = [] # passages with LRUD data
+        self.xyz2sta = {}  # Map of xyz to stations
+        self.lab2sta = {}  # Map of labels to stations
+        self.passages = []  # passages with LRUD data
         self._prev = None
         self._curr_label = ''
         self._curr_date = DateNone
@@ -310,7 +317,7 @@ class Survex3D(object):
         self.passages.append((self._curr_label, lrud))
         if flag & 0x01:
             self.passages.append(None)
- 
+
     def extent(self):
         '''
         Get the boundig box of all stations as [[xmin, ymin, zmin], [xmax, ymax, zmax]]
@@ -358,7 +365,7 @@ class Survex3D(object):
     def iterstations(self):
         '''Iterator over all stations'''
         return iter(self.xyz2sta.values())
- 
+
     __iter__ = iterstations
 
     def iterlegs(self, dosort=False):
@@ -454,11 +461,11 @@ class Survex3D(object):
     def read_stream(self, f):
         from struct import unpack
 
-        line = f.readline() # File ID
+        line = f.readline()  # File ID
         if not line.startswith(b'Survex 3D Image File'):
             raise IOError('not a Survex 3D File, aborting')
 
-        line = f.readline() # File format version
+        line = f.readline()  # File format version
         assert line.startswith(b'v')
         ff_version = int(line[1:])
 
@@ -471,7 +478,7 @@ class Survex3D(object):
         # Coordinate system
         self.cs = autodecode(metadata[1])
 
-        self.timestamp = f.readline().rstrip() # Timestamp
+        self.timestamp = f.readline().rstrip()  # Timestamp
         self.flags = 0x0
 
         def read_xyz():
@@ -601,10 +608,11 @@ class Survex3D(object):
             elif byte <= 0x0e:
                 # TRIM
                 # FIXME: according to doc, trim 16 bytes, but img.c does 17!
-                (i,n) = (-17,0)
+                (i, n) = (-17, 0)
                 while n < byte:
                     i -= 1
-                    if self._curr_label[i] == '.': n += 1
+                    if self._curr_label[i] == '.':
+                        n += 1
                 self._curr_label = self._curr_label[:i + 1]
             elif byte <= 0x0f:
                 # MOVE
@@ -664,6 +672,7 @@ class Survex3D(object):
                 # Reserved
                 continue
 
+
 class Date(datetime.date):
     '''
     Survey date range
@@ -684,6 +693,7 @@ class Date(datetime.date):
         self.end = cls.fromtimestamp(date2) if date2 else self
         return self
 
+
 class DateNone(Date):
     '''
     Singleton for missing date information.
@@ -691,7 +701,10 @@ class DateNone(Date):
     __nonzero__ = lambda s: False
     __repr__ = lambda s: s.__class__.__name__
     __str__ = __repr__
+
+
 Date.end = DateNone = DateNone(1, 1, 1)
+
 
 def natkey(s):
     '''
@@ -719,5 +732,3 @@ if __name__ == '__main__':
         print(s)
         print(s.length())
         print(list(s.sortedlabels())[:5])
-
-# vi:expandtab:smarttab
