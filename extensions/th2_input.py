@@ -672,7 +672,7 @@ parsedict = {
 def main():
     th2pref_reload()
 
-    with open_in_pythonpath('th2_template.svg') as template:
+    with open(get_template_svg_path()) as template:
         this.document = etree.parse(template)
 
     this.root = this.document.getroot()

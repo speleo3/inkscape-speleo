@@ -17,6 +17,7 @@ Text alignment guess for export is not perfect, but covers the most use cases.
 '''
 
 from lxml import etree
+from pathlib import Path
 from typing import Sequence
 import shlex
 import sys
@@ -600,6 +601,9 @@ def parseViewBox(viewBox, width, height):
 
 
 def find_in_pwd(filename, path=[]):
+    """
+    Look up filename first in $PWD, then (if not found) in `path`.
+    """
     for dirname in ['', os.getcwd()] + path:
         candidate = os.path.join(dirname, filename)
         if os.path.exists(candidate):
@@ -607,16 +611,11 @@ def find_in_pwd(filename, path=[]):
     raise IOError("Can't find file '" + filename + "'")
 
 
-def find_in_pythonpath(filename):
-    for dirname in [os.path.dirname(__file__)]:
-        candidate = os.path.join(dirname, filename)
-        if os.path.exists(candidate):
-            return candidate
-    raise IOError("Can't find file '" + filename + "' in PYTHONPATH")
-
-
-def open_in_pythonpath(filename):
-    return open(find_in_pythonpath(filename))
+def get_template_svg_path() -> Path:
+    """
+    Get the filename of the th2_template.svg file.
+    """
+    return Path(__file__).parent / 'th2_template.svg'
 
 
 print_utf8 = print

@@ -6,6 +6,7 @@ Copyright (C) Thomas Holder
 Distributed under the terms of the GNU General Public License v2 or later
 '''
 
+import contextlib
 import sys
 import th2ex
 import tkinter
@@ -137,13 +138,15 @@ def xvi2svg(handle, fullsvg=True, strokewidth=6, XVIroot='',
     return root
 
 
-if __name__ == '__main__':
+def _get_input_context():
     if len(sys.argv) > 1:
-        handle = open(th2ex.find_in_pwd(sys.argv[-1]))
-    else:
-        handle = sys.stdin
-    root = xvi2svg(handle)
-    handle.close()
+        return open(sys.argv[-1])
+    return contextlib.nullcontext(sys.stdin)
+
+
+if __name__ == '__main__':
+    with _get_input_context() as handle:
+        root = xvi2svg(handle)
     binarystdout = sys.stdout.buffer
     binarystdout.write(etree.tostring(root, encoding='utf-8', xml_declaration=True))
     binarystdout.write(b'\n')

@@ -41,9 +41,8 @@ class Th2SetProps(Th2Effect):
         new_options = parse_options(asunicode(self.options.options))
 
         if self.options.dropstyle and 'th2style' not in self.doc_ids:
-            template = open_in_pythonpath('th2_template.svg')
-            doc_temp = etree.parse(template)
-            template.close()
+            with open(get_template_svg_path()) as template:
+                doc_temp = etree.parse(template)
             defs_temp = doc_temp.find(inkex.addNS('defs', 'svg'))
             defs_self = self.document.find(inkex.addNS('defs', 'svg'))
             if defs_self is None:

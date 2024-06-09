@@ -27,6 +27,16 @@ def test_xvi_input_script():
     assert root[0][0].get("d") == "M 197.83 179.72 174.41 103.15"
 
 
+def test_xvi_input_script_stdin():
+    with open(TESTS_DATA / "create.xvi") as stdin:
+        svgcontent = subprocess.check_output(
+            [sys.executable, xvi_input.__file__],
+            stdin=stdin,
+        )
+    root = etree.fromstring(svgcontent)
+    assert root[0][0].get("d") == "M 197.83 179.72 174.41 103.15"
+
+
 def test_xvi2svg():
     with open(TESTS_DATA / "create.xvi") as handle:
         root = xvi_input.xvi2svg(handle, fullsvg=False)
