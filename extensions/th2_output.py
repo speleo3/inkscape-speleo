@@ -6,15 +6,46 @@ Distributed under the terms of the GNU General Public License v2 or later
 This program was inspired by http://www.cavediving.de/svg2th2.py
 '''
 
-from th2ex import *
+from th2ex import (
+    as_unicode,
+    th2pref,
+    th2pref_load_from_xml,
+    svg_polygon,
+    svg_text,
+    svg_textPath,
+    svg_tspan,
+    svg_g,
+    therion_role,
+    therion_options,
+    xlink_href,
+    inkscape_groupmode,
+    inkscape_label,
+    inkscape_original_d,
+    sodipodi_role,
+    sodipodi_insensitive,
+    sodipodi_nodetypes,
+    name_survex2therion,
+    parse_options,
+    format_options,
+    get_props,
+    align2anchor_default_out,
+    align2baseline_default_out,
+    text_keys_output,
+    descrim,
+    parsePath,
+    convert_unit,
+    Th2Effect,
+)
 from lxml import etree
-import simplepath
+import inkex
 import simpletransform
 import simplestyle
 import math
 import re
 import collections
 import os
+
+print_utf8 = print
 
 
 def parse_options_node(node):
@@ -39,7 +70,7 @@ def orientation(mat):
     try:
         deg = -math.degrees(math.atan2(mat[0][1], -mat[1][1]))
         return deg % 360.0
-    except:
+    except Exception:
         return 0.0
 
 
@@ -118,7 +149,7 @@ class Th2Line:
 
 
 class Th2Area:
-    count = collections.defaultdict(int)
+    count: dict[str, int] = collections.defaultdict(int)
 
     def __init__(self, type):
         self.type = type
@@ -185,7 +216,9 @@ class Th2Output(Th2Effect):
         d = node.get(key, d)
         return style.get(key, d)
 
-    def print_scrap_begin(self, id, test, options={}):
+    def print_scrap_begin(self, id: str, test: bool, options=None):
+        options = dict(options or {})
+
         self.current_scrap_id = id
 
         if test:
@@ -444,7 +477,7 @@ class Th2Output(Th2Effect):
         th2line = None
         for cmd, params in p:
             if cmd == 'M':
-                if th2line != None:
+                if th2line is not None:
                     th2line.output()
                 th2line = Th2Line(type)
                 th2line.options.update(options)
@@ -454,7 +487,7 @@ class Th2Output(Th2Effect):
                 node_count += 1
                 th2line.append(transformParams(mat, params))
                 th2line.append_node_options(node_options.get(node_count, []))
-        if th2line != None:
+        if th2line is not None:
             th2line.output()
 
     def output_textblock(self, node):

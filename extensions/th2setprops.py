@@ -6,9 +6,23 @@ Distributed under the terms of the GNU General Public License v2 or later
 Annotate SVG elements for therion export.
 '''
 
-from th2ex import *
+from th2ex import (
+    Th2Effect,
+    get_props,
+    get_template_svg_path,
+    inkscape_original_d,
+    inkscape_path_effect,
+    parse_options,
+    set_props,
+    svg_path,
+    svg_use,
+    th2pref_load_from_xml,
+    xlink_href,
+)
+
+import inkex
+import sys
 from lxml import etree
-import re
 
 
 def asunicode(s):

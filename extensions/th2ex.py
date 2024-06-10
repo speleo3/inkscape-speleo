@@ -18,9 +18,8 @@ Text alignment guess for export is not perfect, but covers the most use cases.
 
 from lxml import etree
 from pathlib import Path
-from typing import Sequence
+from typing import Iterable, Sequence
 import shlex
-import sys
 import os
 import math
 import re
@@ -29,6 +28,10 @@ import inkex
 import warnings
 
 warnings.simplefilter("ignore", DeprecationWarning)
+
+EtreeElement = etree._Element
+BBoxType = list[float]
+AffineType = list[list[float]]
 
 
 def as_unicode(s):
@@ -68,7 +71,7 @@ def parse_scrap_scale_m_per_dots(scale: str) -> float:
     if scale.startswith("["):
         assert scale.endswith("]")
         scale = scale[1:-1]
-    dots = 1
+    dots = 1.0
     unit = "m"
     a = scale.split()
     if len(a) in (1, 2, 3):
@@ -89,7 +92,7 @@ def parse_scrap_scale_m_per_dots(scale: str) -> float:
 
 
 # some prefs
-class th2pref:
+class _th2pref:
     def __init__(self):
         self.howtostore = 'inkscape_label'
         self.textonpath = True
@@ -99,7 +102,7 @@ class th2pref:
 
 
 # fix Python 3 mappingproxy issue
-th2pref = th2pref()
+th2pref = _th2pref()
 
 
 class InkOption(optparse.Option):
@@ -234,13 +237,13 @@ needquote = re.compile(r'[^-._@a-z0-9]', re.I)
 def is_numeric(s):
     try:
         float(s)
-    except:
+    except Exception:
         return False
     return True
 
 
 def maybe_key(s):
-    return re.match(r'-\S+$', s) != None and not is_numeric(s)
+    return re.match(r'-\S+$', s) is not None and not is_numeric(s)
 
 
 def splitquoted(ustr, comments=False):
@@ -303,7 +306,7 @@ def parse_options_new(a):
     while i < n:
         try:
             assert a[i][0] == '-'
-        except:
+        except (AssertionError, IndexError):
             _skipunexpected('assertion failed on ' + a[i])
             return options
 
@@ -362,7 +365,7 @@ def format_options(options):
             ret = '-' + key
             value_count = option_value_count.get(key)
 
-        if value == True:
+        if value is True:
             assert value_count in (None, 0)
         elif isinstance(value, (tuple, list)):
             # multi-value string
@@ -417,10 +420,12 @@ def is_closed_line(node):
     return d.rstrip()[-1:].lower() == 'z'
 
 
-def set_props(e, role, type, options={}):
+def set_props(e, role, type, options=None):
     '''
     Annotate SVG element with role, type and options.
     '''
+    if options is None:
+        options = {}
     assert role != 'scrap', 'Cannot use set_props for scraps'
     options_str = format_options(options)
     if th2pref.howtostore != 'therion_attribs':
@@ -600,11 +605,11 @@ def parseViewBox(viewBox, width, height):
 # IO stuff
 
 
-def find_in_pwd(filename, path=[]):
+def find_in_pwd(filename, path: Iterable[str] = ()):
     """
     Look up filename first in $PWD, then (if not found) in `path`.
     """
-    for dirname in ['', os.getcwd()] + path:
+    for dirname in ['', os.getcwd()] + list(path):
         candidate = os.path.join(dirname, filename)
         if os.path.exists(candidate):
             return candidate
@@ -617,17 +622,6 @@ def get_template_svg_path() -> Path:
     """
     return Path(__file__).parent / 'th2_template.svg'
 
-
-print_utf8 = print
-
-
-######################################
-# transitional inkex functions
-
-try:
-    inkex.errormsg
-except:
-    inkex.errormsg = lambda msg: sys.stderr.write((str(msg) + "\n").encode("UTF-8"))
 
 ######################################
 # inkex (and similar) fixed or enhanced functions
@@ -702,10 +696,10 @@ class Th2Effect(inkex.Effect):
             [0.0, -th2pref.basescale, 0.0],
         ]
 
-    bbox_cache = {}
-    i2d_cache = {}
+    bbox_cache: dict[EtreeElement, BBoxType] = {}
+    i2d_cache: dict[EtreeElement, AffineType] = {}
 
-    def i2d_affine(self, node, use_cache=True):
+    def i2d_affine(self, node: EtreeElement, use_cache: bool = True) -> AffineType:
         '''
         Get the "item to document" transformation matrix.
 
@@ -767,7 +761,7 @@ class Th2Effect(inkex.Effect):
         from simpletransform import boxunion, parseTransform, applyTransformToPath, formatTransform
         try:
             from simpletransform import refinedBBox
-        except:
+        except ImportError:
             from simpletransform import roughBBox as refinedBBox
 
         d = None
@@ -843,7 +837,7 @@ class Th2Effect(inkex.Effect):
 
         self.bbox_cache[node] = node_bbox
 
-        if transform.strip() != '' and node_bbox != None:
+        if transform.strip() != '' and node_bbox is not None:
             mat = parseTransform(transform)
             p = [[[
                 [node_bbox[0], node_bbox[2]],

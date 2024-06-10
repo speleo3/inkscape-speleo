@@ -209,11 +209,9 @@ if ff_version >= 8:
     xyz_move = None
 
     while True:
-        byte = f.read(1)
-        if byte == '':
+        byte = read_byte()
+        if byte == -1:
             break
-
-        byte = ord(byte)
 
         if byte <= 0x05:
             # STYLE_*

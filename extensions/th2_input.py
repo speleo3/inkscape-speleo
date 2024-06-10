@@ -7,12 +7,47 @@ TODO
  * support line options between line data, for example by splitting lines and grouping
 '''
 
+from th2ex import (
+    parse_scrap_scale_m_per_dots,
+    th2pref,
+    oparser,
+    th2pref_reload,
+    th2pref_store_to_xml,
+    therion_role,
+    therion_type,
+    therion_options,
+    therion_xvi_dx,
+    xlink_href,
+    xml_space,
+    inkscape_groupmode,
+    inkscape_label,
+    inkscape_original_d,
+    inkscape_path_effect,
+    sodipodi_role,
+    sodipodi_insensitive,
+    sodipodi_nodetypes,
+    parse_options,
+    format_options,
+    set_props,
+    get_props,
+    align_shortcuts,
+    align2anchor_default_in,
+    align2anchor,
+    align2baseline_default_in,
+    align2baseline,
+    text_keys_input,
+    find_in_pwd,
+    get_template_svg_path,
+)
+
 import sys
 import os
 import re
-from th2ex import *
 from lxml import etree
+import inkex
 import simplepath
+
+EtreeElement = etree._Element
 
 pointtype2layer = {
     'altitude': 'labe',
@@ -81,8 +116,8 @@ class this:
     id_count = 0
     textblock_count = 0
 
-    borders = {}  # for areas
-    sublayers = {}
+    borders: dict[str, EtreeElement] = {}  # for areas
+    sublayers: dict[str, EtreeElement] = {}
 
     doc_x = 0
     doc_y = 0
@@ -158,7 +193,7 @@ def populate_legend():
     node.set('width', '%d' % (2 * spacing))
 
 
-def getlayer(role, type):
+def getlayer(role: str, type: str):
     if not th2pref.sublayers:
         return this.getcurrentlayer()
     if role == 'point':
@@ -170,9 +205,9 @@ def getlayer(role, type):
 
 class FileRecord:
     def __init__(self, patharg: str):
-        searchpath = [this.file_stack[-1].dirname] if this.file_stack else []
-        self.filename = find_in_pwd(patharg, searchpath)
-        self.dirname = os.path.dirname(self.filename)
+        searchpath: list[str] = [this.file_stack[-1].dirname] if this.file_stack else []
+        self.filename: str = find_in_pwd(patharg, searchpath)
+        self.dirname: str = os.path.dirname(self.filename)
         self.f_handle = open(self.filename, 'rb')
         self.f_enum = enumerate(self.f_handle)
 

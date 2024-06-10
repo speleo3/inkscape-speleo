@@ -677,33 +677,35 @@ class Date(datetime.date):
     '''
     Survey date range
     '''
+    end: "Date"
+
     @classmethod
-    def fromdays(cls, date1, date2=None):
+    def fromdays(cls, date1: int, date2: int | None = None):
         self = cls.fromordinal(693596 + date1)
         self.end = cls.fromdays(date2) if date2 else self
         return self
 
     @classmethod
-    def fromdaysspan(cls, date1, datespan):
+    def fromdaysspan(cls, date1: int, datespan: int):
         return cls.fromdays(date1, date1 + datespan)
 
     @classmethod
-    def fromseconds(cls, date1, date2=None):
+    def fromseconds(cls, date1: float, date2: float | None = None):
         self = cls.fromtimestamp(date1)
         self.end = cls.fromtimestamp(date2) if date2 else self
         return self
 
 
-class DateNone(Date):
+class DateNoneType(Date):
     '''
     Singleton for missing date information.
     '''
     __nonzero__ = lambda s: False
-    __repr__ = lambda s: s.__class__.__name__
+    __repr__ = lambda s: "DateNone"
     __str__ = __repr__
 
 
-Date.end = DateNone = DateNone(1, 1, 1)
+Date.end = DateNone = DateNoneType(1, 1, 1)
 
 
 def natkey(s):

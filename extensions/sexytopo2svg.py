@@ -10,6 +10,8 @@ from math import cos, sin, radians
 from pathlib import Path
 from lxml import etree
 
+EtreeElement = etree._Element
+
 CLARK_SVG_G = "{http://www.w3.org/2000/svg}g"
 CLARK_INKSCAPE_LABEL = "{http://www.inkscape.org/namespaces/inkscape}label"
 CLARK_INKSCAPE_GROUPMODE = "{http://www.inkscape.org/namespaces/inkscape}groupmode"
@@ -85,7 +87,7 @@ def read_json(path: Path) -> dict:
         return json.load(handle)
 
 
-def write_drawing(parent: etree.Element, data: dict, bbox: BBox):
+def write_drawing(parent: EtreeElement, data: dict, bbox: BBox):
     for path in data["paths"]:
         color = path["colour"].lower()
         d = "M " + " L ".join(f"{point['x']} {point['y']}" for point in path["points"])
@@ -112,11 +114,11 @@ def write_drawing(parent: etree.Element, data: dict, bbox: BBox):
         bbox.add_point(x, y)
 
 
-def write_shots(parent: etree.Element, data: dict, bbox: BBox, is_ext: bool):
-    name2pos = {}
-    d_splays = []
-    d_splays_vertical = []
-    d_legs = []
+def write_shots(parent: EtreeElement, data: dict, bbox: BBox, is_ext: bool):
+    name2pos: dict[str, tuple[float, float, float]] = {}
+    d_splays: list[ſtr] = []
+    d_splays_vertical: list[str] = []
+    d_legs: list[str] = []
     ee_directions = {
         station["name"]: station["eeDirection"]
         for station in data["stations"]
