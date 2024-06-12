@@ -99,6 +99,16 @@ def write_drawing(parent: EtreeElement, data: dict, bbox: BBox):
         for point in path["points"]:
             bbox.add_point(point["x"], point["y"])
 
+    for symbol in data["symbols"]:
+        color = symbol["colour"].lower()
+        size = symbol["size"] / 3
+        elem_text = etree.SubElement(parent, "text", {
+            "x": str(symbol["location"]["x"]),
+            "y": str(symbol["location"]["y"]),
+            "style": f"font-size:{size};fill:{color};text-anchor:middle;dominant-baseline:middle",
+        })
+        elem_text.text = symbol["symbol-id"].lower()
+
     for label in data["labels"]:
         color = label["colour"].lower()
         size = label["size"]
