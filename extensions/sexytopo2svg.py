@@ -114,6 +114,18 @@ def write_drawing(parent: EtreeElement, data: dict, bbox: BBox):
         bbox.add_point(x, y)
 
 
+def write_xsections(parent: EtreeElement, frompoints: dict[str, tuple], drawing: dict):
+    for xsec in drawing["x-sections"]:
+        pnt = xsec["location"]
+        pnt_stn = frompoints[xsec["station-id"]]
+        etree.SubElement(
+            parent, "path", {
+                CLARK_INKSCAPE_LABEL: "line section",
+                "style": "stroke:#bbb;stroke-dasharray:0.05 0.15",
+                "d": f"M{pnt_stn[0]} {pnt_stn[1]} {pnt['x']} {pnt['y']}",
+            })
+
+
 def write_shots(parent: EtreeElement, data: dict, bbox: BBox, is_ext: bool):
     name2pos: dict[str, tuple[float, float, float]] = {}
     d_splays: list[ſtr] = []
@@ -213,6 +225,8 @@ def write_shots(parent: EtreeElement, data: dict, bbox: BBox, is_ext: bool):
         })
         elem_text.text = name
 
+    return name2pos
+
 
 def main(args=None):
     argparser = argparse.ArgumentParser(description=__doc__)
@@ -242,15 +256,23 @@ def main(args=None):
         CLARK_INKSCAPE_LABEL: "drawing",
         "style": f"stroke-width:{STROKE_WIDTH_PX}",
     })
-    g_shots = etree.SubElement(parent, "g", {CLARK_INKSCAPE_LABEL: "shots"})
+    g_shots = etree.SubElement(parent, "g", {
+        CLARK_INKSCAPE_LABEL: "shots",
+        "style": f"stroke-width:{STROKE_WIDTH_PX / 2}",
+    })
 
     bbox = BBox()
+    drawing = None
 
     if is_plan or is_ext:
-        write_drawing(g_drawing, read_json(filename), bbox)
+        drawing = read_json(filename)
+        write_drawing(g_drawing, drawing, bbox)
 
     if datafilename.is_file():
-        write_shots(g_shots, read_json(datafilename), bbox, is_ext)
+        name2pos = write_shots(g_shots, read_json(datafilename), bbox, is_ext)
+
+        if drawing:
+            write_xsections(g_shots, name2pos, drawing)
 
     if not bbox.is_empty():
         width = bbox.width() + BBOX_PADDING_PX * 2
