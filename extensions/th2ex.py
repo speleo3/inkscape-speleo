@@ -346,6 +346,8 @@ def key_options_item(item: tuple) -> tuple:
     """
     if item[0] == 'id':
         return '0' + item[0], item[1]
+    if item[0] == 'close':
+        return '1' + item[0], item[1]
     return item
 
 

@@ -69,9 +69,11 @@ def orientation(mat):
     '''Orientation of a (0.0, 1.0) vector after rotation with "mat"'''
     try:
         deg = -math.degrees(math.atan2(mat[0][1], -mat[1][1]))
-        return deg % 360.0
     except Exception:
         return 0.0
+    deg = deg % 360
+    deg = round(deg, 3)
+    return deg
 
 
 def fstr(x):
@@ -108,6 +110,15 @@ def fstr_trim_zeros(s: str) -> str:
         i += 1
     s = s[:i + 1]
     return "0.0" if s == "-0.0" else s
+
+
+def optquote(x: str) -> str:
+    """
+    Add quotes around `x` if necessary, e.g. if it contains spaces.
+    """
+    if re.search(r"\s", x) is None:
+        return x
+    return f'"{x}"'
 
 
 def format_options_leading_space(options):
@@ -315,8 +326,8 @@ class Th2Output(Th2Effect):
                 document_path = os.getenv("DOCUMENT_PATH")
                 if document_path:
                     href = os.path.relpath(href, os.path.dirname(document_path))
-                print('##XTHERION## xth_me_image_insert {%s 1 1.0} {%s %s} "%s" 0 {}' %
-                      (fstr2(paramsTrans[0]), fstr2(paramsTrans[1]), XVIroot, href))
+                print('##XTHERION## xth_me_image_insert {%s 1 1.0} {%s %s} %s 0 {}' %
+                      (fstr2(paramsTrans[0]), fstr2(paramsTrans[1]), XVIroot, optquote(href)))
 
         print('\n')
 
