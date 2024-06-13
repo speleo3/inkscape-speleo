@@ -9,6 +9,15 @@ import pytest
 TESTS_DATA = Path(__file__).resolve().parent / "data"
 
 
+def assert_stripped_lines_equal(lhs: str, rhs = "", path = None):
+    if path is not None:
+        assert not rhs
+        rhs = Path(path).read_text()
+    lines_lhs = [line.strip() for line in lhs.splitlines()]
+    lines_rhs = [line.strip() for line in rhs.splitlines()]
+    assert lines_lhs == lines_rhs
+
+
 def test_distmm():
     mm = 1234567
     meter = 1234.567
@@ -129,4 +138,4 @@ def test_dump_xvi():
     out = io.StringIO()
     m.dump_xvi(top, file=out)
     content = out.getvalue()
-    assert "set XVIshots {" in content
+    assert_stripped_lines_equal(content, path=TESTS_DATA / "test1.top.outline.xvi")

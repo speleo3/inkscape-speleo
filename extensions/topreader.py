@@ -1116,7 +1116,7 @@ def dump_xvi(top, *, file=sys.stdout):
         for xsec in drawing['xsec']:
             pnt = pnt2xvi(xsec[KEY_XSEC_POS])
             pnt_stn = pnt2xvi(frompoints[xsec[KEY_XSEC_STN]])
-            file.write("  {yellow " + f"{pnt_stn[0]} {pnt_stn[1]} {pnt[0]} {pnt[1]}" + "}\n")
+            file.write("  {yellow " + f"{pnt_stn[0]:g} {pnt_stn[1]:g} {pnt[0]:g} {pnt[1]:g}" + "}\n")
 
     def write_grid(top, view="outline"):
         min_x, min_y, max_x, max_y = get_bbox(top[view]['polys'])
