@@ -139,3 +139,12 @@ def test_dump_xvi():
     m.dump_xvi(top, file=out)
     content = out.getvalue()
     assert_stripped_lines_equal(content, path=TESTS_DATA / "test1.top.outline.xvi")
+
+
+def test_dump_xvi__sideview():
+    with open(TESTS_DATA / "test1.top", "rb") as handle:
+        top = m.load(handle)
+    out = io.StringIO()
+    m.dump_xvi(top, file=out, view="sideview")
+    content = out.getvalue()
+    assert_stripped_lines_equal(content, path=TESTS_DATA / "test1.top.sideview.xvi")
