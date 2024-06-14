@@ -25,7 +25,15 @@ import collections
 import math
 from html import escape
 from lxml import etree
-from typing import Any, BinaryIO, Iterable, Callable
+from typing import (
+    Any,
+    BinaryIO,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Tuple,
+)
 
 EtreeElement = etree._Element
 
@@ -701,6 +709,125 @@ def get_bbox(polys):
     ]
 
 
+DumpTypePoint = Tuple[float, float]
+DumpTypeLeg = Tuple[DumpTypePoint, DumpTypePoint]
+
+
+class ShotPreprocessor:
+
+    def __init__(self, top: dict, sideview: bool):
+        self.top = top
+        self.sideview = sideview
+
+        self.frompoints: Dict[str, DumpTypePoint] = {}
+        self.legs: List[DumpTypeLeg] = []
+        self.splays: List[DumpTypeLeg] = []
+
+        self.defer: List[dict] = []
+        self.compass_from: Dict[List[float]] = collections.defaultdict(list)
+        self.compass_to: Dict[List[float]] = collections.defaultdict(list)
+
+    def get_sideview_compass_delta(self, shot: dict, true_bearing: float,
+                                   is_splay: bool):
+        compass_delta = 1.0
+        if not is_splay:
+            if shot[KEY_TAPE] and is_consecutive_number(shot["from"], shot["to"]):
+                self.compass_from[shot['from']].append(true_bearing)
+            if shot[KEY_TAPE]:
+                self.compass_to[shot['to']].append(true_bearing)
+        else:
+            assert shot[KEY_TAPE]
+            compass_out = self.compass_from.get(shot['from'])
+            compass_in = self.compass_to.get(shot['from'], compass_out)
+
+            if compass_in is None:
+                compass_out = []
+                compass_in = []
+            elif compass_out is None:
+                compass_out = compass_in
+
+            compass_in = avgdeg(compass_in)
+            compass_out = avgdeg(compass_out)
+
+            compass_in += 180
+            compass_splay_rel = posdeg(true_bearing - compass_in)
+            compass_out_rel = posdeg(compass_out - compass_in)
+
+            if compass_splay_rel > compass_out_rel:
+                compass_splay_rel = 360 - compass_splay_rel
+                compass_out_rel = 360 - compass_out_rel
+
+            if compass_out_rel:
+                compass_delta = compass_splay_rel / compass_out_rel * 2 - 1
+                # I would expect sin transformation, but looks like PocketTopo doesn't do that
+                # compass_delta = math.sin(math.radians(compass_delta * 90))
+
+        if shot[KEY_EXTEND] == EXTEND_LEFT:
+            compass_delta *= -1
+
+        return compass_delta
+
+    def process_shot(self, shot: dict, do_splays: bool):
+        is_splay = not shot['to']
+
+        if do_splays != is_splay:
+            return True
+
+        # ignore "1.0  .. 0.0 0.0 0.0" line
+        if not shot[KEY_TAPE] and is_splay:
+            return True
+
+        if shot['from'] not in self.frompoints:
+            if shot['to'] not in self.frompoints:
+                return False
+            shot = reverse_shot(shot)
+
+        length_proj = shot[KEY_TAPE] * math.cos(math.radians(shot['clino']))
+        true_bearing = get_true_bearing(shot, self.top)
+
+        if self.sideview:
+            compass_delta = self.get_sideview_compass_delta(
+                shot, true_bearing, is_splay)
+
+            delta_x = length_proj * compass_delta
+            delta_y = shot[KEY_TAPE] * math.sin(math.radians(shot['clino']))
+        else:
+            delta_x = length_proj * math.sin(math.radians(true_bearing))
+            delta_y = length_proj * math.cos(math.radians(true_bearing))
+
+        pnt_from = self.frompoints[shot['from']]
+        pnt_to = (pnt_from[0] + delta_x, pnt_from[1] - delta_y)
+
+        if not is_splay:
+            self.frompoints[shot['to']] = pnt_to
+            self.legs.append((pnt_from, pnt_to))
+        else:
+            self.splays.append((pnt_from, pnt_to))
+
+        return True
+
+    def process(self, leg_shots: List[dict]):
+        for s in self.top['shots']:
+            self.frompoints[s['from']] = (0, 0)
+            break
+
+        for s in leg_shots:
+            if not self.process_shot(s, False):
+                self.defer.append(s)
+
+        while self.defer:
+            for s in self.defer:
+                if self.process_shot(s, False):
+                    self.defer.remove(s)
+                    break
+            else:
+                print(f'{len(self.defer)} unconnected subsurveys', file=sys.stderr)
+                break
+
+        for s in self.top['shots']:
+            self.process_shot(s, True)
+
+
 def dump_svg(top: dict,
              *,
              hidesideview: bool = False,
@@ -719,106 +846,6 @@ def dump_svg(top: dict,
     leg_shots = list(average_shots(top['shots']))
 
     def write_shots(parent: EtreeElement, shots, sideview=False) -> dict:
-        frompoints = {}
-        compass_from = collections.defaultdict(list)
-        compass_to = collections.defaultdict(list)
-        legs = []
-        splays = []
-        defer = []
-
-        for s in top['shots']:
-            frompoints[s['from']] = (0, 0)
-            break
-
-        def process_shot(s, do_splays):
-            is_splay = not s['to']
-
-            if do_splays != is_splay:
-                return True
-
-            # ignore "1.0  .. 0.0 0.0 0.0" line
-            if not s[KEY_TAPE] and is_splay:
-                return True
-
-            if s['from'] not in frompoints:
-                if s['to'] not in frompoints:
-                    return False
-                s = reverse_shot(s)
-
-            length_proj = s[KEY_TAPE] * math.cos(math.radians(s['clino']))
-            true_bearing = get_true_bearing(s, top)
-
-            if sideview:
-                compass_delta = 1.0
-
-                if not is_splay:
-                    if s[KEY_TAPE] and is_consecutive_number(s["from"], s["to"]):
-                        compass_from[s['from']].append(true_bearing)
-                    if s[KEY_TAPE]:
-                        compass_to[s['to']].append(true_bearing)
-                else:
-                    assert s[KEY_TAPE]
-                    compass_out = compass_from.get(s['from'])
-                    compass_in = compass_to.get(s['from'], compass_out)
-
-                    if compass_in is None:
-                        compass_out = []
-                        compass_in = []
-                    elif compass_out is None:
-                        compass_out = compass_in
-
-                    compass_in = avgdeg(compass_in)
-                    compass_out = avgdeg(compass_out)
-
-                    compass_in += 180
-                    compass_splay_rel = posdeg(true_bearing - compass_in)
-                    compass_out_rel = posdeg(compass_out - compass_in)
-
-                    if compass_splay_rel > compass_out_rel:
-                        compass_splay_rel = 360 - compass_splay_rel
-                        compass_out_rel = 360 - compass_out_rel
-
-                    if compass_out_rel:
-                        compass_delta = compass_splay_rel / compass_out_rel * 2 - 1
-                        # I would expect sin transformation, but looks like PocketTopo doesn't do that
-                        # compass_delta = math.sin(math.radians(compass_delta * 90))
-
-                if s[KEY_EXTEND] == EXTEND_LEFT:
-                    compass_delta *= -1
-
-                delta_x = length_proj * compass_delta
-                delta_y = s[KEY_TAPE] * math.sin(math.radians(s['clino']))
-            else:
-                delta_x = length_proj * math.sin(math.radians(true_bearing))
-                delta_y = length_proj * math.cos(math.radians(true_bearing))
-
-            pnt_from = frompoints[s['from']]
-            pnt_to = (pnt_from[0] + delta_x, pnt_from[1] - delta_y)
-
-            if not is_splay:
-                frompoints[s['to']] = pnt_to
-                legs.append((pnt_from, pnt_to))
-            else:
-                splays.append((pnt_from, pnt_to))
-
-            return True
-
-        for s in leg_shots:
-            if not process_shot(s, False):
-                defer.append(s)
-
-        while defer:
-            for s in defer:
-                if process_shot(s, False):
-                    defer.remove(s)
-                    break
-            else:
-                print('{} unconnected subsurveys'.format(len(defer)), file=sys.stderr)
-                break
-
-        for s in top['shots']:
-            process_shot(s, True)
-
         def write_legs(legs: list, style: str):
             path_data = " ".join(
                 f"M{pnt_from[0]},{pnt_from[1]} {pnt_to[0]},{pnt_to[1]}"
@@ -829,10 +856,13 @@ def dump_svg(top: dict,
                 "d": path_data,
             })
 
-        write_legs(splays, 'stroke:#fc0;stroke-width:0.02')
-        write_legs(legs, 'stroke:#f00;stroke-width:0.03')
+        preprocessor = ShotPreprocessor(top, sideview)
+        preprocessor.process(leg_shots)
 
-        return frompoints
+        write_legs(preprocessor.splays, 'stroke:#fc0;stroke-width:0.02')
+        write_legs(preprocessor.legs, 'stroke:#f00;stroke-width:0.03')
+
+        return preprocessor.frompoints
 
     def write_xsections(parent: EtreeElement, frompoints, drawing):
         for xsec in drawing['xsec']:
@@ -1015,79 +1045,18 @@ def dump_xvi(top, *, file=sys.stdout, view="outline"):
     leg_shots = list(average_shots(top['shots']))
 
     def write_shots(shots, sideview=False):
-        frompoints = {}
-        legs = []
-        splays = []
-        defer = []
-
-        for s in top['shots']:
-            frompoints[s['from']] = (0, 0)
-            break
-
-        def process_shot(s, do_splays):
-            is_splay = not s['to']
-
-            if do_splays != is_splay:
-                return True
-
-            # ignore "1.0  .. 0.0 0.0 0.0" line
-            if not s[KEY_TAPE] and is_splay:
-                return True
-
-            if s['from'] not in frompoints:
-                if s['to'] not in frompoints:
-                    return False
-                s = reverse_shot(s)
-
-            length_proj = s[KEY_TAPE] * math.cos(math.radians(s['clino']))
-            true_bearing = get_true_bearing(s, top)
-
-            delta_x = length_proj * math.sin(math.radians(true_bearing))
-            delta_y = length_proj * math.cos(math.radians(true_bearing))
-
-            if sideview:
-                if is_splay:
-                    return True  # TODO
-                compass_delta = -1 if s[KEY_EXTEND] == EXTEND_LEFT else 1
-                delta_x = length_proj * compass_delta
-                delta_y = s[KEY_TAPE] * math.sin(math.radians(s['clino']))
-
-            pnt_from = frompoints[s['from']]
-            pnt_to = (pnt_from[0] + delta_x, pnt_from[1] - delta_y)
-
-            if not is_splay:
-                frompoints[s['to']] = pnt_to
-                legs.append((pnt_from, pnt_to))
-            else:
-                splays.append((pnt_from, pnt_to))
-
-            return True
-
-        for s in leg_shots:
-            if not process_shot(s, False):
-                defer.append(s)
-
-        while defer:
-            for s in defer:
-                if process_shot(s, False):
-                    defer.remove(s)
-                    break
-            else:
-                print('{} unconnected subsurveys'.format(len(defer)), file=sys.stderr)
-                break
-
-        for s in top['shots']:
-            process_shot(s, True)
-
         def write_legs(legs):
             file.write('set XVIshots {\n')
             for (pnt_from, pnt_to) in legs:
                 file.write('    {{{0[0]:g} {0[1]:g} {1[0]:g} {1[1]:g}}}\n'.format(pnt2xvi(pnt_from), pnt2xvi(pnt_to)))
             file.write('}\n')
 
-        write_legs(splays + legs)
+        preprocessor = ShotPreprocessor(top, sideview)
+        preprocessor.process(leg_shots)
 
-        return frompoints
+        write_legs(preprocessor.splays + preprocessor.legs)
+
+        return preprocessor.frompoints
 
     def write_stationlabels(frompoints):
         file.write('set XVIstations {\n')
@@ -1164,51 +1133,10 @@ def dump_th2(top, *, file=sys.stdout, with_xvi: bool = False):
         if sideview:
             raise NotImplementedError
 
-        frompoints: dict[str, tuple[float, float]] = {}
-        defer: list[dict] = []
+        preprocessor = ShotPreprocessor(top, sideview)
+        preprocessor.process(leg_shots)
 
-        for s in top['shots']:
-            frompoints[s['from']] = (0, 0)
-            break
-
-        def process_shot(s: dict) -> bool:
-            is_splay = not s['to']
-
-            if is_splay:
-                return True
-
-            if s['from'] not in frompoints:
-                if s['to'] not in frompoints:
-                    return False
-                s = reverse_shot(s)
-
-            length_proj = s[KEY_TAPE] * math.cos(math.radians(s['clino']))
-            true_bearing = get_true_bearing(s, top)
-
-            delta_x = length_proj * math.sin(math.radians(true_bearing))
-            delta_y = length_proj * math.cos(math.radians(true_bearing))
-
-            pnt_from = frompoints[s['from']]
-            pnt_to = (pnt_from[0] + delta_x, pnt_from[1] - delta_y)
-
-            frompoints[s['to']] = pnt_to
-
-            return True
-
-        for s in leg_shots:
-            if not process_shot(s):
-                defer.append(s)
-
-        while defer:
-            for s in defer:
-                if process_shot(s):
-                    defer.remove(s)
-                    break
-            else:
-                print('{} unconnected subsurveys'.format(len(defer)), file=sys.stderr)
-                break
-
-        return frompoints
+        return preprocessor.frompoints
 
     def write_stationlabels(frompoints):
         for key, pnt in frompoints.items():
