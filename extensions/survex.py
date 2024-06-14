@@ -47,6 +47,7 @@ Example usage:
 
 import datetime
 import sys
+from typing import Optional
 
 
 def autodecode(bytestring):
@@ -680,7 +681,7 @@ class Date(datetime.date):
     end: "Date"
 
     @classmethod
-    def fromdays(cls, date1: int, date2: int | None = None):
+    def fromdays(cls, date1: int, date2: Optional[int] = None):
         self = cls.fromordinal(693596 + date1)
         self.end = cls.fromdays(date2) if date2 else self
         return self
@@ -690,7 +691,7 @@ class Date(datetime.date):
         return cls.fromdays(date1, date1 + datespan)
 
     @classmethod
-    def fromseconds(cls, date1: float, date2: float | None = None):
+    def fromseconds(cls, date1: float, date2: Optional[float] = None):
         self = cls.fromtimestamp(date1)
         self.end = cls.fromtimestamp(date2) if date2 else self
         return self

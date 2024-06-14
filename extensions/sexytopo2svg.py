@@ -9,6 +9,11 @@ import sys
 from math import cos, sin, radians
 from pathlib import Path
 from lxml import etree
+from typing import (
+    Dict,
+    List,
+    Tuple,
+)
 
 EtreeElement = etree._Element
 
@@ -124,7 +129,7 @@ def write_drawing(parent: EtreeElement, data: dict, bbox: BBox):
         bbox.add_point(x, y)
 
 
-def write_xsections(parent: EtreeElement, frompoints: dict[str, tuple], drawing: dict):
+def write_xsections(parent: EtreeElement, frompoints: Dict[str, tuple], drawing: dict):
     for xsec in drawing["x-sections"]:
         pnt = xsec["location"]
         pnt_stn = frompoints[xsec["station-id"]]
@@ -137,10 +142,10 @@ def write_xsections(parent: EtreeElement, frompoints: dict[str, tuple], drawing:
 
 
 def write_shots(parent: EtreeElement, data: dict, bbox: BBox, is_ext: bool):
-    name2pos: dict[str, tuple[float, float, float]] = {}
-    d_splays: list[ſtr] = []
-    d_splays_vertical: list[str] = []
-    d_legs: list[str] = []
+    name2pos: Dict[str, Tuple[float, float, float]] = {}
+    d_splays: List[ſtr] = []
+    d_splays_vertical: List[str] = []
+    d_legs: List[str] = []
     ee_directions = {
         station["name"]: station["eeDirection"]
         for station in data["stations"]

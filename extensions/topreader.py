@@ -71,6 +71,13 @@ EXTEND_LEFT = "<"
 EXTEND_RIGHT = ">"
 
 
+def removesuffix(s: str, suffix: str) -> str:
+    '''Drop-in for Python 3.10's str.removesuffix
+    '''
+    assert isinstance(s, str)
+    return s[:-len(suffix)] if (s.endswith(suffix) and suffix) else s
+
+
 def distmm(mm: int) -> float:
     '''convert millimeters to meters'''
     assert isinstance(mm, int)
@@ -188,11 +195,11 @@ def is_consecutive_number(from_: str, to: str) -> bool:
     return p_from[0] == p_to[0] and abs(int(p_from[2]) - int(p_to[2])) == 1
 
 
-def _make_Point(x: int, y: int) -> tuple[float, float]:
+def _make_Point(x: int, y: int) -> Tuple[float, float]:
     return distmm(x), distmm(y)
 
 
-def _make_Point_inv(x: float, y: float) -> tuple[int, int]:
+def _make_Point_inv(x: float, y: float) -> Tuple[int, int]:
     return distmm_inv(x), distmm_inv(y)
 
 
@@ -257,7 +264,7 @@ def _write_trip(trip) -> Iterable[bytes]:
 
 
 def _read_shot(F: BinaryIO):
-    shot: dict[str, Any] = {'from': _read_station(F)}
+    shot: Dict[str, Any] = {'from': _read_station(F)}
     shot['to'] = _read_station(F)
 
     Dist = struct.unpack('<L', F.read(4))
@@ -353,7 +360,7 @@ def _read_Point(F: BinaryIO):
     return _make_Point(x, y)
 
 
-def _write_Point(point: tuple[float, float]) -> Iterable[bytes]:
+def _write_Point(point: Tuple[float, float]) -> Iterable[bytes]:
     yield struct.pack('<ll', *_make_Point_inv(*point))
 
 
@@ -1121,7 +1128,7 @@ def dump_th2(top, *, file=sys.stdout, with_xvi: bool = False):
     '''
     from th2_output import fstr2 as fstr
 
-    def to_th2_space(pnt: tuple[float, float]) -> tuple[float, float]:
+    def to_th2_space(pnt: Tuple[float, float]) -> Tuple[float, float]:
         return (
             FACTOR * pnt[KEY_X],
             -FACTOR * pnt[KEY_Y],
@@ -1129,7 +1136,7 @@ def dump_th2(top, *, file=sys.stdout, with_xvi: bool = False):
 
     leg_shots = list(average_shots(top['shots']))
 
-    def write_shots(sideview: bool = False) -> dict[str, tuple[float, float]]:
+    def write_shots(sideview: bool = False) -> Dict[str, Tuple[float, float]]:
         if sideview:
             raise NotImplementedError
 
@@ -1188,7 +1195,7 @@ def dump_th2(top, *, file=sys.stdout, with_xvi: bool = False):
                        f" {fstr(max_x + BBOX_PADDING_PX)}"
                        f" {fstr(max_y + BBOX_PADDING_PX)}"))
 
-    stem = os.path.basename(top.get('filename', 'unknown.top').removesuffix(".top"))
+    stem = os.path.basename(removesuffix(top.get('filename', 'unknown.top'), ".top"))
     projection = "plan"
 
     out = [

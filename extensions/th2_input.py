@@ -43,6 +43,11 @@ from th2ex import (
 import sys
 import os
 import re
+from typing import (
+    Dict,
+    List,
+)
+
 from lxml import etree
 import inkex
 import simplepath
@@ -116,8 +121,8 @@ class this:
     id_count = 0
     textblock_count = 0
 
-    borders: dict[str, EtreeElement] = {}  # for areas
-    sublayers: dict[str, EtreeElement] = {}
+    borders: Dict[str, EtreeElement] = {}  # for areas
+    sublayers: Dict[str, EtreeElement] = {}
 
     doc_x = 0
     doc_y = 0
@@ -128,7 +133,7 @@ class this:
     m_per_dots_set = False
 
     encoding = 'UTF-8'
-    file_stack: list["FileRecord"] = []
+    file_stack: List["FileRecord"] = []
 
     @classmethod
     def getcurrentlayer(this):
@@ -205,7 +210,7 @@ def getlayer(role: str, type: str):
 
 class FileRecord:
     def __init__(self, patharg: str):
-        searchpath: list[str] = [this.file_stack[-1].dirname] if this.file_stack else []
+        searchpath: List[str] = [this.file_stack[-1].dirname] if this.file_stack else []
         self.filename: str = find_in_pwd(patharg, searchpath)
         self.dirname: str = os.path.dirname(self.filename)
         self.f_handle = open(self.filename, 'rb')
@@ -230,7 +235,7 @@ def floatscale(x: str) -> float:
     return float(x) / th2pref.basescale
 
 
-def flipY(a: list[str]) -> list[str]:
+def flipY(a: List[str]) -> List[str]:
     """
     Transform th2 coordinates to SVG user units, in-place.
 

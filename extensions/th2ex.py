@@ -18,7 +18,12 @@ Text alignment guess for export is not perfect, but covers the most use cases.
 
 from lxml import etree
 from pathlib import Path
-from typing import Iterable, Sequence
+from typing import (
+    Dict,
+    Iterable,
+    List,
+    Sequence,
+)
 import shlex
 import os
 import math
@@ -30,8 +35,8 @@ import warnings
 warnings.simplefilter("ignore", DeprecationWarning)
 
 EtreeElement = etree._Element
-BBoxType = list[float]
-AffineType = list[list[float]]
+BBoxType = List[float]
+AffineType = List[List[float]]
 
 
 def as_unicode(s):
@@ -698,8 +703,8 @@ class Th2Effect(inkex.Effect):
             [0.0, -th2pref.basescale, 0.0],
         ]
 
-    bbox_cache: dict[EtreeElement, BBoxType] = {}
-    i2d_cache: dict[EtreeElement, AffineType] = {}
+    bbox_cache: Dict[EtreeElement, BBoxType] = {}
+    i2d_cache: Dict[EtreeElement, AffineType] = {}
 
     def i2d_affine(self, node: EtreeElement, use_cache: bool = True) -> AffineType:
         '''

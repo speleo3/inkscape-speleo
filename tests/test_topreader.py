@@ -5,6 +5,7 @@ from lxml import etree
 from pathlib import Path
 from pytest import approx
 import pytest
+import sys
 
 TESTS_DATA = Path(__file__).resolve().parent / "data"
 
@@ -16,6 +17,17 @@ def assert_stripped_lines_equal(lhs: str, rhs = "", path = None):
     lines_lhs = [line.strip() for line in lhs.splitlines()]
     lines_rhs = [line.strip() for line in rhs.splitlines()]
     assert lines_lhs == lines_rhs
+
+
+@pytest.mark.skipif(sys.version_info < (3, 10), reason="Python version")
+@pytest.mark.parametrize("s, suffix", [
+    ("foobar", "bar"),
+    ("foobar", "foo"),
+    ("foobar", "foobar"),
+    ("foobar", ""),
+])
+def test_removesuffix(s, suffix):
+    assert m.removesuffix(s, suffix) == s.removesuffix(suffix)
 
 
 def test_distmm():

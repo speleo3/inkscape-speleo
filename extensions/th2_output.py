@@ -36,6 +36,10 @@ from th2ex import (
     convert_unit,
     Th2Effect,
 )
+
+from typing import (
+    Dict,
+)
 from lxml import etree
 import inkex
 import simpletransform
@@ -160,7 +164,7 @@ class Th2Line:
 
 
 class Th2Area:
-    count: dict[str, int] = collections.defaultdict(int)
+    count: Dict[str, int] = collections.defaultdict(int)
 
     def __init__(self, type):
         self.type = type

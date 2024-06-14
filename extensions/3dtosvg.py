@@ -35,10 +35,11 @@ def boolchoice(choices=()) -> dict:
         "1": True,
         "false": False,
         "true": True,
-    } | {
+    }
+    mapper.update({
         key: key
         for key in choices
-    }
+    })
 
     meta = "{" + ",".join(("0", "1") + tuple(choices)) + "}"
 

@@ -3,7 +3,7 @@ import pytest
 import subprocess
 import importlib
 from pathlib import Path
-from typing import AnyStr
+from typing import AnyStr, List
 
 TESTS_DATA = Path(__file__).resolve().parent / "data"
 
@@ -15,7 +15,7 @@ def _find_script(name: str) -> str:
     return spec.origin
 
 
-def _non_empty_lines(buf: AnyStr) -> list[AnyStr]:
+def _non_empty_lines(buf: AnyStr) -> List[AnyStr]:
     return [line.rstrip() for line in buf.splitlines() if line]
 
 
