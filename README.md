@@ -9,7 +9,7 @@ Collection of extensions for Inkscape to import/export various cave mapping data
 | Survex `.3d`          | Yes    | No      |
 | Therion `.th2`        | Yes    | Yes     |
 | Therion `.xvi`        | Yes    | No      |
-| Therion MetaPost      | No     | Planned |
+| Therion MetaPost      | No     | Yes     |
 | PocketTopo `.top`     | Yes    | No      |
 | SexyTopo `.plan.json` | Yes    | No      |
 
@@ -44,6 +44,13 @@ And whenever there are updates to the repo:
 cd "$(inkscape --user-data-directory)"
 git pull
 ```
+
+## Therion Metapost
+
+Supports point symbol export. One symbol per layer, with layer names like
+`p_stalactite_UIS` or `p_u_mysymbol`. Start with _File > New From Template >
+Custom > Therion Metapost_ (opens
+[templates/therion_mp.svg](templates/therion_mp.svg)). The orange box with label "U" is the bounding box for alignment (optional).
 
 ## See also:
 

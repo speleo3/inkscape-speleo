@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<inkscape-extension>
+  <name>Therion Metapost Output</name>
+  <id>speleo.output.therion-mp</id>
+  <output>
+    <extension>.mp</extension>
+    <mimetype>application/x-therion-mp</mimetype>
+    <filetypename>Therion Metapost (*.mp)</filetypename>
+    <dataloss>true</dataloss>
+  </output>
+  <script>
+    <command location="inx" interpreter="python">therion_mp_output.py</command>
+  </script>
+</inkscape-extension>
