@@ -124,6 +124,17 @@ def test_dump_th2():
     m.dump_th2(top, file=out)
     content = out.getvalue()
     assert "line u:black" in content
+    assert "scrap s_plan_unknown -projection plan" in content
+
+
+def test_dump_th2__sideview():
+    with open(TESTS_DATA / "test1.top", "rb") as handle:
+        top = m.load(handle)
+    top["filename"] = "test1.top"
+    out = io.StringIO()
+    m.dump_th2(top, file=out, view="sideview")
+    content = out.getvalue()
+    assert "scrap s_extended_test1 -projection extended" in content
 
 
 def test_dump_svx():

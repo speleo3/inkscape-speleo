@@ -1123,7 +1123,7 @@ def dump_xvi(top, *, file=sys.stdout, view="outline"):
     write_grid(top, view)
 
 
-def dump_th2(top, *, file=sys.stdout, with_xvi: bool = False):
+def dump_th2(top, *, file=sys.stdout, with_xvi: bool = False, view="outline"):
     '''Dump drawing as TH2.
     '''
     from th2_output import fstr2 as fstr
@@ -1137,9 +1137,6 @@ def dump_th2(top, *, file=sys.stdout, with_xvi: bool = False):
     leg_shots = list(average_shots(top['shots']))
 
     def write_shots(sideview: bool = False) -> Dict[str, Tuple[float, float]]:
-        if sideview:
-            raise NotImplementedError
-
         preprocessor = ShotPreprocessor(top, sideview)
         preprocessor.process(leg_shots)
 
@@ -1196,7 +1193,7 @@ def dump_th2(top, *, file=sys.stdout, with_xvi: bool = False):
                        f" {fstr(max_y + BBOX_PADDING_PX)}"))
 
     stem = os.path.basename(removesuffix(top.get('filename', 'unknown.top'), ".top"))
-    projection = "plan"
+    projection = "plan" if view == "outline" else "extended"
 
     out = [
         "encoding  utf-8",
@@ -1204,9 +1201,9 @@ def dump_th2(top, *, file=sys.stdout, with_xvi: bool = False):
         f"scrap s_{projection}_{stem} -projection {projection} -scale [{FACTOR} 1 m]",
     ]
 
-    write_shots_and_stations()
-    write_sketchlines()
-    write_grid()
+    write_shots_and_stations(view)
+    write_sketchlines(view)
+    write_grid(view)
 
     out += ["endscrap", ""]
     file.write("\n".join(out))
@@ -1267,6 +1264,7 @@ def main(argv=None):
             'svx',
             'th',
             'th2',
+            'th2-ee',
             'tro',
             'xvi',
             'xvi-ee',
@@ -1309,6 +1307,8 @@ def main(argv=None):
                 dump_xvi(top, view="sideview")
             elif args.dump == 'th2':
                 dump_th2(top)
+            elif args.dump == 'th2-ee':
+                dump_th2(top, view="sideview")
             elif args.dump == 'th2-xvi':
                 with open(f"{filename}.xvi", "w") as handle:
                     dump_xvi(top, file=handle)
