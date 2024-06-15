@@ -663,8 +663,8 @@ def parse_point(a):
     else:
         e = etree.Element('circle')
         e.set('r', '2')
-        if type in point_colors:
-            e.set('style', 'fill:' + point_colors[type])
+        color = point_colors.get(type, "blue")
+        e.set('style', f'stroke:none;fill:{color};fill-opacity:0.8')
 
     # position and orientation
     transform = 'translate(%s,%s)' % tuple(flipY(a[1:3]))

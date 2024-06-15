@@ -674,7 +674,8 @@
 		symbol, marker {
 			overflow: visible;
 		}
-		path {
+		path.area,
+		path.line {
 			fill:none;
 			stroke:black;
 			stroke-linecap:round;
@@ -827,11 +828,6 @@ path.line.u.purple { stroke:purple }
 			stroke-width:0.5;
 			marker-start:none;
 			marker-end:none;
-		}
-		circle {
-			stroke:none;
-			fill:blue;
-			fill-opacity:0.8;
 		}
 		path.line.label {
 			stroke:#2795e2;
