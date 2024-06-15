@@ -754,6 +754,9 @@ def main():
     e = this.root.xpath('svg:g[@id="layer-scan"]', namespaces=inkex.NSS)[0]
     e.set('transform', ' scale(1,-1) scale(%f)' % (1. / th2pref.basescale))
 
+    e = this.root.xpath('svg:g[@id="layer-legend"]', namespaces=inkex.NSS)[0]
+    e.set('transform', f'translate({this.doc_x} {-this.doc_y})')
+
     # scrap0:
     # Mostly obsolete, we currently don't populate it.
     # Keep it when opening an empty file.
