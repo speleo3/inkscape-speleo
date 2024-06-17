@@ -6,12 +6,12 @@ Collection of extensions for Inkscape to import/export various cave mapping data
 
 | Format                | Import | Export  |
 | --------------------- | ------ | ------- |
-| Survex `.3d`          | Yes    | No      |
+| Survex `.3d`          | Yes    |         |
 | Therion `.th2`        | Yes    | Yes     |
-| Therion `.xvi`        | Yes    | No      |
-| Therion MetaPost      | No     | Yes     |
-| PocketTopo `.top`     | Yes    | No      |
-| SexyTopo `.plan.json` | Yes    | No      |
+| Therion `.xvi`        | Yes    |         |
+| Therion MetaPost      |        | Yes     |
+| PocketTopo `.top`     | Yes    |         |
+| SexyTopo `.plan.json` | Yes    |         |
 
 In addition, there are symbol annotation extensions in the
 _Extensions > Therion_ menu for the `.th2` export.
