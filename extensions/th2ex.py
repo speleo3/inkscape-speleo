@@ -369,7 +369,12 @@ def format_options(options):
     '''
     Format options dictionary as therion options string.
     '''
-    def format_option(key, value):
+    return ' '.join(format_options_iter(options))
+
+
+def format_option(key: str, value: OptionValue, *, prefix="-"):
+        value_count: Union[int, None]
+
         # legacy (might come from SVG file)
         for two_arg_key in two_arg_keys:
             if key.startswith(two_arg_key + '-'):
@@ -378,7 +383,7 @@ def format_options(options):
                 value_count = 1
                 break
         else:
-            ret = '-' + key
+            ret = prefix + key
             value_count = option_value_count.get(key)
 
         if value is True:
@@ -404,15 +409,14 @@ def format_options(options):
 
         return ret
 
-    ret = []
+
+def format_options_iter(options: OptionsDict, *, prefix="-"):
     for key, value in sorted(options.items(), key=key_options_item):
         if key in repeatable_options and isinstance(value, list):
             for v in value:
-                ret.append(format_option(key, v))
+                yield format_option(key, v, prefix=prefix)
         else:
-            ret.append(format_option(key, value))
-
-    return ' '.join(ret)
+            yield format_option(key, value, prefix=prefix)
 
 
 def maybe_point(node):
