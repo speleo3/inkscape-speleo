@@ -16,5 +16,7 @@ def test_flipY():
     assert a == ["0.25", "-0.5", "1.", "-1.5", "2.", "-2.5"]
 
 
-def test_reverseD():
-    assert m.reverseD("M 1 2 L 3 4 C 5 6 7 8 9 10") == "M 9 10 C 7 8 5 6 3 4 L 1 2"
+def test_reverseP():
+    assert m.formatPath(
+        m.reverseP([("M", (1, 2)), ("L", (3, 4)),
+                    ("C", (5, 6, 7, 8, 9, 10))])) == "M9 10C7 8 5 6 3 4L1 2"
