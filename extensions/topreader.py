@@ -1006,7 +1006,7 @@ FACTOR = 100  # 1.0 world-cm per px
 FACTOR = 50   # 2.0 world-cm per px
 
 
-def dump_xvi(top, *, file=sys.stdout):
+def dump_xvi(top, *, file=sys.stdout, view="outline"):
     '''Dump drawing as XVI.
     '''
     def pnt2xvi(pnt):
@@ -1044,6 +1044,13 @@ def dump_xvi(top, *, file=sys.stdout):
 
             delta_x = length_proj * math.sin(math.radians(true_bearing))
             delta_y = length_proj * math.cos(math.radians(true_bearing))
+
+            if sideview:
+                if is_splay:
+                    return True  # TODO
+                compass_delta = -1 if s[KEY_EXTEND] == EXTEND_LEFT else 1
+                delta_x = length_proj * compass_delta
+                delta_y = s[KEY_TAPE] * math.sin(math.radians(s['clino']))
 
             pnt_from = frompoints[s['from']]
             pnt_to = (pnt_from[0] + delta_x, pnt_from[1] - delta_y)
@@ -1116,7 +1123,7 @@ def dump_xvi(top, *, file=sys.stdout):
         for xsec in drawing['xsec']:
             pnt = pnt2xvi(xsec[KEY_XSEC_POS])
             pnt_stn = pnt2xvi(frompoints[xsec[KEY_XSEC_STN]])
-            file.write("  {yellow " + f"{pnt_stn[0]} {pnt_stn[1]} {pnt[0]} {pnt[1]}" + "}\n")
+            file.write("  {yellow " + f"{pnt_stn[0]:g} {pnt_stn[1]:g} {pnt[0]:g} {pnt[1]:g}" + "}\n")
 
     def write_grid(top, view="outline"):
         min_x, min_y, max_x, max_y = get_bbox(top[view]['polys'])
@@ -1135,9 +1142,9 @@ def dump_xvi(top, *, file=sys.stdout):
         file.write('set XVIgrids {1.0 m}\n')
 
     write_grid_spacing()
-    frompoints = write_shots_and_stations(top)
-    write_sketchlines(top, frompoints=frompoints)
-    write_grid(top)
+    frompoints = write_shots_and_stations(top, view)
+    write_sketchlines(top, view, frompoints=frompoints)
+    write_grid(top, view)
 
 
 def dump_th2(top, *, file=sys.stdout, with_xvi: bool = False):
@@ -1319,7 +1326,17 @@ def main(argv=None):
     argparser.add_argument(
         "--dump",
         help="dump file to stdout",
-        choices=('json', 'svg', 'svx', 'th', 'th2', 'tro', 'xvi', 'th2-xvi'),
+        choices=(
+            'json',
+            'svg',
+            'svx',
+            'th',
+            'th2',
+            'tro',
+            'xvi',
+            'xvi-ee',
+            'th2-xvi',
+        ),
     )
     argparser.add_argument("--view", help="open viewer application", choices=('aven', 'inkscape'))
     argparser.add_argument("--surveyname", help="survey name for survex dump", default="")
@@ -1353,6 +1370,8 @@ def main(argv=None):
                 dump_svg(top)
             elif args.dump == 'xvi':
                 dump_xvi(top)
+            elif args.dump == 'xvi-ee':
+                dump_xvi(top, view="sideview")
             elif args.dump == 'th2':
                 dump_th2(top)
             elif args.dump == 'th2-xvi':
