@@ -8,6 +8,7 @@ TODO
 '''
 
 from th2ex import (
+    ParsedPath,
     parse_scrap_scale_m_per_dots,
     th2pref,
     oparser,
@@ -135,6 +136,8 @@ class this:
     encoding = 'UTF-8'
     file_stack: List["FileRecord"] = []
 
+    LPE_symbols: List[str]
+
     @classmethod
     def getcurrentlayer(this):
         return this.layer_stack[-1] if this.layer_stack else this.root
@@ -254,7 +257,7 @@ def flipY(a: List[str]) -> List[str]:
     return a
 
 
-def reverseP(p):
+def reverseP(p: ParsedPath) -> ParsedPath:
     prevcmd = p[-1][0]
     prevparams = p[-1][1]
     retval = [['M', prevparams[-2:]]]
@@ -516,7 +519,8 @@ def parse_BLOCK2TEXT(a):
     this.textblock_count += 1
 
 
-def parse_line(a):
+def parse_line(a: List[str]):
+    assert a[0] == "line"
     options = parse_options(a[2:])
     type_subtype = a[1]
     if ':' in type_subtype:

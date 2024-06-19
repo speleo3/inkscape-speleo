@@ -19,10 +19,14 @@ Text alignment guess for export is not perfect, but covers the most use cases.
 from lxml import etree
 from pathlib import Path
 from typing import (
+    Any,
     Dict,
     Iterable,
     List,
     Sequence,
+    Tuple,
+    TypeVar,
+    Union,
 )
 import shlex
 import os
@@ -34,9 +38,15 @@ import warnings
 
 warnings.simplefilter("ignore", DeprecationWarning)
 
+_StrOrFloat = TypeVar("_StrOrFloat", bound=Union[str, float])
+ParsedPath = List[Tuple[str, Sequence[_StrOrFloat]]]
+
 EtreeElement = etree._Element
 BBoxType = List[float]
 AffineType = List[List[float]]
+
+OptionValue = Any
+OptionsDict = Dict[str, OptionValue]
 
 
 def as_unicode(s):
@@ -294,7 +304,7 @@ def _skipunexpected(s):
     inkex.errormsg(s)
 
 
-def parse_options_new(a):
+def parse_options(a: Union[str, Sequence[str]]):
     '''
     Parses therion options string or sequence of strings.
     New: Uses shlex class (quote parsing).
@@ -302,7 +312,7 @@ def parse_options_new(a):
     Known issues:
      * detection of zero-arg-keys is heuristical
     '''
-    options = {}
+    options: OptionsDict = {}
     if not isinstance(a, str):
         a = ' '.join(a)
     a = splitquoted(a)
@@ -325,6 +335,7 @@ def parse_options_new(a):
             while (value_count + i) != n and not maybe_key(a[value_count + i]):
                 value_count += 1
 
+        value: OptionValue
         if value_count == 0:
             value = True
         elif value_count == 1:
@@ -340,9 +351,6 @@ def parse_options_new(a):
         i += value_count
 
     return options
-
-
-parse_options = parse_options_new
 
 
 def key_options_item(item: tuple) -> tuple:
@@ -365,6 +373,7 @@ def format_options(options):
         # legacy (might come from SVG file)
         for two_arg_key in two_arg_keys:
             if key.startswith(two_arg_key + '-'):
+                inkex.errormsg(f"Legacy two-arg key: {key}")
                 ret = '-' + key.replace('-', ' ', 1)
                 value_count = 1
                 break
@@ -391,7 +400,7 @@ def format_options(options):
             ret += ' ' + value
         else:
             _skipunexpected('error: -{} needs {} values, got {}'.format(key, value_count, repr(value)))
-            ret += ' <error>' * value_count
+            ret += ' <error>' * (value_count or 1)
 
         return ret
 
@@ -457,7 +466,7 @@ def set_props(e, role, type, options=None):
         raise Exception('unknown th2pref.howtostore')
 
 
-def get_props(e):
+def get_props(e: EtreeElement) -> Tuple[str, str, OptionsDict]:
     '''
     Get list of (str role, str type, dict options) from annotated SVG element.
     '''
@@ -493,16 +502,8 @@ def get_props(e):
                 m = re.match(r'#point-(.*)', e.get(xlink_href, ''))
                 if m is not None:
                     type = m.group(1)
-    return [role, type, options]
+    return role, type, options
 
-
-def get_props_dict(e):
-    role, type, options = get_props(e)
-    return {
-        'role': role,
-        'type': type,
-        'options': options
-    }
 
 ##########################################
 # property translation stuff
@@ -586,7 +587,7 @@ def inverse(mat):
     return d
 
 
-def parsePath(d):
+def parsePath(d) -> ParsedPath[float]:
     '''
     Parse line and replace quadratic bezier segments and arcs by
     cubic bezier segments.

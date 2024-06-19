@@ -7,6 +7,9 @@ This program was inspired by http://www.cavediving.de/svg2th2.py
 '''
 
 from th2ex import (
+    AffineType,
+    EtreeElement,
+    OptionsDict,
     as_unicode,
     th2pref,
     th2pref_load_from_xml,
@@ -39,6 +42,10 @@ from th2ex import (
 
 from typing import (
     Dict,
+    Iterator,
+    List,
+    Sequence,
+    Tuple,
 )
 from lxml import etree
 import inkex
@@ -52,13 +59,13 @@ import os
 print_utf8 = print
 
 
-def parse_options_node(node):
+def parse_options_node(node: EtreeElement):
     options = node.get(therion_options, '')
     return parse_options(options)
 
 
-def transformParams(mat, params):
-    new = []
+def transformParams(mat: AffineType, params: Sequence[float]):
+    new: List[float] = []
     for i in range(0, len(params), 2):
         if i + 1 == len(params):
             inkex.errormsg('params index skewd!!!')
@@ -69,7 +76,7 @@ def transformParams(mat, params):
     return new
 
 
-def orientation(mat):
+def orientation(mat: AffineType) -> float:
     '''Orientation of a (0.0, 1.0) vector after rotation with "mat"'''
     try:
         deg = -math.degrees(math.atan2(mat[0][1], -mat[1][1]))
@@ -80,7 +87,7 @@ def orientation(mat):
     return deg
 
 
-def fstr(x):
+def fstr(x: float) -> str:
     """
     Format float with 4 digits after the period
     """
