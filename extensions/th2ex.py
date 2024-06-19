@@ -187,7 +187,7 @@ sodipodi_cx = inkex.addNS('cx', 'sodipodi')
 sodipodi_cy = inkex.addNS('cy', 'sodipodi')
 sodipodi_role = inkex.addNS('role', 'sodipodi')
 sodipodi_insensitive = inkex.addNS('insensitive', 'sodipodi')
-sodipodi_nodetypes   = inkex.addNS('nodetypes', 'sodipodi')
+sodipodi_nodetypes = inkex.addNS('nodetypes', 'sodipodi')
 
 
 def title_node(parent):
@@ -373,41 +373,41 @@ def format_options(options):
 
 
 def format_option(key: str, value: OptionValue, *, prefix="-"):
-        value_count: Union[int, None]
+    value_count: Union[int, None]
 
-        # legacy (might come from SVG file)
-        for two_arg_key in two_arg_keys:
-            if key.startswith(two_arg_key + '-'):
-                inkex.errormsg(f"Legacy two-arg key: {key}")
-                ret = '-' + key.replace('-', ' ', 1)
-                value_count = 1
-                break
-        else:
-            ret = prefix + key
-            value_count = option_value_count.get(key)
+    # legacy (might come from SVG file)
+    for two_arg_key in two_arg_keys:
+        if key.startswith(two_arg_key + '-'):
+            inkex.errormsg(f"Legacy two-arg key: {key}")
+            ret = '-' + key.replace('-', ' ', 1)
+            value_count = 1
+            break
+    else:
+        ret = prefix + key
+        value_count = option_value_count.get(key)
 
-        if value is True:
-            assert value_count in (None, 0)
-        elif isinstance(value, (tuple, list)):
-            # multi-value string
-            assert value_count in (None, len(value))
-            ret += ''.join(' ' + quote(v) for v in value)
-        elif not isinstance(value, str):
-            # number
-            assert value_count in (None, 1)
-            ret += ' ' + str(value)
-        elif value_count == 0:
-            _skipunexpected('error: -{} must have value True, got {}'.format(key, repr(value)))
-        elif value_count in (None, 1):
-            ret += ' ' + quote(value)
-        elif len(splitquoted(value)) == value_count:
-            # pre-quoted multi-value string
-            ret += ' ' + value
-        else:
-            _skipunexpected('error: -{} needs {} values, got {}'.format(key, value_count, repr(value)))
-            ret += ' <error>' * (value_count or 1)
+    if value is True:
+        assert value_count in (None, 0)
+    elif isinstance(value, (tuple, list)):
+        # multi-value string
+        assert value_count in (None, len(value))
+        ret += ''.join(' ' + quote(v) for v in value)
+    elif not isinstance(value, str):
+        # number
+        assert value_count in (None, 1)
+        ret += ' ' + str(value)
+    elif value_count == 0:
+        _skipunexpected('error: -{} must have value True, got {}'.format(key, repr(value)))
+    elif value_count in (None, 1):
+        ret += ' ' + quote(value)
+    elif len(splitquoted(value)) == value_count:
+        # pre-quoted multi-value string
+        ret += ' ' + value
+    else:
+        _skipunexpected('error: -{} needs {} values, got {}'.format(key, value_count, repr(value)))
+        ret += ' <error>' * (value_count or 1)
 
-        return ret
+    return ret
 
 
 def format_options_iter(options: OptionsDict, *, prefix="-"):
