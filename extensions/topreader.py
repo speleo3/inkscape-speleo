@@ -36,6 +36,8 @@ from typing import (
 )
 
 EtreeElement = etree._Element
+ShotDict = Dict[str, Any]
+TopDict = Dict[str, Any]
 
 CLARK_INKSCAPE_LABEL = "{http://www.inkscape.org/namespaces/inkscape}label"
 CLARK_INKSCAPE_GROUPMODE = "{http://www.inkscape.org/namespaces/inkscape}groupmode"
@@ -99,14 +101,14 @@ def adegrees_inv(degrees: float, divisor=0xFFFF) -> int:
     return round((degrees * divisor) / 360.0)
 
 
-def posdeg(deg):
+def posdeg(deg: float) -> float:
     '''positive angle
     :param deg: angle in degrees
     :return: angle in [0, 360)'''
     return deg % 360
 
 
-def avgdeg(deg):
+def avgdeg(deg: List[float]) -> float:
     '''average angle
     :param deg: list of angles in degrees
     :return: mean angle in [-180, 180]
@@ -119,7 +121,7 @@ def avgdeg(deg):
     return math.degrees(math.atan2(mss, msc))
 
 
-def reverse_shot(s):
+def reverse_shot(s: ShotDict) -> ShotDict:
     return s | {
         'from': s['to'],
         'to': s['from'],
@@ -129,10 +131,10 @@ def reverse_shot(s):
     }
 
 
-def average_shots(shots, ignore_splays=True):
+def average_shots(shots: Iterable[ShotDict], ignore_splays=True):
     '''Average duplicate legs and return a new set of legs. Ignores splay shots.
     '''
-    duplicates = collections.defaultdict(list)
+    duplicates: Dict[Tuple[str, str], List[ShotDict]] = collections.defaultdict(list)
     order = []
 
     for s in shots:
@@ -172,7 +174,7 @@ def average_shots(shots, ignore_splays=True):
         }
 
 
-def get_true_bearing(shot, top):
+def get_true_bearing(shot: ShotDict, top: TopDict) -> float:
     """Get the direction relative to geographic "true" north which is corrected
     by magnetic declination.
     """
@@ -731,8 +733,8 @@ class ShotPreprocessor:
         self.splays: List[DumpTypeLeg] = []
 
         self.defer: List[dict] = []
-        self.compass_from: Dict[List[float]] = collections.defaultdict(list)
-        self.compass_to: Dict[List[float]] = collections.defaultdict(list)
+        self.compass_from: Dict[str, List[float]] = collections.defaultdict(list)
+        self.compass_to: Dict[str, List[float]] = collections.defaultdict(list)
 
     def get_sideview_compass_delta(self, shot: dict, true_bearing: float,
                                    is_splay: bool):
@@ -753,12 +755,11 @@ class ShotPreprocessor:
             elif compass_out is None:
                 compass_out = compass_in
 
-            compass_in = avgdeg(compass_in)
-            compass_out = avgdeg(compass_out)
+            compass_in_avg_back = avgdeg(compass_in) + 180
+            compass_out_avg = avgdeg(compass_out)
 
-            compass_in += 180
-            compass_splay_rel = posdeg(true_bearing - compass_in)
-            compass_out_rel = posdeg(compass_out - compass_in)
+            compass_splay_rel = posdeg(true_bearing - compass_in_avg_back)
+            compass_out_rel = posdeg(compass_out_avg - compass_in_avg_back)
 
             if compass_splay_rel > compass_out_rel:
                 compass_splay_rel = 360 - compass_splay_rel
@@ -986,18 +987,18 @@ def dump_svg(top: dict,
 
         return width, height
 
-    root = etree.fromstring(f"""<?xml version="1.0" ?>
+    root = etree.fromstring("""<?xml version="1.0" ?>
 <svg
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns="http://www.w3.org/2000/svg">
 <defs>
 <style type="text/css">
-path {{
+path {
     fill:none;
     stroke-linecap:round;
     stroke-linejoin:round;
-}}
+}
 </style>
 </defs>
 <sodipodi:namedview

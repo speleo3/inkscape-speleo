@@ -43,6 +43,26 @@ def test_adegrees(angle: int):
     assert m.adegrees_inv(angle_deg) == angle
 
 
+def test_posdeg():
+    assert m.posdeg(0.0) == approx(0.0)
+    assert m.posdeg(12.3) == approx(12.3)
+    assert m.posdeg(-12.3) == approx(347.7)
+
+
+def test_avgdeg():
+    assert m.avgdeg([]) == approx(0.0)
+    assert m.avgdeg([1.2]) == approx(1.2)
+    assert m.avgdeg([1.2, 3.4]) == approx(2.3)
+    assert m.avgdeg([1, 2, 3, 8]) == approx(3.5, abs=1e-3)
+    assert m.avgdeg([10, 350]) == approx(0.0)
+    assert m.avgdeg([20, 350]) == approx(5.0)
+    assert m.avgdeg([20, -10]) == approx(5.0)
+    assert m.avgdeg([-20, 350]) == approx(-15.0)
+    assert m.avgdeg([1, 179]) == approx(90)
+    assert m.avgdeg([1, 179 - 4]) == approx(88)
+    assert m.avgdeg([1, 179 + 4]) == approx(-88)
+
+
 def test_is_consecutive_number():
     assert m.is_consecutive_number("0", "1")
     assert m.is_consecutive_number("1.0", "1.1")
