@@ -665,7 +665,7 @@ def parse_line(a: List[str]):
             e = e_path
         else:
             e.insert(0, e_path)
-            set_props(e_path, 'line', type, seg.options)
+            set_props(e_path, '@', '@', seg.options)
 
     assert e is not None
 
