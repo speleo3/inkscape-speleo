@@ -7,7 +7,35 @@ encoding  utf-8
 
 scrap create.s -scale [-128.0 -128.0 620.125 -128.0 0.0 0.0 19.002375 0.0 m]
 
-line wall
+area water
+  w-left
+  b-lower
+  w-right
+  b-upper
+endarea
+
+line border -id b-lower
+  340.0 177.0
+  388.0 232.0
+endline
+
+line border -id for-single-line-area -close on -visibility off
+  192.0 391.0
+  171.0 396.0 152.0 372.0 163.0 359.0
+  174.0 346.0 196.0 343.0 203.0 354.0
+  210.0 365.0 219.26 384.51 192.0 391.0
+endline
+
+area water
+  for-single-line-area
+endarea
+
+line border -id b-upper -subtype invisible
+  340.0 276.0
+  283.0 221.0
+endline
+
+line wall -id w-left
   437.0 56.0
   426.0 98.0 396.0 123.0 370.0 158.0
   altitude .
@@ -37,7 +65,7 @@ point 433.082 135.69 station -name 1@create
 
 point 456.502 59.12 station -name 0@create
 
-line wall
+line wall -id w-right
   470.0 62.0
   460.71 184.57 359.0 236.0 309.0 289.0
   259.0 342.0 175.0 473.0 165.0 490.0

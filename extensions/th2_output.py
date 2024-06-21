@@ -636,15 +636,19 @@ class Th2Output(Th2Effect):
             return
         p = parsePath(d)
 
-        visibility = options.pop('line-visibility', 'on')
-
         th2area = Th2Area(type)
-        th2area.options.update(options)
+
+        line_options = {}
+        for key, value in options.items():
+            if key.startswith("line-"):
+                line_options[key[5:]] = value
+            else:
+                th2area.options[key] = value
+
         for cmd, params in p:
             if cmd == 'M':
                 th2area.append_line()
-                if visibility:
-                    th2area.current_line().options['visibility'] = visibility
+                th2area.current_line().options.update(line_options)
             if cmd == 'Z':
                 th2area.current_line().close()
             else:

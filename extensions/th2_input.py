@@ -471,12 +471,7 @@ def parse_area(a_in):
     e = this.borders[lines[0].strip()]
     role, type, options = get_props(e)
     assert (role, type) == ('line', 'border')
-    options.pop('id', None)  # will get a new ID on export
-    vis = options.pop('visibility', None)
-    if options:
-        errormsg('warning: area border options not empty: ' + str(options))
-    if vis:
-        options['line-visibility'] = vis
+    options = {f"line-{key}": value for (key, value) in options.items()}
     options.update(parse_options(a_in[2:]))
     type_subtype = a_in[1]
     if ':' in type_subtype:
