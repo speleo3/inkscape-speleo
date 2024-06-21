@@ -849,6 +849,8 @@ def dump_svg(top: dict,
       scale: Scale as 1:scale
     '''
     scale /= 100  # cm
+    default_stroke_width = scale * 0.05
+    font_size = scale * 1.27 / 3
 
     leg_shots = list(average_shots(top['shots']))
 
@@ -878,7 +880,7 @@ def dump_svg(top: dict,
             etree.SubElement(
                 parent, "path", {
                     CLARK_INKSCAPE_LABEL: "line section",
-                    "class": "xsecconnector",
+                    "style": "stroke:#bbb;stroke-dasharray:0.05 0.15",
                     "d": f"M{pnt_stn[0]} {pnt_stn[1]} {pnt[0]} {pnt[1]}",
                 })
 
@@ -892,6 +894,7 @@ def dump_svg(top: dict,
                     "x": str(pnt[0]),
                     "y": str(pnt[1]),
                     CLARK_INKSCAPE_LABEL: f"point station -name {name}",
+                    "style": "fill:#999",
                 })
             elem_text.text = key
 
@@ -929,7 +932,7 @@ def dump_svg(top: dict,
             parent, "g", {
                 CLARK_INKSCAPE_GROUPMODE: "layer",
                 CLARK_INKSCAPE_LABEL: label,
-                "style": f"display:{display}",
+                "style": f"display:{display};font:{font_size} sans-serif;stroke-width:{default_stroke_width}",
                 "transform": f"translate({xoffset},{yoffset})",
             })
 
@@ -992,17 +995,8 @@ def dump_svg(top: dict,
 <style type="text/css">
 path {{
     fill:none;
-    stroke-width:{scale * 0.05};
     stroke-linecap:round;
     stroke-linejoin:round;
-}}
-text {{
-    font: {scale * 1.27 / 3} sans-serif;
-    fill:#999;
-}}
-.xsecconnector {{
-    stroke-dasharray:0.05,0.15;
-    stroke:#bbb;
 }}
 </style>
 </defs>
