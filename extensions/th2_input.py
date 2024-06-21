@@ -2,9 +2,6 @@
 '''
 Copyright (C) 2008 Thomas Holder, http://sf.net/users/speleo3/
 Distributed under the terms of the GNU General Public License v2 or later
-
-TODO
- * support line options between line data, for example by splitting lines and grouping
 '''
 
 from th2ex import (
@@ -47,11 +44,12 @@ import re
 from typing import (
     Dict,
     List,
+    Sequence,
+    Tuple,
 )
 
 from lxml import etree
 import inkex
-import simplepath
 
 EtreeElement = etree._Element
 
@@ -257,10 +255,18 @@ def flipY(a: List[str]) -> List[str]:
     return a
 
 
+def formatPath(a: ParsedPath) -> str:
+    """Format SVG path data from an array
+
+    Copied from simplepath
+    """
+    return "".join([cmd + " ".join([str(p) for p in params]) for (cmd, params) in a])
+
+
 def reverseP(p: ParsedPath) -> ParsedPath:
     prevcmd = p[-1][0]
     prevparams = p[-1][1]
-    retval = [['M', prevparams[-2:]]]
+    retval: ParsedPath = [('M', prevparams[-2:])]
     for cmd, params in reversed(p[:-1]):
         newparams = []
         if len(prevparams) == 6:
@@ -271,16 +277,10 @@ def reverseP(p: ParsedPath) -> ParsedPath:
                 prevparams[1],
             ]
         newparams.extend(params[-2:])
-        retval.append([prevcmd, newparams])
+        retval.append((prevcmd, newparams))
         prevparams = params
         prevcmd = cmd
     return retval
-
-
-def reverseD(d: str) -> str:
-    p = simplepath.parsePath(d)
-    p = reverseP(p)
-    return simplepath.formatPath(p)
 
 
 def f_readline():
@@ -519,6 +519,77 @@ def parse_BLOCK2TEXT(a):
     this.textblock_count += 1
 
 
+class LineSegment:
+    def __init__(self) -> None:
+        self.options: Dict[str, str] = {}
+        self.nodetypes: List[str] = []
+        self.x_list: ParsedPath[str] = []
+
+    def is_empty(self) -> bool:
+        return len(self.x_list) < 2
+
+    def set_nodetype(self, nodetype: str):
+        assert self.nodetypes
+        self.nodetypes[-1] = nodetype
+
+    def last_nodetype(self) -> str:
+        return self.nodetypes[-1]
+
+    def last_point(self) -> Sequence[str]:
+        return self.x_list[-1][1][-2:]
+
+    def get_d(self) -> str:
+        return formatPath(self.x_list)
+
+    def reverse(self):
+        self.x_list = reverseP(self.x_list)
+        self.nodetypes.reverse()
+
+    def add_coords(self, a: List[str]):
+        a = flipY(a)
+        if not self.x_list:
+            assert len(a) == 2
+            self.x_list.append(('M', a))
+            self.nodetypes.append("c")
+        elif len(a) == 2:
+            self.x_list.append(('L', a))
+            self.nodetypes.append("c")
+        elif len(a) == 6:
+            self.x_list.append(('C', a))
+            self.nodetypes.append("s")
+        else:
+            errormsg('error: length = %d' % len(a))
+
+
+class SegmentedLine:
+    def __init__(self) -> None:
+        self.segments: List[LineSegment] = [LineSegment()]
+
+    def last_seg(self):
+        return self.segments[-1]
+
+    def add_option(self, a: List[str]):
+        seg = self.last_seg()
+        if not seg.is_empty():
+            seg_new = LineSegment()
+            seg_new.x_list.append(("M", seg.last_point()))
+            seg_new.nodetypes.append(seg.nodetypes[-1])
+            self.segments.append(seg_new)
+            seg = seg_new
+        seg.options[a[0]] = " ".join(a[1:])
+
+    def is_empty(self) -> bool:
+        return all(seg.is_empty() for seg in self.segments)
+
+    def reverse(self):
+        for seg in self.segments:
+            seg.reverse()
+        self.segments.reverse()
+        # TODO
+        # Options like "altitude" which affect only one point need to be moved
+        # to the previous segment
+
+
 def parse_line(a: List[str]):
     assert a[0] == "line"
     options = parse_options(a[2:])
@@ -529,14 +600,8 @@ def parse_line(a: List[str]):
         type = type_subtype
         subtype = options.get('subtype', '')
 
-    insensitive = False
-    lossless_repr = ''
+    segline = SegmentedLine()
 
-    nodetypes = []
-    nodetype = "c"
-
-    d = ""
-    started = False
     while True:
         line = f_readline()
         assert line != ''
@@ -545,71 +610,65 @@ def parse_line(a: List[str]):
             continue
         if a[0] == 'endline':
             break
-        lossless_repr += line
         if a[0] == 'smooth':
-            nodetype = "c" if a[1] == "off" else "s"
-            continue
-        if a[0][0].isdigit() or a[0][0] == '-':
-            nodetypes.append(nodetype)
-            if not started:
-                d += 'M'
-                started = True
-            elif len(a) == 2:
-                d += ' L'
-                nodetype = "c"
-            elif len(a) == 6:
-                d += ' C'
-                nodetype = "s"
-            else:
-                insensitive = True
-                errormsg('error: length = %d' % len(a))
-            d += ','.join(flipY(a))
+            segline.last_seg().set_nodetype("c" if a[1] == "off" else "s")
+        elif a[0][0].isdigit() or a[0][0] == '-':
+            segline.last_seg().add_coords(a)
         else:
-            # TODO Create multiple subpath elements, grouped
-            insensitive = True
-            errormsg('skipped line option: ' + ' '.join(a))
+            segline.add_option(a)
 
-    if len(d) == 0:
+    if segline.is_empty():
         errormsg('warning: empty line')
         return
 
-    nodetypes.pop(0)
-    nodetypes.append(nodetype)
-
-    e = etree.Element('path')
-    e.set('class', 'line %s %s' % (type, subtype))
-
-    if insensitive:
-        errormsg('element not fully supported, will be read-only')
-        e.set(sodipodi_insensitive, 'true')
-        desc = etree.SubElement(e, 'desc')
-        desc.text = lossless_repr
-
-    if options.get('reverse', 'off') == 'on':
-        d = reverseD(d)
-        if not insensitive:
-            del options['reverse']
-        nodetypes.reverse()
-
-    if options.get('close', 'off') == 'on':
-        d += ' z'
-        if not insensitive:
-            del options['close']
-
-    if type + '_' + subtype in this.LPE_symbols:
-        e.set(inkscape_path_effect, '#LPE-%s_%s' % (type, subtype))
-        e.set(inkscape_original_d, d)
-    elif type in this.LPE_symbols:
-        e.set(inkscape_path_effect, '#LPE-%s' % (type))
-        e.set(inkscape_original_d, d)
-    else:
-        e.set('d', d)
-
-    if not insensitive:
-        e.set(sodipodi_nodetypes, "".join(nodetypes))
-
     this.id_count += 1
     e_id = 'line_%s_%d' % (type, this.id_count)
+
+    if not any(seg.options for seg in segline.segments):
+        assert len(segline.segments) == 1
+
+        if options.pop('reverse', 'off') == 'on':
+            segline.reverse()
+
+        if options.pop('close', 'off') == 'on':
+            segline.last_seg().x_list.append(("Z", ()))
+
+        e = None
+    else:
+        if options.get('reverse', 'off') == 'on':
+            errormsg(f'cannot reverse path with point options ({e_id})')
+
+        if options.get('close', 'off') == 'on':
+            errormsg(f'cannot close path with point options ({e_id})')
+
+        e = etree.Element('g')
+
+    for seg in segline.segments:
+        d = seg.get_d()
+        subtype = seg.options.get('subtype', subtype)
+
+        e_path = etree.Element('path')
+        e_path.set('class', 'line %s %s' % (type, subtype))
+
+        if type + '_' + subtype in this.LPE_symbols:
+            e_path.set(inkscape_path_effect, '#LPE-%s_%s' % (type, subtype))
+            e_path.set(inkscape_original_d, d)
+        elif type in this.LPE_symbols:
+            e_path.set(inkscape_path_effect, '#LPE-%s' % (type))
+            e_path.set(inkscape_original_d, d)
+        else:
+            e_path.set('d', d)
+
+        e_path.set(sodipodi_nodetypes, "".join(seg.nodetypes))
+
+        if e is None:
+            e = e_path
+        else:
+            e.insert(0, e_path)
+            set_props(e_path, '@', '@', seg.options)
+
+    assert e is not None
+
     e.set('id', e_id)
 
     if th2pref.textonpath and type == 'label':

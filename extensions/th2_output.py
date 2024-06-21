@@ -6,6 +6,7 @@ Distributed under the terms of the GNU General Public License v2 or later
 This program was inspired by http://www.cavediving.de/svg2th2.py
 '''
 
+import th2ex
 from th2ex import (
     AffineType,
     EtreeElement,
@@ -25,7 +26,6 @@ from th2ex import (
     inkscape_label,
     inkscape_original_d,
     sodipodi_role,
-    sodipodi_insensitive,
     sodipodi_nodetypes,
     name_survex2therion,
     parse_options,
@@ -143,24 +143,33 @@ def format_options_leading_space(options):
 
 
 class Th2Line:
-    def __init__(self, type='wall'):
+    def __init__(self, type: str = 'wall'):
         self.type = type
-        self.options = {}
-        self.points = []
-        self._last = None
+        self.options: OptionsDict = {}
+        self.points: List[str] = []
+        self._last: Sequence[str] = []
+
+    @staticmethod
+    def _format_params(params: Sequence[float]) -> List[str]:
+        return [fstr(i) for i in params]
 
     def append(self, params):
-        self.points.append(" ".join(fstr(i) for i in params))
-        self._last = self.points[-1]
+        self._last = self._format_params(params)
+        self.points.append(" ".join(self._last))
 
-    def append_node_options(self, olist):
-        for o in olist:
-            self.points.append(o)
+    def append_point_options(self, point_options: OptionsDict):
+        # point options follow points, so there must be at least one
+        assert self.points
+        self.points.extend(th2ex.format_options_iter(point_options, prefix=""))
+
+    def ends_with_point(self, params: Sequence[float]) -> bool:
+        assert len(params) == 2
+        return self._last[-2:] == self._format_params(params)
 
     def close(self):
         self.options['close'] = 'on'
-        if self._last is not None and (
-                self._last.split()[-2:] != self.points[0].split()):
+        if self.points and self.points[0].split() != self._last[-2:]:
+            self._last = self.points[0].split()
             self.points.append(self.points[0])
 
     def output(self):
@@ -408,33 +417,14 @@ class Th2Output(Th2Effect):
         self.output_g(layer)
         self.print_scrap_end(self.options.lay2scr)
 
-    def examine_insensitive_path(self, node, p_len):
-        node_options = {}
-        node_count = 0
-        desc = node.xpath('svg:desc', namespaces=inkex.NSS)
-        if len(desc) == 1:
-            lines = desc[0].text.split('\n')
-            for line in lines:
-                a = line.split()
-                if len(a) == 0:
-                    continue
-                if a[0][0].isdigit() or a[0][0] == '-':
-                    node_count += 1
-                else:
-                    if node_count not in node_options:
-                        node_options[node_count] = []
-                    node_options[node_count].append(line.strip())
-            if node_count != p_len:
-                inkex.errormsg('node_count = %d, p_len = %d' % (node_count, p_len))
-                return [True, desc[0].text.rstrip()]
-        return [False, node_options]
-
-    def get_d(self, node):
+    def get_d(self, node: EtreeElement, *, recursive: bool = True):
         d = node.get(inkscape_original_d)
         if not d or not self.options.nolpe:
             d = node.get('d')
         if not d:
             if node.tag == svg_g:
+                if not recursive:
+                    return ''
                 # TODO: i2d_affine of children
                 d = ' M 0,0 '.join(self.get_d(child) for child in reversed(node))
             elif 'points' in node.attrib:
@@ -449,16 +439,39 @@ class Th2Output(Th2Effect):
                 d = 'M{0},{1}h{2}v{3}h-{2}v-{3}z'.format(node.get('x', '0'), node.get('y', '0'), width, height)
         return d or ''
 
-    @staticmethod
-    def _get_smooth_node_options(node, p: list, node_options: dict):
-        nodetypes = node.get(sodipodi_nodetypes, "")
-        for ((cmd, params), (node_count, nodetype)) in zip(p, enumerate(nodetypes, 1)):
+    def get_line_data(
+        self,
+        node: EtreeElement,
+        *,
+        inner=False,
+    ) -> Iterator[Tuple[str, Sequence[float], OptionsDict]]:
+        """
+        Get line data and line options.
+
+
+        """
+        if node.tag == svg_g:
+            for child in reversed(node):
+                yield from self.get_line_data(child, inner=True)
+            return
+
+        d = self.get_d(node, recursive=False)
+        if not d:
+            return
+
+        point_options = get_props(node)[2] if inner else {}
+        mat = self.i2d_affine(node)
+        p = [(cmd, transformParams(mat, params)) for (cmd, params) in parsePath(d)]
+        nodetypes = node.get(sodipodi_nodetypes, "") + "?" * len(p)
+
+        for ((cmd, params), nodetype) in zip(p, nodetypes):
             if len(params) == 6 and nodetype == "c":
-                node_options.setdefault(node_count, []).append("smooth off")
+                point_options["smooth"] = "off"
+            yield (cmd, params, point_options)
+            point_options = {}
+
 
     def output_line(self, node):
-        mat = self.i2d_affine(node)
-
         # get therion attributes
         role, type, options = get_props(node)
 
@@ -469,48 +482,28 @@ class Th2Output(Th2Effect):
                 type = 'label'
                 options.update(self.textpath_dict[node_id])
 
-        # get path data
-        d = self.get_d(node)
-        if not d:
-            inkex.errormsg('no path data for element <{} id="{}">'.format(
-                node, node.get('id')))
-            return
-        p = parsePath(d)
-
-        # check on read-only path
-        if node.get(sodipodi_insensitive, 'false') == 'true':
-            p_len = len(p)
-            for cmd, params in p:
-                if cmd == 'Z':
-                    p_len -= 1
-            check, ret = self.examine_insensitive_path(node, p_len)
-            if check:
-                print_utf8("line %s %s" % (type, format_options(options)))
-                # TODO transformParams?
-                print_utf8(ret)
-                print("endline\n")
-                return
-            node_options = ret
-        else:
-            node_options = {}
-            self._get_smooth_node_options(node, p, node_options)
-
-        node_count = 0
         th2line = None
-        for cmd, params in p:
+        for (cmd, params, point_options) in self.get_line_data(node):
+            join_lines = False
             if cmd == 'M':
                 if th2line is not None:
-                    th2line.output()
-                th2line = Th2Line(type)
-                th2line.options.update(options)
+                    if th2line.ends_with_point(params):
+                        join_lines = True
+                    else:
+                        th2line.output()
+                if not join_lines:
+                    th2line = Th2Line(type)
+                    th2line.options.update(options)
             if cmd == 'Z':
                 th2line.close()
-            else:
-                node_count += 1
-                th2line.append(transformParams(mat, params))
-                th2line.append_node_options(node_options.get(node_count, []))
+            elif not join_lines:
+                th2line.append(params)
+            th2line.append_point_options(point_options)
         if th2line is not None:
             th2line.output()
+        else:
+            inkex.errormsg('no path data for element <{} id="{}">'.format(
+                node, node.get('id')))
 
     def output_textblock(self, node):
         line = self.get_point_text(node)
