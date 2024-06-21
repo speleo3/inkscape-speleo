@@ -23,7 +23,15 @@ point 60.842 321.52 station -name 1@sub.create
 
 point 199.612 418.56 station -name 0@sub.create
 
+# single-line comment for round-trip test
+
+
 point 290.952 288.05 station -name 2@create
+
+# multi-line comment for round-trip test
+# double -- dash
+# line three
+
 
 point 433.082 135.69 station -name 1@create
 

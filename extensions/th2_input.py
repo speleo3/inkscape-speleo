@@ -431,6 +431,25 @@ def parse_scrap(a):
     this.layer_stack.pop()
 
 
+def preserve_literal(a: Sequence[str], lines: Sequence[str] = ()):
+    """
+    Preserve literal lines.
+
+    Args:
+      a: Optional first line as sequence of words
+      lines: Lines, including the line feed.
+    """
+    chunks = ['#therion\n']
+    assert a  # seems to be true (subject to change?)
+    chunks.append(' '.join(a) + '\n')
+    chunks.extend(lines)
+    text = ''.join(chunks)
+    assert text.endswith("\n")
+    e = etree.Comment()
+    e.text = text
+    this.getcurrentlayer().insert(0, e)
+
+
 def parse_area(a_in):
     lines = []
     while True:
@@ -445,10 +464,7 @@ def parse_area(a_in):
 
     # we can only handle areas with one border line
     if len(lines) != 2 or lines[0].strip() not in this.borders:
-        e = etree.Comment('#therion\n')
-        e.text += ' '.join(a_in) + '\n'
-        e.text += ''.join(lines)
-        this.getcurrentlayer().insert(0, e)
+        preserve_literal(a_in, lines)
         return
 
     # update border line
@@ -474,22 +490,18 @@ def parse_area(a_in):
 
 def parse_BLOCK2COMMENT(a):
     role = a[0]
-    e = etree.Comment('#therion\n')
-    e.text += ' '.join(a) + '\n'
+    lines = []
     while True:
         line = f_readline()
         assert line != ''
-        e.text += line
-        a = line.split()
-        if len(a) > 0 and a[0] == 'end%s' % (role):
+        lines.append(line)
+        if line.startswith("end") and line.split()[0] == ("end" + role):
             break
-    this.getcurrentlayer().insert(0, e)
+    preserve_literal(a, lines)
 
 
 def parse_LINE2COMMENT(a):
-    e = etree.Comment('#therion\n')
-    e.text += ' '.join(a) + '\n'
-    this.getcurrentlayer().insert(0, e)
+    preserve_literal(a)
 
 
 def parse_BLOCK2TEXT(a):
