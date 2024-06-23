@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <g id="single_used_defs_group">
+      <text x="20" y="35">Single-used group</text>
+    </g>
+    <g id="multi_used_defs_group">
+      <text x="20" y="35">Multi-used group</text>
+    </g>
+    <g id="unused_defs_group">
+      <text x="20" y="35">Unused group</text>
+    </g>
+    <clipPath id="clip_path_ellipse">
+      <ellipse cx="58" cy="86" rx="52" ry="21" />
+    </clipPath>
+    <clipPath id="clip_path_rect">
+      <rect width="230" height="140" x="5" y="4" />
+    </clipPath>
+  </defs>
+  <g clip-path="url(#clip_path_rect)">
+    <use xlink:href="#multi_used_defs_group" />
+  </g>
+  <g id="trivial_group">
+    <g clip-path="url(#clip_path_rect)">
+      <use y="25" xlink:href="#single_used_defs_group" />
+    </g>
+  </g>
+  <g clip-path="url(#clip_path_ellipse)">
+    <use y="50" xlink:href="#multi_used_defs_group" />
+  </g>
+</svg>
