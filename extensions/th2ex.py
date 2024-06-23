@@ -28,6 +28,7 @@ from typing import (
     TypeVar,
     Union,
 )
+import functools
 import shlex
 import os
 import math
@@ -115,6 +116,10 @@ class _th2pref:
         self.basescale = 1.0
         self.xyascenter = True
 
+    def set_basescale(self, value: float):
+        self.basescale = value
+        get_fonts_setup_default.cache_clear()
+
 
 # fix Python 3 mappingproxy issue
 th2pref = _th2pref()
@@ -141,7 +146,7 @@ def th2pref_reload():
 def th2pref_load_from_xml(root):
     x = root.get(therion_basescale)
     if x is not None:
-        th2pref.basescale = float(x)
+        th2pref.set_basescale(float(x))
     th2pref.howtostore = root.get(therion_howtostore, th2pref.howtostore)
 
 # store prefs
@@ -566,6 +571,30 @@ fill2type = {
 }
 
 ##########################################
+# font stuff
+
+# fonts-setup defaults in "pt" for scales up to 1:N
+fonts_setup_defaults = {
+    100: {'xs': 8, 's': 10, 'm': 12, 'l': 16, 'xl': 24},
+    200: {'xs': 7, 's': 8, 'm': 10, 'l': 14, 'xl': 20},
+    500: {'xs': 6, 's': 7, 'm': 8, 'l': 10, 'xl': 14},
+    math.inf: {'xs': 5, 's': 6, 'm': 7, 'l': 8, 'xl': 10},
+}
+
+
+@functools.lru_cache(maxsize=None)
+def get_fonts_setup_default(map_scale: int = 0):
+    """
+    Get equivalents for the "fonts-setup" layout command default value.
+    """
+    if not map_scale:
+        map_scale = 100 * th2pref.basescale
+    key = min((s for s in fonts_setup_defaults if (map_scale <= s)),
+              key=lambda s: s - map_scale)
+    return fonts_setup_defaults[key]
+
+
+##########################################
 # geom stuff
 
 
@@ -654,20 +683,25 @@ UUCONV = {
 }
 
 
-def convert_unit(value: str, to_unit: str) -> float:
+def convert_unit(value: Union[str, Tuple[float, str]], to_unit: str) -> float:
     """
     Returns value in requested unit
 
     >>> convert_unit("3m", "m") == 3.0
     >>> convert_unit("3m", "cm") == 300.0
     """
-    m = re.fullmatch(r'(.*?)([a-z]+)', value.rstrip())
-    if m is None:
-        return 0.0
+    assert to_unit in UUCONV
+    val: Union[float | str]
 
-    val, unit = m.groups()
+    if isinstance(value, tuple):
+        val, unit = value
+    else:
+        m = re.fullmatch(r'(.*?)([a-z]*)', value.rstrip())
+        assert m is not None
+        val, unit = m.groups()
+
     try:
-        return float(val) * UUCONV[unit] / UUCONV[to_unit]
+        return float(val) * UUCONV[unit or 'px'] / UUCONV[to_unit]
     except (ValueError, KeyError):
         return 0.0
 

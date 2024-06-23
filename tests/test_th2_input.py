@@ -4,7 +4,7 @@ import pytest
 
 @pytest.fixture(autouse=True, scope="module")
 def setup_basescale():
-    m.th2pref.basescale = 4
+    m.th2pref.set_basescale(4)
 
 
 def test_floatscale():

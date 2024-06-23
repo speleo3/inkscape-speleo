@@ -7,6 +7,10 @@ encoding  utf-8
 
 scrap create.s -scale [-128.0 -128.0 620.125 -128.0 0.0 0.0 19.002375 0.0 m]
 
+point 201.0 156.0 label -align bl -scale s -text "Label S"
+
+point 318.0 394.0 label -align tr -scale l -text "Label L"
+
 area water
   w-left
   b-lower

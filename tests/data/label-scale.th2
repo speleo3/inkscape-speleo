@@ -1,0 +1,41 @@
+encoding  utf-8
+##XTHERION## xth_me_area_adjust 0.0 -40.0 300.0 260.0
+##XTHERION## xth_me_area_zoom_to 100
+
+
+
+scrap scrap1 -projection plan -scale [0 0 200 0 0 0 10 0 m]
+
+line pit
+  250.0 210.0
+  50.0 210.0
+endline
+
+line floor-step
+  50.0 10.0
+  250.0 10.0
+endline
+
+line wall
+  250.0 10.0
+  250.0 210.0
+endline
+
+line wall
+  50.0 210.0
+  50.0 10.0
+endline
+
+point 100.0 160.0 label -scale xs -text "Scale xs"
+
+point 100.0 60.0 label -scale s -text "Scale s"
+
+point 150.0 110.0 label -text "Scale m"
+
+point 200.0 160.0 label -scale l -text "Scale l"
+
+point 200.06 59.6 label -scale xl -text "Scale xl"
+
+endscrap
+
+

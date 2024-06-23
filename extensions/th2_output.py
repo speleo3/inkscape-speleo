@@ -240,6 +240,15 @@ class Th2Output(Th2Effect):
             self.textpath_dict = dict()
         self.current_scrap_id = 'none'
 
+    def get_m_per_dots(self) -> float:
+        """
+        Get drawing meters per user unit
+        """
+        m_per_dots_width = self.doc_width_m / self.doc_width
+        m_per_dots_height = self.doc_height_m / self.doc_height
+        assert 0.9 < (m_per_dots_width / m_per_dots_height) < 1.1
+        return (m_per_dots_width + m_per_dots_height) / 2
+
     def get_style(self, node):
         return simplestyle.parseStyle(node.get('style', ''))
 
@@ -557,6 +566,10 @@ class Th2Output(Th2Effect):
             options.pop('align', None)
 
     def guess_text_scale(self, node, style, options, mat):
+        """
+        Guess closest text scale (e.g. "xl") from actual font size and set it in
+        options if it's not the default scale.
+        """
         fontsize = self.get_style_attr(node, style, 'font-size', '12')
         if fontsize[-1] == '%':
             fontsize = float(fontsize[:-1]) / 100.0 * 12
@@ -565,14 +578,12 @@ class Th2Output(Th2Effect):
         if mat is not None:
             fontsize *= descrim(mat)
         fontsize /= th2pref.basescale
-        if fontsize > 17:
-            options['scale'] = 'xl'
-        elif fontsize > 12:
-            options['scale'] = 'l'
-        elif fontsize <= 8:
-            options['scale'] = 'xs'
-        elif fontsize <= 9:
-            options['scale'] = 's'
+        fontsize_pt = th2ex.convert_unit((fontsize * self.get_m_per_dots(), "m"), "pt")
+        fonts_setup_default = th2ex.get_fonts_setup_default()
+        scale = min(fonts_setup_default.items(),
+                    key=lambda item: abs(item[1] - fontsize_pt))[0]
+        if scale != 'm':
+            options['scale'] = scale
 
     def output_point(self, node):
         mat = self.i2d_affine(node)

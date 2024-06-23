@@ -4,6 +4,7 @@ Copyright (C) 2008 Thomas Holder, http://sf.net/users/speleo3/
 Distributed under the terms of the GNU General Public License v2 or later
 '''
 
+import th2ex
 from th2ex import (
     ParsedPath,
     parse_scrap_scale_m_per_dots,
@@ -88,15 +89,6 @@ linetype2layer = {
     'wall': 'wall',
 }
 
-# like 1:500
-fontscale = {
-    'xl': '17.435',
-    'l': '12.435',
-    'm': '9.963',
-    's': '8.717',
-    'xs': '7.472',
-}
-
 point_colors = {
     'station-name': 'orange',
     'altitude': '#f0f',
@@ -139,6 +131,24 @@ class this:
     @classmethod
     def getcurrentlayer(this):
         return this.layer_stack[-1] if this.layer_stack else this.root
+
+
+def to_user_units(value: float, unit: str) -> float:
+    """
+    Convert a physical print dimension (e.g. 12pt or 2mm) to local user units.
+    """
+    return th2ex.convert_unit((value, unit), "cm") / this.m_per_dots
+
+
+def scale_to_fontsize(scale: str) -> float:
+    """
+    Convert a scale value ("xs" ... "xl", or numeric) to font size in user units
+    """
+    fonts_setup_default = th2ex.get_fonts_setup_default()
+    fontsize_pt = (
+        fonts_setup_default.get(scale) or  #
+        fonts_setup_default["m"] * float(scale))
+    return to_user_units(fontsize_pt, "pt")
 
 
 def populate_legend():
@@ -683,9 +693,7 @@ def parse_line(a: List[str]):
         e_textPath = etree.SubElement(e_text, 'textPath', {
             xlink_href: '#' + e_id,
         })
-        fontsize = fontscale.get(options.get('scale'), '12')
-        if 'scale' in options:
-            del options['scale']
+        fontsize = scale_to_fontsize(options.pop("scale", "m"))
         e_text.set('style', "font-size:%s" % (fontsize))
         e_textPath.text = options.pop('text', '')
         if not e_textPath.text:
@@ -717,7 +725,7 @@ def parse_point(a):
             t.text = line
             y += 1
         del options[key]
-        fontsize = fontscale.get(options.pop('scale', None), '12')
+        fontsize = scale_to_fontsize(options.pop("scale", "m"))
         align = options.pop('align', '')
         align = align_shortcuts.get(align, align)
         textanchor = align2anchor.get(align.strip('tb'), align2anchor_default_in)

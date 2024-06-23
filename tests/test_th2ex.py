@@ -22,8 +22,12 @@ def test_distance():
 
 
 def test_convert_unit():
+	assert m.convert_unit("3unknown", "m") == 0.0
 	assert m.convert_unit("3m", "m") == approx(3.0)
 	assert m.convert_unit("3m", "cm") == approx(300.0)
+	assert m.convert_unit("3pt", "px") == approx(4.0)
+	assert m.convert_unit("4px", "pt") == approx(3.0)
+	assert m.convert_unit("4", "pt") == approx(3.0)
 
 
 def test_parse_scrap_scale_m_per_dots():
@@ -138,3 +142,10 @@ def test_zero_division():
     # unexpected "com" because -attr takes two values
     with pytest.raises(UserWarning):
         th2ex.parse_options('-attr foo -bar com')
+
+
+def test_get_fonts_setup_default():
+    assert m.get_fonts_setup_default(10) == m.fonts_setup_defaults[100]
+    assert m.get_fonts_setup_default(200) == m.fonts_setup_defaults[200]
+    assert m.get_fonts_setup_default(250) == m.fonts_setup_defaults[500]
+    assert m.get_fonts_setup_default(999) == m.fonts_setup_defaults[float("inf")]

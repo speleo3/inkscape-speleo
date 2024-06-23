@@ -29,6 +29,8 @@ script_th2_output = _find_script("th2_output")
 
 @pytest.mark.parametrize("stem,basescale", [
     ("label-align", 1),
+    ("label-scale", 0.5),
+    ("label-scale", 2),
     ("create", 1),
     ("create", 2),
 ])
