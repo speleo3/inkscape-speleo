@@ -6,6 +6,7 @@ Distributed under the terms of the GNU General Public License v2 or later
 Enumerate therion station names
 '''
 
+from typing import Tuple
 import inkex
 import re
 
@@ -16,12 +17,12 @@ therion_laststationname = inkex.addNS('laststationname', 'therion')
 BS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 
-def to_base(n, b=len(BS)):
+def to_base(n: int, b=len(BS)) -> str:  # noqa: B008
     return "0" if not n else to_base(n // b, b).lstrip("0") + BS[n % b]
 
 
 class StationName:
-    def __init__(self, name):
+    def __init__(self, name: str):
         name = name.strip()
         m = re.match(r'([0-9a-zA-Z]+)($|@.*)', name)
         if m is None:
@@ -40,7 +41,7 @@ class StationName:
             self.convertToLower = incrementingPart.islower()
         self.number = int(incrementingPart, self.base)
 
-    def __str__(self):
+    def __str__(self) -> str:
         incrementingPart = to_base(self.number, self.base)
         if self.convertToLower:
             incrementingPart = incrementingPart.lower()
@@ -49,7 +50,7 @@ class StationName:
     def __iter__(self):
         return self
 
-    def __next__(self):
+    def __next__(self) -> str:
         s = str(self)
         self.number += 1
         return s
@@ -57,7 +58,7 @@ class StationName:
     next = __next__
 
 
-def SeparateStationNameParts(s):
+def SeparateStationNameParts(s: str) -> Tuple[str, str]:
     part1, part2 = '', ''
 
     # Check if the string is entirely alphabetic or numeric
@@ -80,7 +81,7 @@ class Th2EnumerateStations(Th2SetProps):
         self.arg_parser.add_argument(
             "--stationname", type=str, dest="stationname")
 
-    def update_options(self, options):
+    def update_options(self, options: dict):
         options['name'] = next(self.stationnames)
 
     def effect(self):
