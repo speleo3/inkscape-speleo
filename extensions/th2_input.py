@@ -443,6 +443,21 @@ def parse_scrap(a):
 
 def preserve_literal(a: Sequence[str], lines: Sequence[str] = ()):
     """
+    Preserve literal lines as <g><desc>.
+    """
+    e = etree.Element('g')
+    set_props(e, 'textblock', '@')
+    desc = etree.SubElement(e, 'desc')
+    assert a  # seems to be true (subject to change?)
+    chunks = [' '.join(a) + '\n']
+    chunks.extend(lines)
+    desc.text = ''.join(chunks)
+    assert desc.text.endswith("\n")
+    this.getcurrentlayer().insert(0, e)
+
+
+def preserve_literal_as_comment(a: Sequence[str], lines: Sequence[str] = ()):
+    """
     Preserve literal lines.
 
     Args:

@@ -516,12 +516,14 @@ class Th2Output(Th2Effect):
 
     def output_textblock(self, node):
         line = self.get_point_text(node)
-        print_utf8(line)
+        a = line.split()
+        if a:
+            print_utf8(line)
         desc = node.xpath('svg:desc', namespaces=inkex.NSS)
         if len(desc) > 0:
             print_utf8(desc[0].text.rstrip())
-        a = line.split()
-        print('end' + a[0] + '\n')
+        if a:
+            print('end' + a[0] + '\n')
 
     def get_point_text(self, node):
         text = ''
