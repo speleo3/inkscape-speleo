@@ -460,17 +460,25 @@ def preserve_literal(a: Sequence[str], lines: Sequence[str] = ()):
     this.getcurrentlayer().insert(0, e)
 
 
-def parse_area(a_in):
+def read_block_lines(sentinel: str, *, skip_blank: bool = False) -> List[str]:
+    """
+    Read lines up to and including the given sentinel word.
+    """
     lines = []
     while True:
         line = f_readline()
         assert line != ''
         a = line.split()
-        if not a:
+        if skip_blank and not a:
             continue
         lines.append(line)
-        if a[0] == 'endarea':
+        if a[0] == sentinel:
             break
+    return lines
+
+
+def parse_area(a_in):
+    lines = read_block_lines('endarea', skip_blank=True)
 
     # we can only handle areas with one border line
     if len(lines) != 2 or lines[0].strip() not in this.borders:
@@ -494,14 +502,7 @@ def parse_area(a_in):
 
 
 def parse_BLOCK2COMMENT(a):
-    role = a[0]
-    lines = []
-    while True:
-        line = f_readline()
-        assert line != ''
-        lines.append(line)
-        if line.startswith("end") and line.split()[0] == ("end" + role):
-            break
+    lines = read_block_lines("end" + a[0])
     preserve_literal(a, lines)
 
 
@@ -513,7 +514,21 @@ def parse_BLOCK2TEXT(a):
     '''
     Currently unused
     '''
-    role = a[0]
+    lines = read_block_lines("end" + a[0])
+    preserve_literal_as_textblock(a, lines)
+
+
+def preserve_literal_as_textblock(a: Sequence[str], lines: Sequence[str] = ()):
+    """
+    Preserve literal lines as <text> element.
+
+    First line is displayed text, block body is <desc>.
+
+    Args:
+      a: First line as sequence of words
+      lines: Lines, including the line feed. Last line must be "end...".
+    """
+    assert lines[-1].split()[0] == f"end{a[0]}"
     e = etree.Element('text')
     e.set(therion_role, 'textblock')
     e.set('style', 'font-size:8;fill:#900')
@@ -522,16 +537,7 @@ def parse_BLOCK2TEXT(a):
     e.set(xml_space, 'preserve')
     desc = etree.SubElement(e, 'desc')
     desc.tail = ' '.join(a)
-    while True:
-        line = f_readline()
-        assert line != ''
-        a = line.split()
-        if len(a) > 0 and a[0] == 'end%s' % (role):
-            break
-        if desc.text is None:
-            desc.text = line
-        else:
-            desc.text += line
+    desc.text = ''.join(lines[:-1])
     this.getcurrentlayer().insert(0, e)
     this.textblock_count += 1
 
