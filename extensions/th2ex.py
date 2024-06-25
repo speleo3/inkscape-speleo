@@ -781,7 +781,7 @@ class Th2Effect(inkex.Effect):
         node_bbox = None
 
         if transform:
-            transform = node.get('transform', '')
+            transform = node.get('transform') or ''
         else:
             transform = ''
 
