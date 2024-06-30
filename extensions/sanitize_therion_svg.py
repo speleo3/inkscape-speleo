@@ -107,7 +107,7 @@ class SanitizeTherionSvgExtension(inkex.EffectExtension):
 
     def _ungroup_trivial_groups(self):
         for elem in self.svg.findall('.//svg:g'):
-            if list(elem.attrib) not in ([], ["id"]):
+            if not set(elem.attrib).issubset({"id", "fill"}):
                 continue
             if len(elem) != 1:
                 continue
@@ -120,6 +120,9 @@ class SanitizeTherionSvgExtension(inkex.EffectExtension):
             elem_id = elem.get("id")
             if elem_id and self.id_is_referenced(elem_id):
                 continue
+            fill = elem.get("fill")
+            if fill:
+                parent.attrib["fill"] = fill
             parent.insert(parent.index(elem), child)
             parent.remove(elem)
 
@@ -202,6 +205,8 @@ class SanitizeTherionSvgExtension(inkex.EffectExtension):
         pos = list(parent).index(use)
         parent.insert(pos, linked)
         parent.remove(use)
+
+        linked.set("id", use.get("id"))
 
 
 if __name__ == '__main__':

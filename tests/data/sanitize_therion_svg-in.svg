@@ -24,7 +24,7 @@
   </g>
   <g id="trivial_group">
     <g clip-path="url(#clip_path_rect)">
-      <use y="25" xlink:href="#single_used_defs_group" />
+      <use y="25" xlink:href="#single_used_defs_group" id="single_user" />
     </g>
   </g>
   <g clip-path="url(#clip_path_ellipse)">

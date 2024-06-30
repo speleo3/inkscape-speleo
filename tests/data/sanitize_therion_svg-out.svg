@@ -13,7 +13,7 @@
   <g>
     <use xlink:href="#multi_used_defs_group" />
   </g>
-  <g id="single_used_defs_group" transform="translate(0, 25)">
+  <g id="single_user" transform="translate(0, 25)">
     <text x="20" y="35">Single-used group</text>
   </g>
   <g clip-path="url(#clip_path_ellipse)">
