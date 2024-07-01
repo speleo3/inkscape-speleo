@@ -400,6 +400,8 @@ def parse_XTHERION(a):
         this.doc_y = floatscale(a[5])
         this.doc_width = floatscale(a[4]) - this.doc_x
         this.doc_height = this.doc_y - floatscale(a[3])
+    elif a[1] == 'xth_me_area_zoom_to':
+        this.root.set(th2ex.therion_area_zoom_to, a[2])
 
 
 def parse_scrap(a):

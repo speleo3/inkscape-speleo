@@ -342,7 +342,10 @@ class Th2Output(Th2Effect):
             ]
             print('##XTHERION## xth_me_area_adjust %s %s %s %s' %
                   tuple(map(fstr2, transformParams(self.r2d, params))))
-        print('##XTHERION## xth_me_area_zoom_to 100')
+
+        area_zoom_to = root.get(th2ex.therion_area_zoom_to)
+        if area_zoom_to:
+            print(f'##XTHERION## xth_me_area_zoom_to {area_zoom_to}')
 
         # text on path
         if th2pref.textonpath:
