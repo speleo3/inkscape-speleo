@@ -269,8 +269,8 @@ class Th2Output(Th2Effect):
                         self.options.dpi,
                         self.options.scale,
                     )
-                else:
-                    options['scale'] = '[%d %d m]' % (
+                elif self.doc_width_m:
+                    options['scale'] = '[%g %g m]' % (
                         self.doc_width / self.doc_width_m,
                         self.options.scale,
                     )
@@ -285,6 +285,30 @@ class Th2Output(Th2Effect):
         if test:
             print("endscrap\n\n")
 
+    def setdefault_doc_dims(self):
+        """
+        If document dimensions (width, height) are unknown, set them to default values.
+        """
+        if self.doc_width_m and self.doc_width:
+            m_per_dots = self.doc_width_m / self.doc_width
+        elif self.doc_height_m and self.doc_height:
+            m_per_dots = self.doc_height_m / self.doc_height
+        else:
+            m_per_dots = 0.0254 / 96  # SVG default
+        if not self.doc_width_m:
+            self.doc_width_m = (self.doc_width or 300) * m_per_dots
+        if not self.doc_width:
+            self.doc_width = self.doc_width_m / m_per_dots
+        if not self.doc_height_m:
+            self.doc_height_m = (self.doc_height or 150) * m_per_dots
+        if not self.doc_height:
+            self.doc_height = self.doc_height_m / m_per_dots
+        if not (0.9 < (m_per_dots / self.get_m_per_dots()) < 1.1):
+            inkex.errormsg(
+                f"doc_width:  {self.doc_width}     doc_width_m:  {self.doc_width_m}\n"
+                f"doc_height: {self.doc_height}    doc_height_m: {self.doc_height_m}\n"
+                f"m_per_dots: {self.get_m_per_dots()}\n")
+
     def output(self):
         root = self.document.getroot()
         self.doc_width_m = convert_unit(root.get('width') or '', "m")
@@ -297,6 +321,8 @@ class Th2Output(Th2Effect):
         viewBox = root.get('viewBox')
         if viewBox:
             self.doc_x, self.doc_y, self.doc_width, self.doc_height = map(float, viewBox.split())
+
+        self.setdefault_doc_dims()
 
         self.classes = {}
         stylenodes = self.document.xpath('//svg:style', namespaces=inkex.NSS)
