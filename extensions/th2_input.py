@@ -851,6 +851,9 @@ def main():
         this.root.set('width', f"{this.doc_width * this.m_per_dots}cm")
         this.root.set('height', f"{this.doc_height * this.m_per_dots}cm")
         this.root.set('viewBox', f"{this.doc_x} {-this.doc_y} {this.doc_width} {this.doc_height}")
+        grid = this.root.xpath('/svg:svg/sodipodi:namedview/inkscape:grid', namespaces=inkex.NSS)[0]
+        grid.set("spacingx", f"{1 / this.m_per_dots}")
+        grid.set("spacingy", f"{1 / this.m_per_dots}")
 
     e = this.root.xpath('svg:g[@id="layer-scan"]', namespaces=inkex.NSS)[0]
     e.set('transform', ' scale(1,-1) scale(%f)' % (1. / th2pref.basescale))
