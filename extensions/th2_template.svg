@@ -700,15 +700,18 @@ path.area.flowstone { fill:url(#pattern-flowstone) }
 			stroke:red;
 		}
 		path.line.u.water {
+			stroke:none;
 			fill:blue;
 			fill-opacity:0.5;
 		}
 		path.line.u.sand {
+			stroke:none;
 			fill:yellow;
 			fill-opacity:0.5;
 		}
 
 path.line.u.BLACK { stroke: black }
+path.line.u.black { stroke: black }
 path.line.u.BLUE { stroke: blue }
 path.line.u.blue { stroke: blue }
 path.line.u.BROWN { stroke: brown }
