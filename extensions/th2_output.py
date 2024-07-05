@@ -611,8 +611,13 @@ class Th2Output(Th2Effect):
         fontsize /= th2pref.basescale
         fontsize_pt = th2ex.convert_unit((fontsize * self.get_m_per_dots(), "m"), "pt")
         fonts_setup_default = th2ex.get_fonts_setup_default()
-        scale = min(fonts_setup_default.items(),
-                    key=lambda item: abs(item[1] - fontsize_pt))[0]
+        if (  #
+                fontsize_pt < fonts_setup_default['xs'] * 0.8 or  #
+                fontsize_pt > fonts_setup_default['xl'] * 1.5):
+            scale = f'{fontsize_pt / fonts_setup_default["m"]:g}'
+        else:
+            scale = min(fonts_setup_default.items(),
+                        key=lambda item: abs(item[1] - fontsize_pt))[0]
         if scale != 'm':
             options['scale'] = scale
 

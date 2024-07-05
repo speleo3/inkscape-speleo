@@ -36,6 +36,10 @@ point 200.0 160.0 label -scale l -text "Scale l"
 
 point 200.06 59.6 label -scale xl -text "Scale xl"
 
+point 150.0 10.0 label -scale 3.5 -text "Scale 3.5"
+
+point 100.0 -40.0 label -scale 0.5 -text "Scale 0.5"
+
 endscrap
 
 
