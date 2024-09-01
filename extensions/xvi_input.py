@@ -103,7 +103,7 @@ def xvi2svg(handle, fullsvg=True, strokewidth=6, XVIroot='',
 
     g_stations = etree.SubElement(root, th2ex.svg_g, {th2ex.inkscape_label: 'Stations'})
     for line in stations:
-        x, y, label = line.split()
+        x, y, label = line.split(None, 2)
         y = invert_str(y)
         e = etree.SubElement(g_stations, th2ex.svg_text, {
             'style': f'font-size: {strokewidth * 10}',
