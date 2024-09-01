@@ -494,6 +494,12 @@ def read_block_lines(sentinel: str, *, skip_blank: bool = False) -> List[str]:
     return lines
 
 
+def _pop_subtype(type_subtype: str, options: dict) -> Tuple[str, str]:
+    if ':' in type_subtype:
+        return tuple(type_subtype.split(':', 1))
+    return type_subtype, options.get('subtype', '')
+
+
 def parse_area(a_in):
     lines = read_block_lines('endarea', skip_blank=True)
 
@@ -505,15 +511,12 @@ def parse_area(a_in):
     # update border line
     e = this.borders[lines[0].strip()]
     role, type, options = get_props(e)
+    type, _ = _pop_subtype(type, {})
     assert (role, type) == ('line', 'border')
     options = {f"line-{key}": value for (key, value) in options.items()}
     options.update(parse_options(a_in[2:]))
     type_subtype = a_in[1]
-    if ':' in type_subtype:
-        type, subtype = type_subtype.split(':', 1)
-    else:
-        type = type_subtype
-        subtype = options.get('subtype', '')
+    type, subtype = _pop_subtype(type_subtype, options)
     e.set('class', 'area %s %s' % (type, subtype))
     set_props(e, 'area', type_subtype, options)
 
