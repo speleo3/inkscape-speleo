@@ -132,6 +132,13 @@ class this:
     def getcurrentlayer(this):
         return this.layer_stack[-1] if this.layer_stack else this.root
 
+    @classmethod
+    def getcurrentfilename(this) -> str:
+        return os.path.relpath(
+            this.file_stack[-1].filename,
+            this.file_stack[0].dirname,
+        ) if this.file_stack else ""
+
 
 def to_user_units(value: float, unit: str) -> float:
     """
@@ -308,7 +315,11 @@ def f_readline():
 
 
 def errormsg(x):
-    print('[line %d]' % (this.line_nr + 1), x, file=sys.stderr)
+    if len(this.file_stack) > 1:
+        prefix = this.getcurrentfilename() + ':'
+    else:
+        prefix = 'line '
+    print(f'[{prefix}{this.line_nr + 1}] {x}', file=sys.stderr)
 
 
 def parse(a):
