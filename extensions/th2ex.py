@@ -254,6 +254,8 @@ repeatable_options = [
 two_arg_keys = ['attr', 'context', 'author']
 needquote = re.compile(r'[^-._@a-z0-9]', re.I)
 
+RE_MAYBEQUOTED = re.compile(r'\[.*?\]|"(?:[^"]|"")*"(?!")|\S+')
+
 
 def is_numeric(s):
     try:
@@ -269,27 +271,19 @@ def maybe_key(s):
 
 def splitquoted(ustr, comments=False):
     '''
-    Unicode safe shlex.split() drop-in.
-
     Only uses double quotes, not single quotes.
 
     Returns "[foo bar]" as one string.
     '''
+    assert not comments
     assert not isinstance(ustr, bytes)
-    lex = shlex.shlex(ustr, posix=True)
-    lex.whitespace_split = True
-    if not comments:
-        lex.commenters = ''
-    lex.quotes = '"'
 
-    def gen():
-        values = iter(lex)
-        for value in values:
-            if value.startswith('['):
-                while not value.endswith(']'):
-                    value += ' ' + next(values)
-            yield value
-    return list(gen())
+    def popquotes(s: str) -> str:
+        if s.startswith('"') and s.endswith('"'):
+            return s[1:-1].replace('""', '"')
+        return s
+
+    return [popquotes(v) for v in RE_MAYBEQUOTED.findall(ustr)]
 
 
 def quote(value):
@@ -303,7 +297,7 @@ def quote(value):
         return value
     if value.startswith('[') and value.endswith(']'):
         return value
-    return '"' + value.replace('\\', '\\\\').replace('"', '\\"') + '"'
+    return '"' + value.replace('"', '""') + '"'
 
 
 def _skipunexpected(s):

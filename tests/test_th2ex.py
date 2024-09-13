@@ -44,7 +44,8 @@ def test_parse_scrap_scale_m_per_dots():
 def test_quote():
     assert "foo" == th2ex.quote("foo")
     assert '"foo bar"' == th2ex.quote('foo bar')
-    assert '"foo\\" bar"' == th2ex.quote('foo" bar')
+    assert '"foo"" bar"' == th2ex.quote('foo" bar')
+    assert '"""foo bar"""' == th2ex.quote('"foo bar"')
     assert '[foo bar]' == th2ex.quote('[foo bar]')
 
 
@@ -53,6 +54,12 @@ def test_splitquoted():
     assert ["foo", "bar"] == th2ex.splitquoted("foo bar")
     assert ["foo bar"] == th2ex.splitquoted('"foo bar"')
     assert ["[foo bar]"] == th2ex.splitquoted('[foo bar]')
+    assert ['[foo " bar]'] == th2ex.splitquoted('[foo " bar]')
+    assert ['[foo "" bar]'] == th2ex.splitquoted('[foo "" bar]')
+    assert ['foo " bar'] == th2ex.splitquoted('"foo "" bar"')
+    assert ['foo"bar'] == th2ex.splitquoted('"foo""bar"')
+    assert ["foo", "bar"] == th2ex.splitquoted('"foo" "bar"')
+    assert ['"foo bar"'] == th2ex.splitquoted('"""foo bar"""')
 
 
 def test_parse_options():
@@ -64,19 +71,19 @@ def test_parse_options():
 
     # spaced argument with quote
     expected = {'foo': 'bar', 'bar': 'Thomas" Höhle'}
-    assert expected == parse_options('-foo bar -bar "Thomas\\" Höhle"')
+    assert expected == parse_options('-foo bar -bar "Thomas"" Höhle"')
 
     # spaced argument with escaped quote
     expected = {'foo': 'bar', 'bar': 'Thomas\\" Höhle'}
-    assert expected == parse_options(r'-foo bar -bar "Thomas\\\" Höhle"')
+    assert expected == parse_options(r'-foo bar -bar "Thomas\"" Höhle"')
 
     # spaced argument with backslash
     expected = {'foo': 'bar', 'bar': 'Thomas Höhle\\'}
-    assert expected == parse_options('-foo bar -bar "Thomas Höhle\\\\"')
+    assert expected == parse_options('-foo bar -bar "Thomas Höhle\\"')
 
     # spaced argument with quote-backslash
     expected = {'foo': 'bar', 'bar': 'Thomas Höhle"\\'}
-    assert expected == parse_options('-foo bar -bar "Thomas Höhle\\"\\\\"')
+    assert expected == parse_options('-foo bar -bar "Thomas Höhle""\\"')
 
     # parse_options with list (needed?)
     expected = {'foo': 'bar', 'com': 'bla'}
