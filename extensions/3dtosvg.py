@@ -97,7 +97,7 @@ filter_len = len(args['filter'])
 
 if args['view'] == 2:
     if not infile.endswith('_extend.3d'):
-        command = args['extend-cmd'] + ' "' + infile + '"'
+        command = args['extend_cmd'] + ' "' + infile + '"'
         if os.path.exists(infile[:-3] + '.espec'):
             command += ' --specfile="' + infile[:-3] + '.espec"'
         pipe = os.popen(command)
