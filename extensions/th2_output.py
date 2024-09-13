@@ -271,7 +271,7 @@ class Th2Output(Th2Effect):
                     )
                 elif self.doc_width_m:
                     options['scale'] = '[%g %g m]' % (
-                        self.doc_width / self.doc_width_m,
+                        th2pref.basescale * self.doc_width / self.doc_width_m,
                         self.options.scale,
                     )
             if 'projection' not in options and self.options.projection:
