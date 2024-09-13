@@ -398,6 +398,8 @@ def parse_XTHERION(a):
                 errormsg('xvi2svg failed ({})'.format(e))
         elif href != '':
             img = etree.Element('image')
+            img.set("style", "opacity: 0.5")
+            img.set(inkscape_label, re.sub(r".*[/\\]", "", href))
             img.set(xlink_href, href)
             img.set('x', x)
             img.set('y', y)
