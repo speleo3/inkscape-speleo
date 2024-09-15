@@ -874,6 +874,9 @@ class Th2Effect(inkex.Effect):
         if recurse:
             for child in node:
                 child_bbox = self.compute_bbox(child, True, use_cache)
+                if node_bbox is None:
+                    node_bbox = child_bbox
+                    continue
                 node_bbox = boxunion(child_bbox, node_bbox)
 
         self.bbox_cache[node] = node_bbox
