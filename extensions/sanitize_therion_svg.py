@@ -19,6 +19,11 @@ class NotLinear(Exception):
     pass
 
 
+FONT_MAPPING = {
+    "thss00": "Arial",
+}
+
+
 def id_to_clip_path_value(id: str) -> str:
     """
     Format the given ID as a valid clip-path value.
@@ -104,6 +109,12 @@ class SanitizeTherionSvgExtension(inkex.EffectExtension):
         self._unlink_exclusive_clones()
         self._consolidate_clipPaths()
         self._ungroup_trivial_groups()
+        self._substitute_fonts()
+
+    def _substitute_fonts(self):
+        for elem in self.svg.findall('.//svg:text[@font-family]'):
+            ff = elem.get("font-family")
+            elem.set("font-family", FONT_MAPPING.get(ff, ff))
 
     def _ungroup_trivial_groups(self):
         for elem in self.svg.findall('.//svg:g'):
