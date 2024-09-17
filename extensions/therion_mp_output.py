@@ -7,7 +7,7 @@ Scale is 1cm SVG = 1u MetaPost
 from dataclasses import dataclass
 import itertools
 import re
-from typing import cast, IO, List, Optional, Union
+from typing import cast, IO, List, Optional, Union, Tuple
 
 import inkex
 import inkex.paths as inkpa
@@ -21,6 +21,20 @@ pens = [
     (0.35 / 10, "PenD"),
     (1.2 / 10, "PenX"),
 ]
+
+
+def uround(value: float) -> float:
+    """
+    Round the given user units value to the accepted precision.
+    """
+    return round(value, 4)
+
+
+def approx_equal(a: float, b: float) -> bool:
+    '''
+    True if a and b are approximately equal in user units
+    '''
+    return abs(a - b) < 1e-4
 
 
 def removeprefix(s: str, prefix: str) -> str:
@@ -133,15 +147,23 @@ enddef;
         y = round(y, 4)
         return f"({x}u,{y}u)"
 
-    def process_shape(self, node: inkel.ShapeElement):
+    def process_special_shape(self, node: inkel.ShapeElement) -> bool:
         """
-        Child-recursive function which builds `shape_U` and `shapes_etc`.
+        If node is the `U` shape, process it and return true.
         """
         label = get_label(node)
         if label == "U":
             if self.shape_U is not None:
                 raise UserWarning(f"more than one U for point {self.name}")
             self.shape_U = node
+            return True
+        return False
+
+    def process_shape(self, node: inkel.ShapeElement):
+        """
+        Child-recursive function which builds `shape_U` and `shapes_etc`.
+        """
+        if self.process_special_shape(node):
             return
 
         if isinstance(node, inkel.Group):
@@ -153,13 +175,25 @@ enddef;
             path = self.get_path_for_node(node).transform(transform)
             self.shapes_etc.append(ShapeEtc(node, path, transform))
 
+    def check_mainpath(self, segments: List[inkpa.AbsolutePathCommand]) -> bool:
+        return False
+
+    def finish_mainpath(self, pen: str, draw_args: str):
+        raise AssertionError("bug")
+
     def finish_shape(self, etc: ShapeEtc):
         """
         Build `draws`
         """
         ps: List[List[str]] = []
 
-        for seg in etc.path.to_superpath().to_segments():
+        segments = list(etc.path.to_superpath().to_segments())
+
+        is_mainpath = self.check_mainpath(segments)
+        if is_mainpath:
+            segments = []
+
+        for seg in segments:
             assert isinstance(seg, inkpa.AbsolutePathCommand)
             if isinstance(seg, inkpa.Move):
                 ps.append([self.format_point(seg.x, seg.y)])
@@ -205,7 +239,9 @@ enddef;
             stroke_width = etc.shape.to_dimensionless(
                 style.get("stroke-width", "1")) * scale
             pen = get_pen_for_width(stroke_width)
-            if pen != self.pen:
+            if is_mainpath:
+                self.finish_mainpath(pen, draw_args)
+            elif pen != self.pen:
                 self.draws.append("pickup " + pen)
                 self.pen = pen
 
@@ -226,6 +262,124 @@ enddef;
                 self.draws.append("thfill " + ''.join(p) + fill_args)
 
 
+class LineBuilder(PointBuilder):
+
+    def __init__(self, mpbuilder: "MetapostBuilder", node: inkel.ShapeElement):
+        self.mpbuilder = mpbuilder
+        self.shape_U_in: Optional[inkel.ShapeElement] = None
+        self.shape_U_out: Optional[inkel.ShapeElement] = None
+        self.shapes_etc: List[ShapeEtc] = []
+        self.draws: List[str] = []
+        self.draws_main: List[str] = []
+        self.pen = None
+        self.name = removeprefix(get_label(node), "l_") or "unnamed"
+        self.center = (0.0, 0.0)
+
+        self.process_shape(node)
+
+        if not self.shapes_etc:
+            inkex.errormsg(f"Empty line: {self.name}")
+            return
+
+        self.center, self.width = self.get_center_and_width()
+
+        for etc in self.shapes_etc:
+            self.finish_shape(etc)
+
+        out_draws = ';\n    '.join(self.draws)
+        out_draws_main = ';\n  '.join(self.draws_main)
+
+        out = f"""
+def l_{self.name}(expr P) ="""
+        if out_draws:
+            out += f"""
+  myarclen := arclength P;
+  if myarclen > 0:
+    mystep := adjust_step(myarclen, {self.width}u);
+    for mytime=(mystep / 2) step mystep until myarclen:
+      t := arctime mytime of P;
+      T := identity rotated angle(thdir(P, t)) shifted (point t of P);
+      {out_draws};
+    endfor;
+  fi;"""
+        if out_draws_main:
+            out += f"""
+  T:=identity;
+  {out_draws_main};"""
+        out += """
+enddef;
+"""
+
+        self.mpbuilder.stream.write(out.encode("utf-8"))
+
+    def get_bbox_for_node(self, node: inkex.ShapeElement) -> inkex.BoundingBox:
+        transform = self.get_transform_for_node(node)
+        path = self.get_path_for_node(node).transform(transform)
+        return path.bounding_box()
+
+    def get_center_and_width(self) -> Tuple[Tuple[float, float], float]:
+        if self.shape_U_in is None:
+            raise UserWarning("Missing U_in")
+        if self.shape_U_out is None:
+            raise UserWarning("Missing U_out")
+
+        bbox_in = self.get_bbox_for_node(self.shape_U_in)
+        bbox_out = self.get_bbox_for_node(self.shape_U_out)
+
+        def assert_approx_equal(a: float, b: float, msg):
+            if not approx_equal(a, b):
+                ids = self.shape_U_in.get('id'), self.shape_U_out.get('id')
+                raise UserWarning(f"U_in and U_out must be {msg} [{a} != {b}] {ids}")
+
+        assert_approx_equal(bbox_in.left, bbox_out.left, "left-aligned")
+        assert_approx_equal(bbox_in.width, bbox_out.width, "same width")
+        assert_approx_equal(bbox_in.bottom, bbox_out.top, "aligned bottom to top")
+
+        return (
+            uround(bbox_in.center_x),
+            uround(bbox_in.bottom),
+        ), uround(bbox_in.width)
+
+    def process_special_shape(self, node: inkel.ShapeElement) -> bool:
+        label = get_label(node)
+        if label == "U_in":
+            if self.shape_U_in is not None:
+                raise UserWarning(f"more than one U_in for point {self.name}")
+            self.shape_U_in = node
+            return True
+        if label == "U_out":
+            if self.shape_U_out is not None:
+                raise UserWarning(f"more than one U_out for point {self.name}")
+            self.shape_U_out = node
+            return True
+        return False
+
+    def check_mainpath(self, segments: List[inkpa.AbsolutePathCommand]) -> bool:
+        """
+        True if the path is the main path, which means it's on the x-axis and
+        has self.width length.
+        """
+        if not (len(segments) == 2 and isinstance(segments[1], inkpa.Line)):
+            return False
+        assert isinstance(segments[0], inkpa.Move)
+        if not approx_equal(segments[0].y, self.center[1]):
+            return False
+        if not approx_equal(segments[1].y, self.center[1]):
+            return False
+        if not approx_equal(segments[0].x, self.center[0] - self.width / 2):
+            return False
+        if not approx_equal(segments[1].x, self.center[0] + self.width / 2):
+            return False
+        return True
+
+    def finish_mainpath(self, pen: str, draw_args: str):
+        """
+        Add draws for the main path with given pen and draw arguments.
+        """
+        self.draws_main.append("pickup " + pen)
+        self.draws_main.append(f"thdraw P{draw_args}")
+
+
 class MetapostBuilder:
 
     def __init__(self, extension: OutputExtension, stream: IO[bytes]):
@@ -242,7 +396,7 @@ class MetapostBuilder:
             if label.startswith("p_"):
                 PointBuilder(self, node)
             elif label.startswith("l_"):
-                inkex.errormsg("Line not implemented yet")
+                LineBuilder(self, node)
             elif isinstance(node, inkel.Group):
                 self.process_group(node)
             else:

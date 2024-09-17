@@ -30,3 +30,20 @@ enddef;
 
     # waterflow
     assert " withcolor (0.0,0.0,1.0) dashed dashpattern(on 0.005u off 0.06u);" in mpcontent
+
+    assert """
+def l_pit(expr P) =
+  myarclen := arclength P;
+  if myarclen > 0:
+    mystep := adjust_step(myarclen, 0.6u);
+    for mytime=(mystep / 2) step mystep until myarclen:
+      t := arctime mytime of P;
+      T := identity rotated angle(thdir(P, t)) shifted (point t of P);
+      thfill (0.0u,0.4u)--(0.2u,0.0u)--(-0.2u,0.0u)--cycle withcolor (1.0,0.0,1.0);
+    endfor;
+  fi;
+  T:=identity;
+  pickup PenA;
+  thdraw P withcolor (1.0,0.0,1.0);
+enddef;
+""" in mpcontent
