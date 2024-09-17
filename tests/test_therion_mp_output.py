@@ -27,3 +27,6 @@ def p_stalactite_UIS(expr pos,theta,sc,al) =
     thdraw (0.0u,0.15u)--(0.15u,0.4u);
 enddef;
 """ in mpcontent
+
+    # waterflow
+    assert " withcolor (0.0,0.0,1.0) dashed dashpattern(on 0.005u off 0.06u);" in mpcontent

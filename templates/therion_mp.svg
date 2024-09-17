@@ -74,7 +74,7 @@ rect.U {
        id="g2">
       <path
          d="M 0,0.5 C 0,0.35 -0.1,0.4 -0.1,0.3 -0.1,0.2 0.1,0.25 0.1,0.15 0.1,0.05 -0.1,0.1 -0.1,0 c 0,-0.1 0.2,-0.05 0.2,-0.15 0,-0.1 -0.1,0 -0.1,-0.25"
-         style="fill:none;stroke:#0000ff;stroke-width:0.05"
+         style="fill:none;stroke:#0000ff;stroke-width:0.05;stroke-dasharray:0.005,0.06"
          id="path1"
          sodipodi:nodetypes="cccscc" />
       <path

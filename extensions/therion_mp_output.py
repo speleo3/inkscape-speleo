@@ -5,6 +5,8 @@ Scale is 1cm SVG = 1u MetaPost
 """
 
 from dataclasses import dataclass
+import itertools
+import re
 from typing import cast, IO, List, Optional, Union
 
 import inkex
@@ -187,8 +189,21 @@ enddef;
         if stroke != "none":
             draw_args += get_metapost_color_arg(stroke)
 
+            scale = descrim(etc.transform)
+
+            stroke_dasharray = style.get("stroke-dasharray")
+            if stroke_dasharray and stroke_dasharray[0].isdigit():
+                values = [
+                    etc.shape.to_dimensionless(v) * scale
+                    for v in re.split(r"[\s,]+", stroke_dasharray)
+                ]
+                pattern = " ".join(
+                    f"{onoff} {v}u"
+                    for (onoff, v) in zip(itertools.cycle(["on", "off"]), values))
+                draw_args += f" dashed dashpattern({pattern})"
+
             stroke_width = etc.shape.to_dimensionless(
-                style.get("stroke-width")) * descrim(etc.transform)
+                style.get("stroke-width", "1")) * scale
             pen = get_pen_for_width(stroke_width)
             if pen != self.pen:
                 self.draws.append("pickup " + pen)
