@@ -89,13 +89,16 @@ class ShapeEtc:
 
 class PointBuilder:
 
+    NAMEPREFIX = "p_"
+
     def __init__(self, mpbuilder: "MetapostBuilder", node: inkel.ShapeElement):
         self.mpbuilder = mpbuilder
         self.shape_U: Optional[inkel.ShapeElement] = None
         self.shapes_etc: List[ShapeEtc] = []
         self.draws: List[str] = []
         self.pen = None
-        self.name = removeprefix(get_label(node), "p_") or "unnamed"
+        self.name = removeprefix(get_label(node), self.NAMEPREFIX) or "unnamed"
+        self.lname = self.NAMEPREFIX + self.name
         self.center = (0.0, 0.0)
 
         self.process_shape(node)
@@ -114,11 +117,14 @@ class PointBuilder:
 
         out_draws = ';\n    '.join(self.draws)
         out = f"""
-def p_{self.name}(expr pos,theta,sc,al) =
+def {self.lname}(expr pos,theta,sc,al) =
     U:={self.format_point_abs(bbox.width / 2, bbox.height / 2)};
     T:=identity aligned al rotated theta scaled sc shifted pos;
     {out_draws};
 enddef;
+if unknown ID_{self.lname}:
+  initsymbol("{self.lname}");
+fi
 """
         self.mpbuilder.stream.write(out.encode("utf-8"))
 
@@ -264,6 +270,8 @@ enddef;
 
 class LineBuilder(PointBuilder):
 
+    NAMEPREFIX = "l_"
+
     def __init__(self, mpbuilder: "MetapostBuilder", node: inkel.ShapeElement):
         self.mpbuilder = mpbuilder
         self.shape_U_in: Optional[inkel.ShapeElement] = None
@@ -272,7 +280,8 @@ class LineBuilder(PointBuilder):
         self.draws: List[str] = []
         self.draws_main: List[str] = []
         self.pen = None
-        self.name = removeprefix(get_label(node), "l_") or "unnamed"
+        self.name = removeprefix(get_label(node), self.NAMEPREFIX) or "unnamed"
+        self.lname = self.NAMEPREFIX + self.name
         self.center = (0.0, 0.0)
 
         self.process_shape(node)
@@ -290,7 +299,7 @@ class LineBuilder(PointBuilder):
         out_draws_main = ';\n  '.join(self.draws_main)
 
         out = f"""
-def l_{self.name}(expr P) ="""
+def {self.lname}(expr P) ="""
         if out_draws:
             out += f"""
   myarclen := arclength P;
@@ -306,8 +315,11 @@ def l_{self.name}(expr P) ="""
             out += f"""
   T:=identity;
   {out_draws_main};"""
-        out += """
+        out += f"""
 enddef;
+if unknown ID_{self.lname}:
+  initsymbol("{self.lname}");
+fi
 """
 
         self.mpbuilder.stream.write(out.encode("utf-8"))

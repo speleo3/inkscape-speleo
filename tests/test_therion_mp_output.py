@@ -26,6 +26,9 @@ def p_stalactite_UIS(expr pos,theta,sc,al) =
     thdraw (0.0u,-0.4u)--(0.0u,0.15u)--(-0.15u,0.4u);
     thdraw (0.0u,0.15u)--(0.15u,0.4u);
 enddef;
+if unknown ID_p_stalactite_UIS:
+  initsymbol("p_stalactite_UIS");
+fi
 """ in mpcontent
 
     # waterflow
