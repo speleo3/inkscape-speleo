@@ -17,6 +17,7 @@ Related:
 import argparse
 import math
 import os
+import subprocess
 import sys
 from struct import unpack
 
@@ -97,12 +98,10 @@ filter_len = len(args['filter'])
 
 if args['view'] == 2:
     if not infile.endswith('_extend.3d'):
-        command = args['extend_cmd'] + ' "' + infile + '"'
+        command = [args['extend_cmd'], str(infile)]
         if os.path.exists(infile[:-3] + '.espec'):
-            command += ' --specfile="' + infile[:-3] + '.espec"'
-        pipe = os.popen(command)
-        if pipe.close() != None:
-            die("extend failed")
+            command += ['--specfile=' + infile[:-3] + '.espec']
+        subprocess.check_output(command)
         infile = infile[:-3] + '_extend.3d'
     args['bearing'] = 0
 
