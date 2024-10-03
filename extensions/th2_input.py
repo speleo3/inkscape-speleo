@@ -502,7 +502,7 @@ def read_block_lines(sentinel: str, *, skip_blank: bool = False) -> List[str]:
         if skip_blank and not a:
             continue
         lines.append(line)
-        if a[0] == sentinel:
+        if a and a[0] == sentinel:
             break
     return lines
 
