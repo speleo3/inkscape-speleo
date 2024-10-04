@@ -33,7 +33,7 @@ def asunicode(s):
 
 class Th2SetProps(Th2Effect):
     def __init__(self):
-        inkex.Effect.__init__(self)
+        super().__init__()
         self.arg_parser.add_argument("--role", type=str, dest="role", default="")
         self.arg_parser.add_argument("--type", type=str, dest="type", default="")
         self.arg_parser.add_argument("--options", type=str, dest="options", default="")
@@ -44,6 +44,9 @@ class Th2SetProps(Th2Effect):
         '''Subclasses can update options here'''
         pass
 
+    def getdocids(self):
+        self.doc_ids = self.document.xpath("//*/@id", smart_strings=False)
+
     def effect(self):
         if len(self.selected) == 0:
             inkex.errormsg('warning: nothing selected')
@@ -53,6 +56,8 @@ class Th2SetProps(Th2Effect):
         th2pref_load_from_xml(self.document.getroot())
 
         new_options = parse_options(asunicode(self.options.options))
+
+        self.getdocids()
 
         if self.options.dropstyle and 'th2style' not in self.doc_ids:
             with open(get_template_svg_path()) as template:
@@ -154,4 +159,4 @@ class Th2SetProps(Th2Effect):
 
 if __name__ == '__main__':
     e = Th2SetProps()
-    e.affect()
+    e.run()

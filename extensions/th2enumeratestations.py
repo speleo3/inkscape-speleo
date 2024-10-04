@@ -102,4 +102,4 @@ class Th2EnumerateStations(Th2SetProps):
 
 if __name__ == '__main__':
     e = Th2EnumerateStations()
-    e.affect()
+    e.run()

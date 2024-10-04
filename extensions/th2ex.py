@@ -16,6 +16,8 @@ Elements with role annotation "none" are excluded from export.
 Text alignment guess for export is not perfect, but covers the most use cases.
 '''
 
+import argparse
+import sys
 from lxml import etree
 from pathlib import Path
 from typing import (
@@ -23,13 +25,13 @@ from typing import (
     Dict,
     Iterable,
     List,
+    Optional,
     Sequence,
     Tuple,
     TypeVar,
     Union,
 )
 import functools
-import shlex
 import os
 import math
 import re
@@ -307,7 +309,6 @@ def _skipunexpected(s):
 def parse_options(a: Union[str, Sequence[str]]):
     '''
     Parses therion options string or sequence of strings.
-    New: Uses shlex class (quote parsing).
 
     Known issues:
      * detection of zero-arg-keys is heuristical
@@ -686,7 +687,7 @@ def convert_unit(value: Union[str, Tuple[float, str]], to_unit: str) -> float:
     >>> convert_unit("3m", "cm") == 300.0
     """
     assert to_unit in UUCONV
-    val: Union[float | str]
+    val: Union[float, str]
 
     if isinstance(value, tuple):
         val, unit = value
@@ -701,7 +702,55 @@ def convert_unit(value: Union[str, Tuple[float, str]], to_unit: str) -> float:
         return 0.0
 
 
-class Th2Effect(inkex.Effect):
+class Th2Effect:
+    def __init__(self) -> None:
+        self.arg_parser = argparse.ArgumentParser()
+        self.arg_parser.add_argument("--id", action="append", dest="ids")
+        self.arg_parser.add_argument("--selected-nodes")
+        self.arg_parser.add_argument("--output")
+        self.arg_parser.add_argument("input_file", nargs="?")
+
+    def _get_selected(self) -> Dict[str, EtreeElement]:
+        selected = {}
+        if self.options.ids:
+            ids = set(self.options.ids)
+            for node in self.document.xpath("//*[@id]"):
+                eid = node.get("id")
+                if eid in ids:
+                    selected[eid] = node
+        return selected
+
+    def run(self, args=None) -> None:
+        self.options = self.arg_parser.parse_args(args)
+
+        if self.options.input_file and self.options.input_file != "-":
+            with open(self.options.input_file, "rb") as handle:
+                self.document = etree.parse(handle)
+        else:
+            self.document = etree.parse(sys.stdin.buffer)
+
+        self.selected = self._get_selected()
+        self.effect()
+        self.output()
+
+    def effect(self) -> None:
+        pass
+
+    def output(self) -> None:
+        xmlstr = etree.tostring(self.document, encoding="utf-8")
+        if self.options.output and self.options.output != "-":
+            with open(self.options.output, "wb") as handle:
+                handle.write(xmlstr)
+        else:
+            sys.stdout.buffer.write(xmlstr)
+
+    def getElementById(self, eid: str) -> Optional[EtreeElement]:
+        elements = self.document.xpath(f"//*[@id='{eid}']")
+        if not elements:
+            return None
+        if len(elements) > 1:
+            inkex.errormsg(f"{len(elements)} with id '{eid}'")
+        return elements[0]
 
     @staticmethod
     def unittouu(string):
@@ -725,10 +774,6 @@ class Th2Effect(inkex.Effect):
     @staticmethod
     def uutounit(val, unit):
         return val / UUCONV[unit]
-
-    def getDocumentUnit(self):
-        '''Override inkex.Effect.getDocumentUnit'''
-        return 'px'
 
     @property
     def r2d(self) -> list:

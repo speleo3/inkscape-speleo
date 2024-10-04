@@ -225,17 +225,17 @@ class Th2Output(Th2Effect):
     doc_height_m = 0  # height in meters
 
     def __init__(self):
-        inkex.Effect.__init__(self)
-        self.OptionParser.add_option("--scale", type="int", dest="scale", default=100)
-        self.OptionParser.add_option("--dpi", type="int", dest="dpi", default=0)
-        self.OptionParser.add_option("--layers", type="string", dest="layers", default="all")
-        self.OptionParser.add_option("--images", type="inkbool", dest="images", default=True)
-        self.OptionParser.add_option("--nolpe", type="inkbool", dest="nolpe", default=True)
-        self.OptionParser.add_option("--lay2scr", type="inkbool", dest="lay2scr", default=True)
-        self.OptionParser.add_option("--xyascenter", type="inkbool", dest="xyascenter", default=True)
-        self.OptionParser.add_option("--projection", type="string", dest="projection", default="")
-        self.OptionParser.add_option("--author", type="string", dest="author", default="")
-        self.OptionParser.add_option("--options", type="string", dest="options", default="")
+        super().__init__()
+        self.arg_parser.add_argument("--scale", type=int, default=100)
+        self.arg_parser.add_argument("--dpi", type=int, default=0)
+        self.arg_parser.add_argument("--layers", type=str, default="all")
+        self.arg_parser.add_argument("--images", type=inkex.Boolean, default=True)
+        self.arg_parser.add_argument("--nolpe", type=inkex.Boolean, default=True)
+        self.arg_parser.add_argument("--lay2scr", type=inkex.Boolean, default=True)
+        self.arg_parser.add_argument("--xyascenter", type=inkex.Boolean, default=True)
+        self.arg_parser.add_argument("--projection", type=str, default="")
+        self.arg_parser.add_argument("--author", type=str, default="")
+        self.arg_parser.add_argument("--options", type=str, default="")
         if th2pref.textonpath:
             self.textpath_dict = dict()
         self.current_scrap_id = 'none'
@@ -711,4 +711,4 @@ class Th2Output(Th2Effect):
 
 if __name__ == '__main__':
     e = Th2Output()
-    e.affect()
+    e.run()
