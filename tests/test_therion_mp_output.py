@@ -6,6 +6,11 @@ from pathlib import Path
 TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "templates"
 
 
+def test_get_metapost_color_arg():
+    assert m.get_metapost_color_arg("blue") == " withcolor (0.0,0.0,1.0)"
+    assert m.get_metapost_color_arg("#00cc00") == " withcolor (0.0,0.8,0.0)"
+
+
 def test_therion_mp_output(tmp_path):
     path_input = TEMPLATES_DIR / "therion_mp.svg"
     mpcontent = subprocess.check_output(

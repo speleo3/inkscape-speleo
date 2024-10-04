@@ -77,7 +77,7 @@ def get_metapost_color_arg(color: str) -> str:
     assert len(rgb) == 3
     if rgb == [0, 0, 0]:
         return ""
-    return " withcolor (" + ",".join(f"{round(c, 6)}" for c in rgb.to_floats()) + ")"
+    return " withcolor (" + ",".join(f"{round(c / 0xFF, 6)}" for c in rgb) + ")"
 
 
 @dataclass
