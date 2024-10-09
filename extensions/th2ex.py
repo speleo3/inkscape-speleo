@@ -116,6 +116,9 @@ def parse_scrap_scale_m_per_dots(scale: str) -> float:
     return meters / dots
 
 
+default_m_per_dots = 0.0254  # 1:100
+
+
 # some prefs
 class _th2pref:
     def __init__(self):
@@ -123,7 +126,16 @@ class _th2pref:
         self.textonpath = True
         self.image_inkscape = False
         self.basescale = 1.0
+        self.scale_real_m_per_th2 = default_m_per_dots  # from scrap or xvi
         self.xyascenter = True
+
+    @property
+    def requested_basescale(self) -> float:
+        return th2pref.basescale / default_m_per_dots * th2pref.scale_real_m_per_th2
+
+    def set_scale_real_m_per_th2(self, value: float):
+        self.scale_real_m_per_th2 = value
+        self.set_basescale(self.basescale * default_m_per_dots / value)
 
     def set_basescale(self, value: float):
         self.basescale = value
@@ -138,6 +150,9 @@ th2pref = _th2pref()
 
 
 def th2pref_load_from_xml(root: EtreeElement):
+    x = root.get(therion_scrapscale)
+    if x is not None:
+        th2pref.scale_real_m_per_th2 = float(x)
     x = root.get(therion_basescale)
     if x is not None:
         th2pref.set_basescale(float(x))
@@ -147,7 +162,8 @@ def th2pref_load_from_xml(root: EtreeElement):
 
 
 def th2pref_store_to_xml(root: EtreeElement):
-    root.set(therion_basescale, '%.4f' % th2pref.basescale)
+    root.set(therion_basescale, str(th2pref.basescale))
+    root.set(therion_scrapscale, str(th2pref.scale_real_m_per_th2))
     root.set(therion_howtostore, th2pref.howtostore)
 
 
@@ -174,6 +190,7 @@ therion_type = inkex.addNS('type', 'therion')
 therion_options = inkex.addNS('options', 'therion')
 therion_area_zoom_to = inkex.addNS('area-zoom-to', 'therion')
 therion_basescale = inkex.addNS('basescale', 'therion')
+therion_scrapscale = inkex.addNS('scrapscale', 'therion')
 therion_howtostore = inkex.addNS('howtostore', 'therion')
 therion_xvi_dx = inkex.addNS('xvi-dx', 'therion')
 therion_xvi_dy = inkex.addNS('xvi-dy', 'therion')
@@ -577,7 +594,7 @@ def get_fonts_setup_default(map_scale: int = 0):
     Get equivalents for the "fonts-setup" layout command default value.
     """
     if not map_scale:
-        map_scale = 100 * th2pref.basescale
+        map_scale = round(100 * th2pref.requested_basescale)
     key = min((s for s in fonts_setup_defaults if (map_scale <= s)),
               key=lambda s: s - map_scale)
     return fonts_setup_defaults[key]

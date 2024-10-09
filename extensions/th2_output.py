@@ -400,7 +400,7 @@ class Th2Output(Th2Effect):
                 if document_path:
                     href = os.path.relpath(href, os.path.dirname(document_path))
                 print('##XTHERION## xth_me_image_insert {%s 1 1.0} {%s %s} %s 0 {}' %
-                      (fstr2(paramsTrans[0]), fstr2(paramsTrans[1]), XVIroot, optquote(href)))
+                      (fstr2(paramsTrans[0], 6), fstr2(paramsTrans[1], 6), XVIroot, optquote(href)))
 
         print('\n')
 

@@ -128,6 +128,13 @@ oparser.add_option('--howtostore', action='store', type='choice', dest='howtosto
 oparser.add_option('--lock-stations', action='store', type='inkbool', dest='lock_stations', default=False)
 
 
+class classproperty:
+    def __init__(self, func):
+        self.func = func
+    def __get__(self, obj, owner):
+        return self.func(owner)
+
+
 class this:
     document: etree._ElementTree
     root: EtreeElement
@@ -140,12 +147,28 @@ class this:
     borders: Dict[str, EtreeElement] = {}  # for areas
     sublayers: Dict[str, EtreeElement] = {}
 
-    doc_x = 0.0
-    doc_y = 0.0
-    doc_width = 0.0
-    doc_height = 0.0
+    area_adjust = (0., 0., 0., 0.)
 
-    m_per_dots = 0.0254
+    @classproperty
+    def doc_x(this):
+        return floatscale(this.area_adjust[0])
+
+    @classproperty
+    def doc_y(this):
+        return floatscale(this.area_adjust[3])
+
+    @classproperty
+    def doc_width(this):
+        return floatscale(this.area_adjust[2] - this.area_adjust[0])
+
+    @classproperty
+    def doc_height(this):
+        return floatscale(this.area_adjust[3] - this.area_adjust[1])
+
+    @classproperty
+    def m_per_dots(this):
+        return th2ex.default_m_per_dots
+
     m_per_dots_set = False
 
     encoding = 'UTF-8'
@@ -265,11 +288,14 @@ class FileRecord:
 
 
 def set_m_per_dots(value: float, overwrite: bool = False):
-    if this.m_per_dots_set and not (0.9 < (value / this.m_per_dots) < 1.1):
-        errormsg(f"Warning: m/dots {value} vs {this.m_per_dots}")
-    if overwrite or not this.m_per_dots_set:
-        this.m_per_dots = value
+    if not this.m_per_dots_set:
         this.m_per_dots_set = True
+        th2pref.set_scale_real_m_per_th2(value)
+        th2pref_store_to_xml(this.root)
+    elif not (0.9 < (value / th2pref.scale_real_m_per_th2) < 1.1):
+        errormsg(f"Warning: m/dots {value:g} vs {th2pref.scale_real_m_per_th2:g}")
+        if overwrite:
+            errormsg("overwrite ignored")
 
 
 def floatscale(x: Union[str, Th2Coord]) -> UserUnit:
@@ -407,7 +433,7 @@ def parse_XTHERION(a: Sequence[str]):
             try:
                 import xvi_input
                 with open(href) as handle:
-                    g_xvi = xvi_input.xvi2svg(handle, False, 6, XVIroot)
+                    g_xvi = xvi_input.xvi2svg(handle, False, 2 * th2pref.requested_basescale, XVIroot)
                 img = etree.Element('g')
                 img.append(g_xvi)
                 img.set('transform', 'scale(1,-1) translate(%s,%s)' % (x, y))
@@ -436,10 +462,7 @@ def parse_XTHERION(a: Sequence[str]):
             errormsg('skipped: ' + a[1])
 
     if a[1] == 'xth_me_area_adjust':
-        this.doc_x = floatscale(a[2])
-        this.doc_y = floatscale(a[5])
-        this.doc_width = floatscale(a[4]) - this.doc_x
-        this.doc_height = this.doc_y - floatscale(a[3])
+        this.area_adjust = float(a[2]), float(a[3]), float(a[4]), float(a[5])
     elif a[1] == 'xth_me_area_zoom_to':
         this.root.set(th2ex.therion_area_zoom_to, a[2])
 
