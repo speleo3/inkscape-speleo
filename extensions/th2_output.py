@@ -185,7 +185,10 @@ class Th2Area:
     def __init__(self, type):
         self.type = type
         self.options = {}
-        self._lines = []
+        self._lines: List[Th2Line] = []
+
+    def has_lines(self) -> bool:
+        return bool(self._lines)
 
     def current_line(self):
         return self._lines[-1]
@@ -672,17 +675,8 @@ class Th2Output(Th2Effect):
         print_utf8("point %s %s %s%s\n" % (fstr(params[0]), fstr(params[1]), type, formatted_options))
 
     def output_area(self, node):
-        mat = self.i2d_affine(node)
-
         # get therion attributes
         role, type, options = get_props(node)
-
-        # get path data
-        d = self.get_d(node)
-        if not d:
-            inkex.errormsg('no path data for element %s' % (node))
-            return
-        p = parsePath(d)
 
         th2area = Th2Area(type)
 
@@ -693,14 +687,20 @@ class Th2Output(Th2Effect):
             else:
                 th2area.options[key] = value
 
-        for cmd, params in p:
+        for (cmd, params, point_options) in self.get_line_data(node):
             if cmd == 'M':
                 th2area.append_line()
                 th2area.current_line().options.update(line_options)
             if cmd == 'Z':
                 th2area.current_line().close()
             else:
-                th2area.current_line().append(transformParams(mat, params))
+                th2area.current_line().append(params)
+            th2area.current_line().append_point_options(point_options)
+
+        if not th2area.has_lines():
+            inkex.errormsg('no path data for element <{} id="{}">'.format(
+                node, node.get('id')))
+
         th2area.output(self.current_scrap_id)
 
     def output_input(self, node):
