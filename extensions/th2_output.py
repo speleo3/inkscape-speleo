@@ -552,7 +552,8 @@ class Th2Output(Th2Effect):
         if len(desc) > 0:
             print_utf8(desc[0].text.rstrip())
         if a:
-            print('end' + a[0] + '\n')
+            print('end' + a[0])
+        print()
 
     def get_point_text(self, node):
         text = ''
