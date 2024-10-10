@@ -3,19 +3,18 @@
   <_name>Therion 2D Input</_name>
   <id>speleo.input.th2</id>
   <dependency type="executable" location="extensions">th2_input.py</dependency>
-  <param name="basescale" type="float" min="0.001" max="1000" _gui-text="Base-Scale to Scale Factor">2.0</param>
-  <label>
-    Factor 2.0 typically corresponds to scale 1:200 if scrap scale is defined
-    (-scale option) or can be derived from an XVI background image.
-  </label>
-  <param name="howtostore" type="enum" _gui-text="How to store properties"
-      gui-description="inkscape:label can be modified with the layers and
-objects dialog. inkscape:label and title can be modified in the object
-properties dialog. Other attributes with the XML dialog.">
-    <item value="inkscape_label">inkscape:label attribute</item>
-    <item value="title">title tag</item>
-    <item value="therion_attribs">therion:* attributes (deprecated)</item>
+  <param name="basescale" type="optiongroup" appearance="combo" gui-text="Base-Scale"
+      gui-description="Render signatures to this scale. Depends on scrap scale (-scale option) or scale derived from an XVI background image.">
+    <item value="0.25">1:25</item>
+    <item value="0.5">1:50</item>
+    <item value="1">1:100</item>
+    <item value="2" default="true">1:200</item>
+    <item value="2.5">1:250</item>
+    <item value="5">1:500</item>
+    <item value="10">1:1000</item>
+    <item value="20">1:2000</item>
   </param>
+  <param name="howtostore" gui-hidden="true" type="string">inkscape_label</param>
   <param name="sublayers" type="boolean" _gui-text="Organize different Symbols in Sublayers">false</param>
   <param name="lock-stations" type="boolean" _gui-text="Lock Stations">false</param>
   <input>
