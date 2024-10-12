@@ -388,6 +388,7 @@ def parse_XTHERION(a):
                 img.set(therion_type, 'xth_me_image_insert')
                 img.set(therion_options, format_options({'href': href,
                                                          'XVIroot': XVIroot}))
+                img.set(inkscape_label, re.sub(r".*[/\\]", "", href))
                 this.root.xpath('svg:g[@id="layer-scan"]', namespaces=inkex.NSS)[0].append(img)
 
                 dx = g_xvi.get(therion_xvi_dx)
