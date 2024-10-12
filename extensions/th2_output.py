@@ -252,7 +252,20 @@ class Th2Output(Th2Effect):
         assert 0.9 < (m_per_dots_width / m_per_dots_height) < 1.1
         return (m_per_dots_width + m_per_dots_height) / 2
 
-    def get_style(self, node):
+    def get_style(self, node: EtreeElement) -> Dict[str, str]:
+        """
+        Get the cascaded style from the style attributes. Does not consider class attributes.
+        """
+        style = {}
+        stack = []
+        while node is not None:
+            stack.append(node)
+            node = node.getparent()
+        for node in reversed(stack):
+            style.update(self.get_style_nocascade(node))
+        return style
+
+    def get_style_nocascade(self, node: EtreeElement) -> Dict[str, str]:
         return simplestyle.parseStyle(node.get('style', ''))
 
     def get_style_attr(self, node, style, key, d=''):
