@@ -30,6 +30,12 @@ def test_convert_unit():
 	assert m.convert_unit("4", "pt") == approx(3.0)
 
 
+def test_unittouu():
+    assert m.Th2Effect.unittouu("3m") == m.convert_unit("3m", "px")
+    assert m.Th2Effect.unittouu("3px") == m.convert_unit("3px", "px")
+    assert m.Th2Effect.unittouu("3") == m.convert_unit("3", "px")
+
+
 def test_parse_scrap_scale_m_per_dots():
     assert m.parse_scrap_scale_m_per_dots("1") == 1
     assert m.parse_scrap_scale_m_per_dots("2") == 2
