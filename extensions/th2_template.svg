@@ -676,6 +676,7 @@
 		}
 		path.area,
 		path.line {
+			stroke-width:0.6 /* PenC */;
 			fill:none;
 			stroke:black;
 			stroke-linecap:round;
@@ -697,6 +698,7 @@ path.area.flowstone { fill:url(#pattern-flowstone) }
 		path.line {
 		}
 		path.line.u {
+			stroke-width:1.2 /* PenA */;
 			stroke:red;
 		}
 		path.line.u.water {
@@ -726,26 +728,17 @@ path.line.u.gray { stroke:gray }
 path.line.u.purple { stroke:purple }
 
 		path.line.wall {
-			stroke-width:1.0;
+			stroke-width:1.2 /* PenA */;
 		}
 		path.line.wall.unsurveyed {
-			stroke-width:0.6;
+			stroke-width:0.6 /* PenC */;
 		}
 		path.line.wall.presumed {
 			stroke-dasharray:5, 3;
 		}
-		path.line.wall.sand,
-		path.line.wall.clay,
-		path.line.wall.ice,
-		path.line.wall.blocks {
-			marker-start:none;
-			marker-end:none;
-		}
 		path.line.wall.debris,
 		path.line.wall.pebbles {
-			stroke-width:0.75;
-			marker-start:none;
-			marker-end:none;
+			stroke-width:0.6 /* PenC */;
 		}
 		path.line.invisible {
 			stroke-opacity:0.5;
@@ -754,23 +747,14 @@ path.line.u.purple { stroke:purple }
 			stroke:#c00;
 			stroke-width:0.3;
 		}
-		path.line.floor-step,
-		path.line.floor-meander,
-		path.line.ceiling-step,
-		path.line.ceiling-meander,
-		path.line.pit,
 		path.line.slope,
 		path.line.contour {
-			stroke-width:0.325;
-			marker-start:none;
-			marker-end:none;
+			stroke-width:0.42 /* PenD */;
 		}
 		path.line.chimney {
-			stroke-width:0.55;
 			stroke-dasharray:3.75, 3.75;
 		}
 		path.line.section {
-			marker-start:none;
 			marker-end:url(#ArrowSection);
 			stroke: #cc0;
 			opacity: 0.7;
@@ -778,64 +762,47 @@ path.line.u.purple { stroke:purple }
 		path.area,
 		path.line.border {
 			stroke:#579f57;
-			stroke-width:0.4;
-			marker-start:none;
-			marker-end:none;
 		}
 		path.line.rock-border {
 			stroke:black;
-			stroke-width:0.55;
-			marker-start:none;
-			marker-end:none;
 			fill:gray;
 			fill-opacity:0.5;
 		}
 		path.line.rock-edge {
 			stroke:black;
-			stroke-width:0.325;
-			marker-start:none;
-			marker-end:none;
+			stroke-width:0.42 /* PenD */;
 		}
 		path.line.overhang {
 			stroke:none;
 			fill:black;
-			marker-start:none;
-			marker-end:none;
 		}
 		path.line.water-flow {
-			marker-start:none;
 			marker-end:url(#ArrowEnd);
+			stroke-width:0.42 /* PenD */;
 		}
 		path.line.gradient {
-			stroke-width:0.75;
-			marker-start:none;
 			marker-end:url(#ArrowGradient);
 		}
 		path.line.arrow	{
-			marker-start:none;
 			marker-end:url(#ArrowEnd);
 		}
 		path.line.map-connection {
+			stroke-width:0.84 /* PenB */;
 			marker-start:url(#ArrowStart);
 			marker-end:url(#ArrowEnd);
 			stroke-dasharray:1,2;
 		}
 		path.line.flowstone,
 		path.line.moonmilk {
-			marker-start:none;
-			marker-end:none;
 		}
 		path.line.rope,
 		path.line.via-ferrata {
 			stroke:red;
-			stroke-width:0.5;
-			marker-start:none;
-			marker-end:none;
+			stroke-width:0.42 /* PenD */;
 		}
 		path.line.label {
 			stroke:#2795e2;
 			stroke-width:3.5;
-			marker-end:none;
 		}
 	</style>
   </defs>

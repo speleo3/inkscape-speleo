@@ -116,7 +116,8 @@ def parse_scrap_scale_m_per_dots(scale: str) -> float:
     return meters / dots
 
 
-default_m_per_dots = 0.0254  # 1:100
+# FIXME? dots_per_mm 1:100
+default_m_per_dots = 9 / 254  # 90dpi
 
 
 # some prefs
