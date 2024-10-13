@@ -60,7 +60,7 @@ def test_clipPath_is_aligned_rect():
     assert not m.clipPath_is_aligned_rect(inkex.ClipPath.new(inkex.PathElement.new(d)))
 
 
-def _read_xml(path: Path) -> bytes:
+def _read_xml(path: Path) -> str:
     tree = etree.parse(str(path), parser=etree.XMLParser(remove_blank_text=True))
     return etree.tostring(tree, encoding="utf-8").decode("utf-8")
 

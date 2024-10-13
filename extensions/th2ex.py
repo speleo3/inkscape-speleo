@@ -47,12 +47,10 @@ EtreeElement = etree._Element
 BBoxType = List[float]
 AffineType = List[List[float]]
 
+StyleDict = Dict[str, str]
+
 OptionValue = Any
 OptionsDict = Dict[str, OptionValue]
-
-
-def as_unicode(s):
-    return s.decode('utf-8') if isinstance(s, bytes) else s
 
 
 def distance(lhs: Sequence[float], rhs: Sequence[float]) -> float:
@@ -79,6 +77,16 @@ METERS_PER = {
     'feet': 0.3048,
     'feets': 0.3048,
 }
+
+
+def xpath_elems(node: Union[etree._ElementTree, EtreeElement], elemexpr: str):
+    elems: Sequence[EtreeElement] = node.xpath(elemexpr, namespaces=inkex.NSS)  # type: ignore[assignment]
+    return elems
+
+
+def xpath_attrs(node: Union[etree._ElementTree, EtreeElement], attrexpr: str):
+    attrs: Sequence[str] = node.xpath(attrexpr, namespaces=inkex.NSS, smart_strings=False)  # type: ignore[assignment]
+    return attrs
 
 
 def parse_scrap_scale_m_per_dots(scale: str) -> float:
@@ -129,7 +137,7 @@ th2pref = _th2pref()
 # load prefs from file
 
 
-def th2pref_load_from_xml(root):
+def th2pref_load_from_xml(root: EtreeElement):
     x = root.get(therion_basescale)
     if x is not None:
         th2pref.set_basescale(float(x))
@@ -138,7 +146,7 @@ def th2pref_load_from_xml(root):
 # store prefs
 
 
-def th2pref_store_to_xml(root):
+def th2pref_store_to_xml(root: EtreeElement):
     root.set(therion_basescale, '%.4f' % th2pref.basescale)
     root.set(therion_howtostore, th2pref.howtostore)
 
@@ -182,7 +190,7 @@ sodipodi_insensitive = inkex.addNS('insensitive', 'sodipodi')
 sodipodi_nodetypes = inkex.addNS('nodetypes', 'sodipodi')
 
 
-def title_node(parent):
+def title_node(parent: EtreeElement) -> EtreeElement:
     title = parent.find(svg_title)
     if title is None:
         title = etree.SubElement(parent, svg_title)
@@ -193,12 +201,13 @@ def title_node(parent):
     return title
 
 
-def get_style(node):
+# TODO same as th2_output.Th2Output.get_style_nocascade
+def get_style(node: EtreeElement) -> StyleDict:
     import simplestyle
     return simplestyle.parseStyle(node.get('style', ''))
 
 
-def get_style_attr(node, style, key, d=''):
+def get_style_attr(node: EtreeElement, style: Optional[StyleDict], key: str, d=''):
     if style is None:
         style = get_style(node)
     d = node.get(key, d)
@@ -208,14 +217,14 @@ def get_style_attr(node, style, key, d=''):
 # station name stuff
 
 
-def name_survex2therion(name):
+def name_survex2therion(name: str) -> str:
     x = name.split('.')
     if len(x) == 1:
         return name
     return x[-1] + '@' + '.'.join(reversed(x[:-1]))
 
 
-def name_therion2survex(name, prefix=''):
+def name_therion2survex(name: str, prefix=''):
     x = name.replace('@', '.', 1).split('.')
     return prefix + '.'.join(reversed(x))
 
@@ -243,7 +252,7 @@ needquote = re.compile(r'[^-._@a-z0-9]', re.I)
 RE_MAYBEQUOTED = re.compile(r'\[.*?\]|"(?:[^"]|"")*"(?!")|\S+')
 
 
-def is_numeric(s):
+def is_numeric(s: str) -> bool:
     try:
         float(s)
     except Exception:
@@ -251,11 +260,11 @@ def is_numeric(s):
     return True
 
 
-def maybe_key(s):
+def maybe_key(s: str) -> bool:
     return re.match(r'-\S+$', s) is not None and not is_numeric(s)
 
 
-def splitquoted(ustr, comments=False):
+def splitquoted(ustr: str, comments=False):
     '''
     Only uses double quotes, not single quotes.
 
@@ -272,7 +281,7 @@ def splitquoted(ustr, comments=False):
     return [popquotes(v) for v in RE_MAYBEQUOTED.findall(ustr)]
 
 
-def quote(value):
+def quote(value: str) -> str:
     '''
     Add quotes around value, if needed
     '''
@@ -338,7 +347,7 @@ def parse_options(a: Union[str, Sequence[str]]):
     return options
 
 
-def key_options_item(item: tuple) -> tuple:
+def key_options_item(item: Tuple[str, OptionValue]) -> tuple:
     """
     Sort key for options. Alphabetic with some exceptions.
     """
@@ -350,14 +359,14 @@ def key_options_item(item: tuple) -> tuple:
 
 
 # TODO this fails for -text "[foo bar]" (will be -text [foo bar], no quotes)
-def format_options(options):
+def format_options(options: OptionsDict) -> str:
     '''
     Format options dictionary as therion options string.
     '''
     return ' '.join(format_options_iter(options))
 
 
-def format_option(key: str, value: OptionValue, *, prefix="-"):
+def format_option(key: str, value: OptionValue, *, prefix="-") -> str:
     value_count: Union[int, None]
 
     # legacy (might come from SVG file)
@@ -404,13 +413,13 @@ def format_options_iter(options: OptionsDict, *, prefix="-"):
             yield format_option(key, value, prefix=prefix)
 
 
-def maybe_point(node):
+def maybe_point(node: EtreeElement) -> bool:
     return node.tag == svg_text or \
         node.tag == svg_use or \
         node.tag == svg_circle
 
 
-def maybe_line(node):
+def maybe_line(node: EtreeElement) -> bool:
     return node.tag == svg_path or \
         node.tag == svg_line or \
         node.tag == svg_polyline or \
@@ -418,14 +427,14 @@ def maybe_line(node):
         node.tag == svg_polygon
 
 
-def is_closed_line(node):
+def is_closed_line(node: EtreeElement) -> bool:
     if node.tag in (svg_polygon, svg_rect):
         return True
     d = node.get('d', '')
     return d.rstrip()[-1:].lower() == 'z'
 
 
-def set_props(e, role, type, options=None):
+def set_props(e, role: str, type: str, options: Optional[OptionsDict] = None):
     '''
     Annotate SVG element with role, type and options.
     '''
@@ -466,11 +475,11 @@ def get_props(e: EtreeElement) -> Tuple[str, str, OptionsDict]:
     else:
         label = title_node(e).text or e.get(inkscape_label) or ''
 
-    label = label.split(None, 2) + [''] * 3
-    role = e.get(therion_role, label[0])
-    type = e.get(therion_type, label[1])
-    options = e.get(therion_options, label[2])
-    options = parse_options(options)
+    role, type, optionsstr = (label.split(None, 2) + [''] * 3)[:3]
+    role = e.get(therion_role, role)
+    type = e.get(therion_type, type)
+    optionsstr = e.get(therion_options, optionsstr)
+    options = parse_options(optionsstr)
     if role == '':
         if maybe_point(e):
             role = 'point'
@@ -578,16 +587,16 @@ def get_fonts_setup_default(map_scale: int = 0):
 # geom stuff
 
 
-def det(mat):
+def det(mat: AffineType) -> float:
     return mat[0][0] * mat[1][1] - mat[0][1] * mat[1][0]
 
 
-def descrim(mat):
+def descrim(mat: AffineType) -> float:
     return math.sqrt(abs(det(mat)))
 
 
-def inverse(mat):
-    d = [[1, 0, 0], [0, 1, 0]]
+def inverse(mat: AffineType) -> AffineType:
+    d: AffineType = [[1, 0, 0], [0, 1, 0]]
     determ = det(mat)
     if abs(determ) > 0.0001:
         ideterm = 1.0 / determ
@@ -600,7 +609,7 @@ def inverse(mat):
     return d
 
 
-def parsePath(d) -> ParsedPath[float]:
+def parsePath(d: str) -> ParsedPath[float]:
     '''
     Parse line and replace quadratic bezier segments and arcs by
     cubic bezier segments.
@@ -614,7 +623,8 @@ def parsePath(d) -> ParsedPath[float]:
     return p
 
 
-def parseViewBox(viewBox, width, height):
+def parseViewBox(viewBox: Union[str, Sequence[float]], width: Union[str, float],
+                 height: Union[str, float]) -> AffineType:
     '''
     Returns the 2x3 transformation matrix that a viewBox defines
     '''
@@ -687,6 +697,8 @@ def convert_unit(value: Union[str, Tuple[float, str]], to_unit: str) -> float:
 
 
 class Th2Effect:
+    document: etree._ElementTree
+
     def __init__(self) -> None:
         self.arg_parser = argparse.ArgumentParser()
         self.arg_parser.add_argument("--id", action="append", dest="ids")
@@ -698,7 +710,7 @@ class Th2Effect:
         selected = {}
         if self.options.ids:
             ids = set(self.options.ids)
-            for node in self.document.xpath("//*[@id]"):
+            for node in xpath_elems(self.document, "//*[@id]"):
                 eid = node.get("id")
                 if eid in ids:
                     selected[eid] = node
@@ -729,7 +741,7 @@ class Th2Effect:
             sys.stdout.buffer.write(xmlstr)
 
     def getElementById(self, eid: str) -> Optional[EtreeElement]:
-        elements = self.document.xpath(f"//*[@id='{eid}']")
+        elements = xpath_elems(self.document, f"//*[@id='{eid}']")
         if not elements:
             return None
         if len(elements) > 1:
@@ -766,7 +778,7 @@ class Th2Effect:
             [0.0, -th2pref.basescale, 0.0],
         ]
 
-    bbox_cache: Dict[EtreeElement, BBoxType] = {}
+    bbox_cache: Dict[EtreeElement, Optional[BBoxType]] = {}
     i2d_cache: Dict[EtreeElement, AffineType] = {}
 
     def i2d_affine(self, node: EtreeElement, use_cache: bool = True) -> AffineType:
@@ -791,7 +803,7 @@ class Th2Effect:
         self.i2d_cache[node] = m2
         return m2
 
-    def node_center(self, node):
+    def node_center(self, node: EtreeElement) -> Sequence[float]:
         '''
         Get the bounding box center, or for some particular cases x/y (like
         for text to support alignment). Does not take the "transform" attibute
@@ -812,7 +824,10 @@ class Th2Effect:
             return [0, 0]
         return [(bbox[0] + bbox[1]) * 0.5, (bbox[2] + bbox[3]) * 0.5]
 
-    def compute_bbox(self, node, transform=True, use_cache=False):
+    def compute_bbox(self,
+                     node: EtreeElement,
+                     transform=True,
+                     use_cache=False) -> Optional[BBoxType]:
         '''
         Compute the bounding box of a element in its parent coordinate system,
         or in its own coordinate system if "transform" is False.
@@ -839,59 +854,66 @@ class Th2Effect:
         node_bbox = None
 
         if transform:
-            transform = node.get('transform') or ''
+            transformattr = node.get('transform') or ''
         else:
-            transform = ''
+            transformattr = ''
 
         if use_cache and node in self.bbox_cache:
             node_bbox = self.bbox_cache[node]
         elif node.tag in [svg_use, 'use']:
             x, y = float(node.get('x', 0)), float(node.get('y', 0))
             refid = node.get(xlink_href)
+            if refid is None or not refid.startswith("#"):
+                return None
             refnode = self.getElementById(refid[1:])
 
             if refnode is None:
                 return None
 
-            if 'width' in node.attrib and 'height' in node.attrib and 'viewBox' in refnode.attrib:
-                mat = parseViewBox(refnode.get('viewBox'), node.get('width'), node.get('height'))
-                transform += ' ' + formatTransform(mat)
+            parse_viewbox_args = (
+                refnode.get('viewBox', ''),
+                node.get('width', ''),
+                node.get('height', ''),
+            )
+            if all(parse_viewbox_args):
+                mat = parseViewBox(*parse_viewbox_args)
+                transformattr += ' ' + formatTransform(mat)
 
             refbbox = self.compute_bbox(refnode, True, True)
             if refbbox is not None:
                 node_bbox = [refbbox[0] + x, refbbox[1] + x, refbbox[2] + y, refbbox[3] + y]
 
         elif node.get('d'):
-            d = node.get('d')
+            d = node.get('d', '')
         elif node.get('points'):
-            d = 'M' + node.get('points')
+            d = 'M' + node.get('points', '')
         elif node.tag in [svg_rect, 'rect', svg_image, 'image']:
             d = 'M' + node.get('x', '0') + ',' + node.get('y', '0') + \
-                'h' + node.get('width') + 'v' + node.get('height') + \
-                'h-' + node.get('width')
+                'h' + node.get('width', '99') + 'v' + node.get('height', '99') + \
+                'h-' + node.get('width', '99')
         elif node.tag in [svg_line, 'line']:
-            d = 'M' + node.get('x1') + ',' + node.get('y1') + \
-                ' ' + node.get('x2') + ',' + node.get('y2')
+            d = 'M' + node.get('x1', '0') + ',' + node.get('y1', '0') + \
+                ' ' + node.get('x2', '99') + ',' + node.get('y2', '99')
         elif node.tag in [svg_circle, 'circle', svg_ellipse, 'ellipse']:
-            rx = node.get('r')
-            if rx is not None:
-                ry = rx
+            rxs = node.get('r', '')
+            if rxs:
+                rys = rxs
             else:
-                rx = node.get('rx')
-                ry = node.get('ry')
-            rx, ry = float(rx), float(ry)
+                rxs = node.get('rx', '99')
+                rys = node.get('ry', '99')
+            rx, ry = float(rxs), float(rys)
             cx = float(node.get('cx', '0'))
             cy = float(node.get('cy', '0'))
             node_bbox = [cx - rx, cx + rx, cy - ry, cy + ry]
         elif node.tag in [svg_text, 'text', svg_tspan, 'tspan']:
             # very rough estimate of text bounding box
-            x = node.get('x', '0').split()
-            y = node.get('y', '0').split()
-            if len(x) == 1 and len(y) > 1:
-                x = x * len(y)
-            elif len(y) == 1 and len(x) > 1:
-                y = y * len(x)
-            d = 'M' + ' '.join('%f' % self.unittouu(c) for xy in zip(x, y) for c in xy)
+            xs = node.get('x', '0').split()
+            ys = node.get('y', '0').split()
+            if len(xs) == 1 and len(ys) > 1:
+                xs = xs * len(ys)
+            elif len(ys) == 1 and len(xs) > 1:
+                ys = ys * len(xs)
+            d = 'M' + ' '.join('%f' % self.unittouu(c) for xy in zip(xs, ys) for c in xy)
             recurse = True
         elif node.tag in [svg_g, 'g', svg_symbol, 'symbol', svg_svg, 'svg']:
             recurse = True
@@ -910,8 +932,8 @@ class Th2Effect:
 
         self.bbox_cache[node] = node_bbox
 
-        if transform.strip() != '' and node_bbox is not None:
-            mat = parseTransform(transform)
+        if transformattr.strip() != '' and node_bbox is not None:
+            mat = parseTransform(transformattr)
             p = [[[
                 [node_bbox[0], node_bbox[2]],
                 [node_bbox[0], node_bbox[3]],
@@ -919,7 +941,7 @@ class Th2Effect:
                 [node_bbox[1], node_bbox[3]],
             ]]]
             applyTransformToPath(mat, p)
-            x, y = zip(*p[0][0])
-            node_bbox = [min(x), max(x), min(y), max(y)]
+            fxs, fys = zip(*p[0][0])
+            node_bbox = [min(fxs), max(fxs), min(fys), max(fys)]
 
         return node_bbox

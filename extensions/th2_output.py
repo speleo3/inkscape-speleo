@@ -11,7 +11,6 @@ from th2ex import (
     AffineType,
     EtreeElement,
     OptionsDict,
-    as_unicode,
     th2pref,
     th2pref_load_from_xml,
     svg_polygon,
@@ -132,7 +131,7 @@ def optquote(x: str) -> str:
     return f'"{x}"'
 
 
-def format_options_leading_space(options):
+def format_options_leading_space(options: OptionsDict):
     """
     Like format_options() but with a leading space if non-empty.
     """
@@ -182,21 +181,21 @@ class Th2Line:
 class Th2Area:
     count: Dict[str, int] = collections.defaultdict(int)
 
-    def __init__(self, type):
+    def __init__(self, type: str):
         self.type = type
-        self.options = {}
+        self.options: OptionsDict = {}
         self._lines: List[Th2Line] = []
 
     def has_lines(self) -> bool:
         return bool(self._lines)
 
-    def current_line(self):
+    def current_line(self) -> Th2Line:
         return self._lines[-1]
 
-    def append_line(self):
+    def append_line(self) -> None:
         self._lines.append(Th2Line('border'))
 
-    def output(self, prefix):
+    def output(self, prefix: str):
         ids = []
 
         # if only one line, assume it must be closed
@@ -293,8 +292,8 @@ class Th2Output(Th2Effect):
             if 'projection' not in options and self.options.projection:
                 options['projection'] = self.options.projection
             if 'author' not in options and self.options.author:
-                options['author'] = as_unicode(self.options.author)
-            options.update(parse_options(as_unicode(self.options.options)))
+                options['author'] = self.options.author
+            options.update(parse_options(self.options.options))
             print_utf8('\nscrap %s %s\n' % (id, format_options(options)))
 
     def print_scrap_end(self, test):
@@ -687,13 +686,13 @@ class Th2Output(Th2Effect):
         formatted_options = format_options_leading_space(options)
         print_utf8("point %s %s %s%s\n" % (fstr(params[0]), fstr(params[1]), type, formatted_options))
 
-    def output_area(self, node):
+    def output_area(self, node: EtreeElement) -> None:
         # get therion attributes
         role, type, options = get_props(node)
 
         th2area = Th2Area(type)
 
-        line_options = {}
+        line_options: OptionsDict = {}
         for key, value in options.items():
             if key.startswith("line-"):
                 line_options[key[5:]] = value

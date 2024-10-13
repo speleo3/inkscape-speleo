@@ -16,6 +16,8 @@ from th2ex import (
     therion_xvi_dx,
     xlink_href,
     xml_space,
+    xpath_attrs,
+    xpath_elems,
     inkscape_groupmode,
     inkscape_label,
     inkscape_original_d,
@@ -46,12 +48,15 @@ from typing import (
     List,
     Sequence,
     Tuple,
+    Union,
 )
 
 from lxml import etree
-import inkex
 
 EtreeElement = etree._Element
+
+Th2Coord = float
+UserUnit = float
 
 pointtype2layer = {
     'altitude': 'labe',
@@ -124,6 +129,10 @@ oparser.add_option('--lock-stations', action='store', type='inkbool', dest='lock
 
 
 class this:
+    document: etree._ElementTree
+    root: EtreeElement
+    layer_stack: List[EtreeElement]
+
     line_nr = 0
     id_count = 0
     textblock_count = 0
@@ -131,10 +140,10 @@ class this:
     borders: Dict[str, EtreeElement] = {}  # for areas
     sublayers: Dict[str, EtreeElement] = {}
 
-    doc_x = 0
-    doc_y = 0
-    doc_width = 0
-    doc_height = 0
+    doc_x = 0.0
+    doc_y = 0.0
+    doc_width = 0.0
+    doc_height = 0.0
 
     m_per_dots = 0.0254
     m_per_dots_set = False
@@ -142,6 +151,7 @@ class this:
     encoding = 'UTF-8'
     file_stack: List["FileRecord"] = []
 
+    point_symbols: Sequence[str]
     LPE_symbols: List[str]
 
     @classmethod
@@ -156,14 +166,14 @@ class this:
         ) if this.file_stack else ""
 
 
-def to_user_units(value: float, unit: str) -> float:
+def to_user_units(value: float, unit: str) -> UserUnit:
     """
     Convert a physical print dimension (e.g. 12pt or 2mm) to local user units.
     """
     return th2ex.convert_unit((value, unit), "cm") / this.m_per_dots
 
 
-def scale_to_fontsize(scale: str) -> float:
+def scale_to_fontsize(scale: str) -> UserUnit:
     """
     Convert a scale value ("xs" ... "xl", or numeric) to font size in user units
     """
@@ -175,7 +185,7 @@ def scale_to_fontsize(scale: str) -> float:
 
 
 def populate_legend():
-    layer_legend = this.root.xpath('svg:g[@id="layer-legend"]', namespaces=inkex.NSS)[0]
+    layer_legend = xpath_elems(this.root, 'svg:g[@id="layer-legend"]')[0]
 
     # points legend
     spacing = 40
@@ -262,7 +272,7 @@ def set_m_per_dots(value: float, overwrite: bool = False):
         this.m_per_dots_set = True
 
 
-def floatscale(x: str) -> float:
+def floatscale(x: Union[str, Th2Coord]) -> UserUnit:
     """
     Scale input coordinate to base-scale
     """
@@ -316,15 +326,15 @@ def reverseP(p: ParsedPath) -> ParsedPath:
     return retval
 
 
-def f_readline():
+def f_readline() -> str:
     try:
-        this.line_nr, line = next(this.file_stack[-1].f_enum)
+        this.line_nr, bline = next(this.file_stack[-1].f_enum)
     except StopIteration:
         this.file_stack.pop()
         this.layer_stack.pop()
         return f_readline() if this.file_stack else ''
-    line = line.rstrip(b'\r\n')
-    line = line.decode(this.encoding)
+    bline = bline.rstrip(b'\r\n')
+    line = bline.decode(this.encoding)
     if line.endswith('\\'):
         line = line[:-1] + f_readline()
     return line + '\n'
@@ -338,7 +348,7 @@ def errormsg(x):
     print(f'[{prefix}{this.line_nr + 1}] {x}', file=sys.stderr)
 
 
-def parse(a):
+def parse(a: Sequence[str]):
     function = parsedict.get(a[0])
     if function:
         function(a)
@@ -348,21 +358,21 @@ def parse(a):
         errormsg('skipped: ' + a[0])
 
 
-def parse_encoding(a):
+def parse_encoding(a: Sequence[str]):
     this.encoding = a[1]
 
 
-def parse_INKSCAPE(a):
+def parse_INKSCAPE(a: Sequence[str]):
     if a[1] == 'image':
         img = etree.Element('image')
         img.set('width', a[2])
         img.set('height', a[3])
         img.set('transform', a[4])
         img.set(xlink_href, ' '.join(a[5:]))
-        this.root.xpath('svg:g[@id="layer-scan"]', namespaces=inkex.NSS)[0].append(img)
+        xpath_elems(this.root, 'svg:g[@id="layer-scan"]')[0].append(img)
 
 
-def parse_XTHERION(a):
+def parse_XTHERION(a: Sequence[str]):
     if a[1] == 'xth_me_image_insert':
         href, XVIroot = '', ''
         try:
@@ -405,7 +415,7 @@ def parse_XTHERION(a):
                 img.set(therion_options, format_options({'href': href,
                                                          'XVIroot': XVIroot}))
                 img.set(inkscape_label, re.sub(r".*[/\\]", "", href))
-                this.root.xpath('svg:g[@id="layer-scan"]', namespaces=inkex.NSS)[0].append(img)
+                xpath_elems(this.root, 'svg:g[@id="layer-scan"]')[0].append(img)
 
                 dx = g_xvi.get(therion_xvi_dx)
                 if dx:
@@ -421,7 +431,7 @@ def parse_XTHERION(a):
             img.set('x', x)
             img.set('y', y)
             img.set('transform', 'scale(1,-1)')
-            this.root.xpath('svg:g[@id="layer-scan"]', namespaces=inkex.NSS)[0].append(img)
+            xpath_elems(this.root, 'svg:g[@id="layer-scan"]')[0].append(img)
         else:
             errormsg('skipped: ' + a[1])
 
@@ -434,7 +444,7 @@ def parse_XTHERION(a):
         this.root.set(th2ex.therion_area_zoom_to, a[2])
 
 
-def parse_scrap(a):
+def parse_scrap(a: Sequence[str]):
     e = etree.Element('g')
     e.set(inkscape_groupmode, "layer")
 
@@ -525,8 +535,9 @@ def read_block_lines(sentinel: str, *, skip_blank: bool = False) -> List[str]:
 
 
 def _pop_subtype(type_subtype: str, options: dict) -> Tuple[str, str]:
-    if ':' in type_subtype:
-        return tuple(type_subtype.split(':', 1))
+    a = type_subtype.split(':', 1)
+    if len(a) == 2:
+        return a[0], a[1]
     return type_subtype, options.get('subtype', '')
 
 
@@ -843,7 +854,7 @@ parsedict = {
 }
 
 
-def main():
+def main() -> None:
     th2pref_reload()
 
     with open(get_template_svg_path()) as template:
@@ -855,10 +866,10 @@ def main():
     # save input prefs to file
     th2pref_store_to_xml(this.root)
 
-    ids = this.root.xpath('/svg:svg/svg:defs/*[starts-with(@id, "point-")]/@id', namespaces=inkex.NSS)
+    ids = xpath_attrs(this.root, '/svg:svg/svg:defs/*[starts-with(@id, "point-")]/@id')
     this.point_symbols = [id[6:] for id in ids]
 
-    ids = this.root.xpath('/svg:svg/svg:defs/*[starts-with(@id, "LPE-")]/@id', namespaces=inkex.NSS)
+    ids = xpath_attrs(this.root, '/svg:svg/svg:defs/*[starts-with(@id, "LPE-")]/@id')
     this.LPE_symbols = [id[4:] for id in ids]
 
     populate_legend()
@@ -884,21 +895,21 @@ def main():
         this.root.set('width', f"{this.doc_width * this.m_per_dots}cm")
         this.root.set('height', f"{this.doc_height * this.m_per_dots}cm")
         this.root.set('viewBox', f"{this.doc_x} {-this.doc_y} {this.doc_width} {this.doc_height}")
-        grid = this.root.xpath('/svg:svg/sodipodi:namedview/inkscape:grid', namespaces=inkex.NSS)[0]
+        grid = xpath_elems(this.root, '/svg:svg/sodipodi:namedview/inkscape:grid')[0]
         grid.set("spacingx", f"{1 / this.m_per_dots}")
         grid.set("spacingy", f"{1 / this.m_per_dots}")
 
-    e = this.root.xpath('svg:g[@id="layer-scan"]', namespaces=inkex.NSS)[0]
+    e = xpath_elems(this.root, 'svg:g[@id="layer-scan"]')[0]
     e.set('transform', ' scale(1,-1) scale(%f)' % (1. / th2pref.basescale))
 
-    e = this.root.xpath('svg:g[@id="layer-legend"]', namespaces=inkex.NSS)[0]
+    e = xpath_elems(this.root, 'svg:g[@id="layer-legend"]')[0]
     e.set('transform', f'translate({this.doc_x} {-this.doc_y})')
 
     # scrap0:
     # Mostly obsolete, we currently don't populate it.
     # Keep it when opening an empty file.
-    e = this.root.xpath('svg:g[@id="layer-scrap0"]', namespaces=inkex.NSS)[0]
-    others = this.root.xpath('/svg:svg/g[not(@therion:role="none")]', namespaces=inkex.NSS)
+    e = xpath_elems(this.root, 'svg:g[@id="layer-scrap0"]')[0]
+    others = xpath_elems(this.root, '/svg:svg/g[not(@therion:role="none")]')
     if len(e) == 0 and others:
         this.root.remove(e)
     else:

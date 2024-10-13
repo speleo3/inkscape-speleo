@@ -1,5 +1,4 @@
 import th2enumeratestations
-import pytest
 
 def test_SeparateStationNames():
     assert ('', '1') == th2enumeratestations.SeparateStationNameParts("1")

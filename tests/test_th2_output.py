@@ -31,7 +31,7 @@ def test_fstr_trim_zeros():
     assert m.fstr_trim_zeros("1.0000") == "1.0"
     assert m.fstr_trim_zeros("1.0") == "1.0"
     assert m.fstr_trim_zeros("-0.000") == "0.0"
-    with pytest.raises(Exception):
+    with pytest.raises(AssertionError):
         m.fstr_trim_zeros("123")
 
 
