@@ -35,7 +35,6 @@ import functools
 import os
 import math
 import re
-import optparse
 import inkex
 import warnings
 
@@ -126,21 +125,6 @@ class _th2pref:
 # fix Python 3 mappingproxy issue
 th2pref = _th2pref()
 
-
-class InkOption(optparse.Option):
-    TYPES = optparse.Option.TYPES + ("inkbool", )
-    TYPE_CHECKER = dict(optparse.Option.TYPE_CHECKER)
-    TYPE_CHECKER["inkbool"] = lambda _1, _2, v: str(v).capitalize() == "True"
-
-
-# command line options and hook to th2pref
-oparser = optparse.OptionParser(option_class=InkOption)
-oparser.defaults = th2pref.__dict__
-
-
-def th2pref_reload():
-    _values, th2pref.argv = oparser.parse_args()
-    oparser.set_defaults(**_values.__dict__)
 
 # load prefs from file
 

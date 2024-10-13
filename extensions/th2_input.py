@@ -9,8 +9,6 @@ from th2ex import (
     ParsedPath,
     parse_scrap_scale_m_per_dots,
     th2pref,
-    oparser,
-    th2pref_reload,
     th2pref_store_to_xml,
     therion_role,
     therion_type,
@@ -39,6 +37,7 @@ from th2ex import (
     get_template_svg_path,
 )
 
+import optparse
 import sys
 import os
 import re
@@ -100,6 +99,23 @@ default_line_opts = {
 }
 
 # some prefs
+
+class InkOption(optparse.Option):
+    TYPES = optparse.Option.TYPES + ("inkbool", )
+    TYPE_CHECKER = dict(optparse.Option.TYPE_CHECKER)
+    TYPE_CHECKER["inkbool"] = lambda _1, _2, v: str(v).capitalize() == "True"
+
+
+# command line options and hook to th2pref
+oparser = optparse.OptionParser(option_class=InkOption)
+oparser.defaults = th2pref.__dict__
+
+
+def th2pref_reload():
+    _values, th2pref.argv = oparser.parse_args()
+    oparser.set_defaults(**_values.__dict__)
+
+
 oparser.add_option('--sublayers', action='store', type='inkbool', dest='sublayers', default=False)
 oparser.add_option('--basescale', action='store', type='float', dest='basescale', default=1.0)
 oparser.add_option('--howtostore', action='store', type='choice', dest='howtostore',
