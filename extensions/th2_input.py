@@ -166,8 +166,8 @@ class this:
         return floatscale(this.area_adjust[3] - this.area_adjust[1])
 
     @classproperty
-    def m_per_dots(this):
-        return th2ex.default_m_per_dots
+    def cm_per_uu(this):
+        return th2pref.scale_paper_cm_per_uu
 
     m_per_dots_set = False
 
@@ -193,7 +193,7 @@ def to_user_units(value: float, unit: str) -> UserUnit:
     """
     Convert a physical print dimension (e.g. 12pt or 2mm) to local user units.
     """
-    return th2ex.convert_unit((value, unit), "cm") / this.m_per_dots
+    return th2ex.convert_unit((value, unit), "cm") / this.cm_per_uu
 
 
 def scale_to_fontsize(scale: str) -> UserUnit:
@@ -302,7 +302,7 @@ def floatscale(x: Union[str, Th2Coord]) -> UserUnit:
     """
     Scale input coordinate to base-scale
     """
-    return float(x) / th2pref.basescale
+    return float(x) / th2pref.scale_th2_per_uu
 
 
 def flipY(a: List[str]) -> List[str]:
@@ -433,7 +433,7 @@ def parse_XTHERION(a: Sequence[str]):
             try:
                 import xvi_input
                 with open(href) as handle:
-                    g_xvi = xvi_input.xvi2svg(handle, False, 2 * th2pref.requested_basescale, XVIroot)
+                    g_xvi = xvi_input.xvi2svg(handle, False, 2 * th2pref.basescale, XVIroot)
                 img = etree.Element('g')
                 img.append(g_xvi)
                 img.set('transform', 'scale(1,-1) translate(%s,%s)' % (x, y))
@@ -915,15 +915,15 @@ def main() -> None:
     assert not this.file_stack
 
     if this.doc_width and this.doc_height:
-        this.root.set('width', f"{this.doc_width * this.m_per_dots}cm")
-        this.root.set('height', f"{this.doc_height * this.m_per_dots}cm")
+        this.root.set('width', f"{this.doc_width * this.cm_per_uu}cm")
+        this.root.set('height', f"{this.doc_height * this.cm_per_uu}cm")
         this.root.set('viewBox', f"{this.doc_x} {-this.doc_y} {this.doc_width} {this.doc_height}")
         grid = xpath_elems(this.root, '/svg:svg/sodipodi:namedview/inkscape:grid')[0]
-        grid.set("spacingx", f"{1 / this.m_per_dots}")
-        grid.set("spacingy", f"{1 / this.m_per_dots}")
+        grid.set("spacingx", f"{1 / this.cm_per_uu}")
+        grid.set("spacingy", f"{1 / this.cm_per_uu}")
 
     e = xpath_elems(this.root, 'svg:g[@id="layer-scan"]')[0]
-    e.set('transform', ' scale(1,-1) scale(%f)' % (1. / th2pref.basescale))
+    e.set('transform', ' scale(1,-1) scale(%f)' % (1. / th2pref.scale_th2_per_uu))
 
     e = xpath_elems(this.root, 'svg:g[@id="layer-legend"]')[0]
     e.set('transform', f'translate({this.doc_x} {-this.doc_y})')

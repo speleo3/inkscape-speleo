@@ -116,10 +116,6 @@ def parse_scrap_scale_m_per_dots(scale: str) -> float:
     return meters / dots
 
 
-# FIXME? dots_per_mm 1:100
-default_m_per_dots = 9 / 254  # 90dpi
-
-
 # some prefs
 class _th2pref:
     def __init__(self):
@@ -127,20 +123,72 @@ class _th2pref:
         self.textonpath = True
         self.image_inkscape = False
         self.basescale = 1.0
-        self.scale_real_m_per_th2 = default_m_per_dots  # from scrap or xvi
+        self._scale_real_m_per_th2 = 0.0  # from scrap or xvi
         self.xyascenter = True
 
-    @property
-    def requested_basescale(self) -> float:
-        return th2pref.basescale / default_m_per_dots * th2pref.scale_real_m_per_th2
+    def _get_u(self) -> float:
+        if self.basescale <= 1:
+            return 14
+        elif self.basescale <= 2:
+            return 12
+        elif self.basescale <= 5:
+            return 10
+        else:
+            return 7
 
-    def set_scale_real_m_per_th2(self, value: float):
-        self.scale_real_m_per_th2 = value
-        self.set_basescale(self.basescale * default_m_per_dots / value)
+    @property
+    def scale_paper_cm_per_uu(self) -> float:
+        """
+        Print/paper centimeters per user units.
+
+        This is the viewBox scaling factor.
+        """
+        # 9 is (maybe?) for 90dpi
+        # 254 is (maybe?) for cm/100in
+        # 12 is default u at 1:200
+        return 9 / 254 * self._get_u() / 12
+
+    @property
+    def scale_real_per_paper(self) -> float:
+        """
+        Scaling factor from paper to real world.
+
+        This is the map scale.
+        """
+        return self.basescale * 100
+
+    @property
+    def scale_th2_per_uu(self) -> float:
+        """
+        Scaling factor from th2 "pixels" to SVG user units.
+        """
+        return self.basescale * self._secondary_basescale
+
+    def set_scale_uu_per_th2(self, value: float):
+        self.set_basescale(value / self._secondary_basescale)
 
     def set_basescale(self, value: float):
         self.basescale = value
         get_fonts_setup_default.cache_clear()
+
+    @property
+    def scale_real_m_per_th2(self) -> float:
+        """
+        Scaling factor from th2 "pixels" to real world meters (scrap scale).
+
+        Therion Book: "meters per drawing unit"
+        """
+        return self._scale_real_m_per_th2 or self.scale_paper_cm_per_uu
+
+    def set_scale_real_m_per_th2(self, value: float):
+        self._scale_real_m_per_th2 = value
+
+    @property
+    def _secondary_basescale(self) -> float:
+        """
+        Same as scale_th2_per_uu at 1:100
+        """
+        return self.scale_paper_cm_per_uu / self.scale_real_m_per_th2
 
 
 # fix Python 3 mappingproxy issue
@@ -151,12 +199,12 @@ th2pref = _th2pref()
 
 
 def th2pref_load_from_xml(root: EtreeElement):
-    x = root.get(therion_scrapscale)
-    if x is not None:
-        th2pref.scale_real_m_per_th2 = float(x)
     x = root.get(therion_basescale)
     if x is not None:
         th2pref.set_basescale(float(x))
+    x = root.get(therion_scrapscale)
+    if x is not None:
+        th2pref.set_scale_real_m_per_th2(float(x))
     th2pref.howtostore = root.get(therion_howtostore, th2pref.howtostore)
 
 # store prefs
@@ -595,7 +643,7 @@ def get_fonts_setup_default(map_scale: int = 0):
     Get equivalents for the "fonts-setup" layout command default value.
     """
     if not map_scale:
-        map_scale = round(100 * th2pref.requested_basescale)
+        map_scale = round(th2pref.scale_real_per_paper)
     key = min((s for s in fonts_setup_defaults if (map_scale <= s)),
               key=lambda s: s - map_scale)
     return fonts_setup_defaults[key]
@@ -791,9 +839,12 @@ class Th2Effect:
 
     @property
     def r2d(self) -> list:
+        """
+        Transformation from SVG user units to th2 drawing units.
+        """
         return [
-            [th2pref.basescale, 0.0, 0.0],
-            [0.0, -th2pref.basescale, 0.0],
+            [th2pref.scale_th2_per_uu, 0.0, 0.0],
+            [0.0, -th2pref.scale_th2_per_uu, 0.0],
         ]
 
     bbox_cache: Dict[EtreeElement, Optional[BBoxType]] = {}
@@ -801,7 +852,7 @@ class Th2Effect:
 
     def i2d_affine(self, node: EtreeElement, use_cache: bool = True) -> AffineType:
         '''
-        Get the "item to document" transformation matrix.
+        Get the "item to th2 drawing units" transformation matrix.
 
         Note: use_cache showed 20% speed improvement for a big SVG document
         '''
