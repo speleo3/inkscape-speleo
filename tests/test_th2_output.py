@@ -57,3 +57,11 @@ def test_th2_output(tmp_path):
         r'point .* label .* -text "<lang:de>German<lang:en>English<lang:fr>French"',
         th2content) is not None
     assert TH2_LINE_SMOOTH_OFF in th2content
+
+
+def test_th2_output__options():
+    path_input = TESTS_DATA / "ink1.svg"
+    th2content = subprocess.check_output([sys.executable, m.__file__, "--options", '-author 1984 "Mäx Groß"', str(path_input)], encoding="utf-8")
+    assert 'scrap scrap1 -author 1984 "Mäx Groß"' in th2content
+    th2content = subprocess.check_output([sys.executable, m.__file__, "--options", '-author 1984 Mäx', str(path_input)], encoding="utf-8")
+    assert 'scrap scrap1 -author 1984 "Mäx"' in th2content
