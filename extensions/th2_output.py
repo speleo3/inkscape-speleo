@@ -242,9 +242,9 @@ class Th2Output(Th2Effect):
             self.textpath_dict = dict()
         self.current_scrap_id = 'none'
 
-    def get_m_per_dots(self) -> float:
+    def get_m_per_uu(self) -> float:
         """
-        Get drawing meters per user unit
+        Get drawing (print/paper) meters per user unit
         """
         m_per_dots_width = self.doc_width_m / self.doc_width
         m_per_dots_height = self.doc_height_m / self.doc_height
@@ -286,7 +286,7 @@ class Th2Output(Th2Effect):
                     )
                 elif self.doc_width_m:
                     options['scale'] = '[%g %g m]' % (
-                        th2pref.basescale * self.doc_width / self.doc_width_m,
+                        th2pref.scale_th2_per_uu * self.doc_width / self.doc_width_m,
                         self.options.scale,
                     )
             if 'projection' not in options and self.options.projection:
@@ -318,11 +318,11 @@ class Th2Output(Th2Effect):
             self.doc_height_m = (self.doc_height or 150) * m_per_dots
         if not self.doc_height:
             self.doc_height = self.doc_height_m / m_per_dots
-        if not (0.9 < (m_per_dots / self.get_m_per_dots()) < 1.1):
+        if not (0.9 < (m_per_dots / self.get_m_per_uu()) < 1.1):
             inkex.errormsg(
                 f"doc_width:  {self.doc_width}     doc_width_m:  {self.doc_width_m}\n"
                 f"doc_height: {self.doc_height}    doc_height_m: {self.doc_height_m}\n"
-                f"m_per_dots: {self.get_m_per_dots()}\n")
+                f"m_per_dots: {self.get_m_per_uu()}\n")
 
     def output(self):
         root = self.document.getroot()
@@ -616,6 +616,9 @@ class Th2Output(Th2Effect):
         """
         Guess closest text scale (e.g. "xl") from actual font size and set it in
         options if it's not the default scale.
+
+        Args:
+          mat: Affine from item local coordinates to th2 drawing units
         """
         fontsize = self.get_style_attr(node, style, 'font-size', '12')
         if fontsize[-1] == '%':
@@ -624,8 +627,8 @@ class Th2Output(Th2Effect):
             fontsize = self.unittouu(fontsize)
         if mat is not None:
             fontsize *= descrim(mat)
-        fontsize /= th2pref.basescale
-        fontsize_pt = th2ex.convert_unit((fontsize * self.get_m_per_dots(), "m"), "pt")
+        fontsize /= th2pref.scale_th2_per_uu
+        fontsize_pt = th2ex.convert_unit((fontsize * self.get_m_per_uu(), "m"), "pt")
         fonts_setup_default = th2ex.get_fonts_setup_default()
         if (  #
                 fontsize_pt < fonts_setup_default['xs'] * 0.8 or  #

@@ -37,7 +37,6 @@ from th2ex import (
     text_keys_input,
     find_in_pwd,
     get_template_svg_path,
-    default_m_per_dots,
 )
 
 import optparse
@@ -123,7 +122,7 @@ def th2pref_reload():
 
 
 oparser.add_option('--sublayers', action='store', type='inkbool', dest='sublayers', default=False)
-oparser.add_option('--basescale', action='store', type='float', dest='basescale', default=1.0)
+oparser.add_option('--basescale', action='store', type='float', dest='_basescale', default=2.0)
 oparser.add_option('--howtostore', action='store', type='choice', dest='howtostore',
                    choices=('inkscape_label', 'title', 'therion_attribs'))
 oparser.add_option('--lock-stations', action='store', type='inkbool', dest='lock_stations', default=False)
@@ -167,8 +166,8 @@ class this:
         return floatscale(this.area_adjust[3] - this.area_adjust[1])
 
     @classproperty
-    def m_per_dots(this):
-        return default_m_per_dots
+    def cm_per_uu(this):
+        return th2pref.scale_paper_cm_per_uu
 
     m_per_dots_set = False
 
@@ -194,7 +193,7 @@ def to_user_units(value: float, unit: str) -> UserUnit:
     """
     Convert a physical print dimension (e.g. 12pt or 2mm) to local user units.
     """
-    return th2ex.convert_unit((value, unit), "cm") / this.m_per_dots
+    return th2ex.convert_unit((value, unit), "cm") / this.cm_per_uu
 
 
 def scale_to_fontsize(scale: str) -> UserUnit:
@@ -291,10 +290,10 @@ class FileRecord:
 def set_m_per_dots(value: float, overwrite: bool = False):
     if not this.m_per_dots_set:
         this.m_per_dots_set = True
-        th2pref.set_scrapscale_m_per_dots(value)
+        th2pref.set_scale_real_m_per_th2(value)
         th2pref_store_to_xml(this.root)
-    elif not (0.9 < (value / th2pref.scrapscale_m_per_dots) < 1.1):
-        errormsg(f"Warning: m/dots {value:g} vs {th2pref.scrapscale_m_per_dots:g}")
+    elif not (0.9 < (value / th2pref.scale_real_m_per_th2) < 1.1):
+        errormsg(f"Warning: m/dots {value:g} vs {th2pref.scale_real_m_per_th2:g}")
         if overwrite:
             errormsg("overwrite ignored")
 
@@ -303,7 +302,7 @@ def floatscale(x: Union[str, Th2Coord]) -> UserUnit:
     """
     Scale input coordinate to base-scale
     """
-    return float(x) / th2pref.basescale
+    return float(x) / th2pref.scale_th2_per_uu
 
 
 def flipY(a: List[str]) -> List[str]:
@@ -434,7 +433,7 @@ def parse_XTHERION(a: Sequence[str]):
             try:
                 import xvi_input
                 with open(href) as handle:
-                    g_xvi = xvi_input.xvi2svg(handle, False, 2 * th2pref.requested_basescale, XVIroot)
+                    g_xvi = xvi_input.xvi2svg(handle, False, 2 * th2pref.basescale, XVIroot)
                 img = etree.Element('g')
                 img.append(g_xvi)
                 img.set('transform', 'scale(1,-1) translate(%s,%s)' % (x, y))
@@ -463,7 +462,7 @@ def parse_XTHERION(a: Sequence[str]):
             errormsg('skipped: ' + a[1])
 
     if a[1] == 'xth_me_area_adjust':
-        this.area_adjust = tuple(map(float, a[2:]))
+        this.area_adjust = float(a[2]), float(a[3]), float(a[4]), float(a[5])
     elif a[1] == 'xth_me_area_zoom_to':
         this.root.set(th2ex.therion_area_zoom_to, a[2])
 
@@ -916,15 +915,15 @@ def main() -> None:
     assert not this.file_stack
 
     if this.doc_width and this.doc_height:
-        this.root.set('width', f"{this.doc_width * this.m_per_dots}cm")
-        this.root.set('height', f"{this.doc_height * this.m_per_dots}cm")
+        this.root.set('width', f"{this.doc_width * this.cm_per_uu}cm")
+        this.root.set('height', f"{this.doc_height * this.cm_per_uu}cm")
         this.root.set('viewBox', f"{this.doc_x} {-this.doc_y} {this.doc_width} {this.doc_height}")
         grid = xpath_elems(this.root, '/svg:svg/sodipodi:namedview/inkscape:grid')[0]
-        grid.set("spacingx", f"{1 / this.m_per_dots}")
-        grid.set("spacingy", f"{1 / this.m_per_dots}")
+        grid.set("spacingx", f"{1 / this.cm_per_uu}")
+        grid.set("spacingy", f"{1 / this.cm_per_uu}")
 
     e = xpath_elems(this.root, 'svg:g[@id="layer-scan"]')[0]
-    e.set('transform', ' scale(1,-1) scale(%f)' % (1. / th2pref.basescale))
+    e.set('transform', ' scale(1,-1) scale(%f)' % (1. / th2pref.scale_th2_per_uu))
 
     e = xpath_elems(this.root, 'svg:g[@id="layer-legend"]')[0]
     e.set('transform', f'translate({this.doc_x} {-this.doc_y})')
