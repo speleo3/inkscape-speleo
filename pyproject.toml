@@ -29,7 +29,7 @@ ignore = [
     "E731", # lambda
 ]
 
-[tool.ruff]
+[tool.ruff.lint]
 extend-select = ["W", "B", "Q003"]
 ignore = [
     "E401",     # Multiple imports on one line
