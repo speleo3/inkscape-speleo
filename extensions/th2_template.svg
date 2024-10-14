@@ -628,7 +628,7 @@
       <text x="0" y="2.4" style="font-size: 7px" transform="scale(0.7,1.4)">st name</text>
     </symbol>
     <symbol id="point-label">
-      <path d="M 4.4,4e-7 A 4.4,4.25 0 0 1 0,4.25 4.4,4.25 0 0 1 -4.4,4.e-7 4.4,4.25 0 0 1 0,-4.25 4.4,4.25 0 0 1 4.4,4e-7 Z"
+      <path d="M 4.4,0 A 4.4,4.25 0 0 1 0,4.25 4.4,4.25 0 0 1 -4.4,0 4.4,4.25 0 0 1 0,-4.25 4.4,4.25 0 0 1 4.4,0 Z"
         style="fill:#4e9eda;fill-opacity:0.5;stroke:#2795e2;stroke-width:0.8" />
     </symbol>
 	<symbol id="point-clay-choke">
