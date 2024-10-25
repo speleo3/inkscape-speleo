@@ -625,6 +625,26 @@ fill2type = {
     '#ffff00': 'u:sand',
 }
 
+tag2style = {
+    "it": {
+        "font-family": "serif",
+        "font-style": "italic",
+    },
+    "si": {
+        "font-family": "sans-serif",
+        "font-style": "italic",
+    },
+    "rm": {
+        "font-family": "serif",
+    },
+    "bf": {
+        "font-weight": "bold",
+    },
+    "ss": {
+        "font-family": "sans-serif",
+    },
+}
+
 ##########################################
 # font stuff
 

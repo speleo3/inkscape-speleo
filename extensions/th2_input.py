@@ -7,6 +7,7 @@ Distributed under the terms of the GNU General Public License v2 or later
 import th2ex
 from th2ex import (
     ParsedPath,
+    StyleDict,
     parse_scrap_scale_m_per_dots,
     th2pref,
     th2pref_store_to_xml,
@@ -798,6 +799,24 @@ def parse_line(a: List[str]):
     getlayer('line', type).insert(0, e)
 
 
+_RE_TAG = re.compile(r"<([a-z:]+)>")
+
+
+def text_to_styles(text: str):
+    """
+    Parse the leading style tags to CSS properties.
+    """
+    styles: StyleDict = {}
+    pos = 0
+    while True:
+        m = _RE_TAG.match(text, pos)
+        if m is None:
+            break
+        styles.update(th2ex.tag2style.get(m.group(1), ()))
+        pos = m.end()
+    return styles
+
+
 def parse_point(a):
     options = parse_options(a[4:])
     type = a[3].split(':')[0]
@@ -810,9 +829,13 @@ def parse_point(a):
     if as_text:
         e = etree.Element('text')
         y = 0
+        styles: StyleDict = {}
         for line in options[key].split('<br>'):
             t = etree.SubElement(e, 'tspan', {sodipodi_role: 'line', 'x': '0', 'y': '%dem' % (y)})
             t.text = line
+            styles.update(text_to_styles(line))
+            if styles:
+                t.set("style", ";".join(f"{key}:{value}" for (key, value) in styles.items()))
             y += 1
         del options[key]
         fontsize = scale_to_fontsize(options.pop("scale", "m"))
