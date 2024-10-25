@@ -46,6 +46,7 @@ import os
 import re
 from typing import (
     Dict,
+    Iterable,
     List,
     Sequence,
     Tuple,
@@ -306,9 +307,9 @@ def floatscale(x: Union[str, Th2Coord]) -> UserUnit:
     return float(x) / th2pref.scale_th2_per_uu
 
 
-def flipY(a: List[str]) -> List[str]:
+def flipY(a: Iterable[str]) -> List[str]:
     """
-    Transform th2 coordinates to SVG user units, in-place.
+    Transform th2 coordinates to SVG user units.
 
     - Scale to base-scale
     - Invert y
@@ -317,8 +318,9 @@ def flipY(a: List[str]) -> List[str]:
       a: Flat 2D coordinate list
 
     Returns:
-      Modified input list
+      Transformed coordinate list
     """
+    a = list(a)
     # TODO %f rounds to 6 digits, check if sufficient
     a[0::2] = ['%f' % (floatscale(i)) for i in a[0::2]]
     a[1::2] = ['%f' % (-floatscale(i)) for i in a[1::2]]
@@ -565,7 +567,7 @@ def _pop_subtype(type_subtype: str, options: dict) -> Tuple[str, str]:
     return type_subtype, options.get('subtype', '')
 
 
-def parse_area(a_in):
+def parse_area(a_in: Sequence[str]):
     lines = read_block_lines('endarea', skip_blank=True)
 
     # we can only handle areas with one border line
@@ -586,16 +588,16 @@ def parse_area(a_in):
     set_props(e, 'area', type_subtype, options)
 
 
-def parse_BLOCK2COMMENT(a):
+def parse_BLOCK2COMMENT(a: Sequence[str]):
     lines = read_block_lines("end" + a[0])
     preserve_literal(a, lines)
 
 
-def parse_LINE2COMMENT(a):
+def parse_LINE2COMMENT(a: Sequence[str]):
     preserve_literal(a)
 
 
-def parse_BLOCK2TEXT(a):
+def parse_BLOCK2TEXT(a: Sequence[str]):
     '''
     Currently unused
     '''
@@ -698,7 +700,7 @@ class SegmentedLine:
         # to the previous segment
 
 
-def parse_line(a: List[str]):
+def parse_line(a: Sequence[str]):
     assert a[0] == "line"
     options = parse_options(a[2:])
     type_subtype = a[1]
@@ -817,7 +819,7 @@ def text_to_styles(text: str):
     return styles
 
 
-def parse_point(a):
+def parse_point(a: Sequence[str]):
     options = parse_options(a[4:])
     type = a[3].split(':')[0]
 
@@ -871,7 +873,7 @@ def parse_point(a):
     getlayer('point', type).insert(0, e)
 
 
-def parse_input(a):
+def parse_input(a: Sequence[str]):
     assert a[0] == "input"
     assert len(a) == 2
     this.file_stack.append(FileRecord(a[1]))
