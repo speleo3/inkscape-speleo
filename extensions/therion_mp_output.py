@@ -7,7 +7,7 @@ Scale is 1cm SVG = 1u MetaPost
 from dataclasses import dataclass
 import itertools
 import re
-from typing import cast, IO, List, Optional, Union, Tuple
+from typing import cast, IO, List, Optional, Union, Tuple, Type, TypeVar
 
 import inkex
 import inkex.paths as inkpa
@@ -22,12 +22,27 @@ pens = [
     (1.2 / 10, "PenX"),
 ]
 
+T = TypeVar("T")
+
+
+def cast_assert(typ: Type[T], val) -> T:
+    """
+    Returns:
+      Unchanged val
+    Raises:
+      AssertionError: If val is not of type typ
+    """
+    assert isinstance(val, typ)
+    return val
+
 
 def uround(value: float) -> float:
     """
     Round the given user units value to the accepted precision.
+
+    Drops the sign from signed zero.
     """
-    return round(value, 4)
+    return round(value, 4) or 0.0
 
 
 def approx_equal(a: float, b: float) -> bool:
@@ -77,7 +92,7 @@ def get_metapost_color_arg(color: str) -> str:
     assert len(rgb) == 3
     if rgb == [0, 0, 0]:
         return ""
-    return " withcolor (" + ",".join(f"{round(c / 0xFF, 6)}" for c in rgb) + ")"
+    return " withcolor (" + ",".join(f"{round(c / 0xFF, 4)}" for c in rgb) + ")"
 
 
 @dataclass
@@ -149,8 +164,8 @@ fi
         return self.format_point_abs(x - self.center[0], self.center[1] - y)
 
     def format_point_abs(self, x: float, y: float) -> str:
-        x = round(x, 4)
-        y = round(y, 4)
+        x = uround(x)
+        y = uround(y)
         return f"({x}u,{y}u)"
 
     def process_special_shape(self, node: inkel.ShapeElement) -> bool:
@@ -187,6 +202,27 @@ fi
     def finish_mainpath(self, pen: str, draw_args: str):
         raise AssertionError("bug")
 
+    def _get_circle_p(self, etc: ShapeEtc):
+        if not isinstance(etc.shape, (inkex.Circle, inkex.Ellipse)) or len(etc.path) < 2:
+            return None
+        arc = cast_assert(inkpa.Arc, etc.path[1])
+        rx, ry = uround(arc.rx), uround(arc.ry)
+        rot = uround(arc.x_axis_rotation) % 180
+        if rot >= 90:
+            rot -= 90
+            rx, ry = ry, rx
+        buf = ["fullcircle"]
+        if rx != ry:
+            buf.append(f" xscaled {rx}u yscaled {ry}u")
+        else:
+            buf.append(f" scaled {rx}u")
+        if rot != 0:
+            buf.append(f" rotated {rot}")
+        center_formatted = self.format_point(*etc.path.bounding_box().center)
+        if center_formatted != self.format_point_abs(0, 0):
+            buf.append(f" shifted {center_formatted}")
+        return buf
+
     def finish_shape(self, etc: ShapeEtc):
         """
         Build `draws`
@@ -194,6 +230,12 @@ fi
         ps: List[List[str]] = []
 
         segments = list(etc.path.to_superpath().to_segments())
+
+        # circle optimization
+        circle_p = self._get_circle_p(etc)
+        if circle_p is not None:
+            ps.append(circle_p)
+            segments = []
 
         is_mainpath = self.check_mainpath(segments)
         if is_mainpath:

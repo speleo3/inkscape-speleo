@@ -1,9 +1,17 @@
 import therion_mp_output as m
 import subprocess
 import sys
+import math
 from pathlib import Path
 
 TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "templates"
+
+
+def test_uround():
+    assert math.copysign(1, m.uround(-0.1)) == -1
+    assert math.copysign(1, m.uround(-0.0)) == 1  # drop sign
+    assert math.copysign(1, m.uround(0.0)) == 1
+    assert math.copysign(1, m.uround(0.1)) == 1
 
 
 def test_get_metapost_color_arg():
@@ -21,6 +29,13 @@ def p_u_smiley(expr pos,theta,sc,al) =
     U:=(0.4u,0.4u);
     T:=identity aligned al rotated theta scaled sc shifted pos;
     pickup PenC;
+    p:=fullcircle scaled 0.4u;
+    thfill p withcolor (1.0,1.0,0.0);
+    thdraw p withcolor (0.0,0.502,0.0);
+    thdraw (0.2u,-0.1u)..controls (0.18u,-0.2u) and (0.1u,-0.25u)..(0.0u,-0.25u)..controls (-0.1u,-0.25u) and (-0.18u,-0.2u)..(-0.2u,-0.1u) withcolor (0.0,0.502,0.0);
+    thdraw fullcircle xscaled 0.03u yscaled 0.05u shifted (0.15u,0.15u) withcolor (0.0,0.502,0.0);
+    thdraw fullcircle xscaled 0.03u yscaled 0.05u shifted (-0.15u,0.15u) withcolor (0.0,0.502,0.0);
+enddef;
 """ in mpcontent
 
     assert """
