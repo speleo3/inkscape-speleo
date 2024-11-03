@@ -48,8 +48,8 @@ from typing import (
 )
 from lxml import etree
 import inkex
-import simpletransform
-import simplestyle
+from inkex0 import simpletransform
+from inkex0 import simplestyle
 import math
 import re
 import collections

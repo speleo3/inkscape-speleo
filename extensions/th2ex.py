@@ -269,7 +269,7 @@ def title_node(parent: EtreeElement) -> EtreeElement:
 
 # TODO same as th2_output.Th2Output.get_style_nocascade
 def get_style(node: EtreeElement) -> StyleDict:
-    import simplestyle
+    from inkex0 import simplestyle
     return simplestyle.parseStyle(node.get('style', ''))
 
 
@@ -700,10 +700,10 @@ def parsePath(d: str) -> ParsedPath[float]:
     Parse line and replace quadratic bezier segments and arcs by
     cubic bezier segments.
     '''
-    import simplepath
+    from inkex0 import simplepath
     p = simplepath.parsePath(d)
     if any(cmd not in 'MLCZ' for (cmd, params) in p):
-        import cubicsuperpath
+        from inkex0 import cubicsuperpath
         csp = cubicsuperpath.CubicSuperPath(p)
         p = cubicsuperpath.unCubicSuperPath(csp)
     return p
@@ -879,7 +879,7 @@ class Th2Effect:
         if use_cache and node in self.i2d_cache:
             return self.i2d_cache[node]
 
-        import simpletransform
+        from inkex0 import simpletransform
         m2 = simpletransform.parseTransform(node.get('transform'))
 
         parent = node.getparent()
@@ -931,12 +931,9 @@ class Th2Effect:
         Warning: Evaluates "transform" attribute for symbol tags, which is
         wrong according to SVG spec, but matches Inkscape's behaviour.
         '''
-        import cubicsuperpath
-        from simpletransform import boxunion, parseTransform, applyTransformToPath, formatTransform
-        try:
-            from simpletransform import refinedBBox
-        except ImportError:
-            from simpletransform import roughBBox as refinedBBox
+        from inkex0 import cubicsuperpath
+        from inkex0.simpletransform import boxunion, parseTransform, applyTransformToPath, formatTransform
+        from inkex0.simpletransform import refinedBBox
 
         d = None
         recurse = False
