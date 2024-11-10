@@ -28,7 +28,7 @@ def parseTransform(transf,mat=[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]]):
     if transf=="" or transf==None:
         return(mat)
     stransf = transf.strip()
-    result=re.match("(translate|scale|rotate|skewX|skewY|matrix)\s*\(([^)]*)\)\s*,?",stransf)
+    result=re.match(r"(translate|scale|rotate|skewX|skewY|matrix)\s*\(([^)]*)\)\s*,?",stransf)
 #-- translate --
     if result.group(1)=="translate":
         args=result.group(2).replace(',',' ').split()
