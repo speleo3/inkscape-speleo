@@ -768,6 +768,8 @@ def parse_line(a: Sequence[str]):
             e_path.set(inkscape_original_d, d)
         else:
             e_path.set('d', d)
+            if seg.options.get('altitude') is not None:
+                e_path.set('style', 'marker-start:url(#linept-altitude)')
 
         e_path.set(sodipodi_nodetypes, "".join(seg.nodetypes))
 
