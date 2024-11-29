@@ -421,6 +421,8 @@ def key_options_item(item: Tuple[str, OptionValue]) -> tuple:
         return '0' + item[0], item[1]
     if item[0] == 'close':
         return '1' + item[0], item[1]
+    if item[0] == 'orientation':  # point
+        return '1' + item[0], item[1]
     if item[0] == 'projection':  # scrap
         return '1' + item[0], item[1]
     return item

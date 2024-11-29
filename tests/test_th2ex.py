@@ -124,6 +124,7 @@ def test_format_options():
     assert th2ex.format_options({'author': ["2000 Max"]}) == '-author 2000 Max'
     assert th2ex.format_options({'author': [("2000 Max")]}) == '-author 2000 Max'
     assert th2ex.format_options({'author': [("2000", "Max Foo"), ("2000", "Jane Bar")]}) == '-author 2000 "Max Foo" -author 2000 "Jane Bar"'
+    assert m.format_options(m.parse_options('-align b -orientation 25.723')) == '-orientation 25.723 -align b'
 
 
 def test_name_survex2therion():
