@@ -146,6 +146,7 @@ class this:
     id_count = 0
     textblock_count = 0
 
+    single_line_areas: Dict[str, Tuple[EtreeElement, Sequence[str]]] = {}
     borders: Dict[str, EtreeElement] = {}  # for areas
     sublayers: Dict[str, EtreeElement] = {}
 
@@ -506,6 +507,8 @@ def parse_scrap(a: Sequence[str]):
             break
         parse(a)
 
+    promote_borders_to_areas()
+
     this.layer_stack.pop()
 
 
@@ -522,6 +525,7 @@ def preserve_literal(a: Sequence[str], lines: Sequence[str] = ()):
     desc.text = ''.join(chunks)
     assert desc.text.endswith("\n")
     this.getcurrentlayer().insert(0, e)
+    return e
 
 
 def preserve_literal_as_comment(a: Sequence[str], lines: Sequence[str] = ()):
@@ -569,14 +573,23 @@ def _pop_subtype(type_subtype: str, options: dict) -> Tuple[str, str]:
 
 def parse_area(a_in: Sequence[str]):
     lines = read_block_lines('endarea', skip_blank=True)
+    e = preserve_literal(a_in, lines)
 
     # we can only handle areas with one border line
-    if len(lines) != 2 or lines[0].strip() not in this.borders:
-        preserve_literal(a_in, lines)
-        return
+    line_id = lines[0].strip() if len(lines) == 2 else ""
+    if line_id:
+        this.single_line_areas[line_id] = (e, tuple(a_in))
 
-    # update border line
-    e = this.borders[lines[0].strip()]
+
+def promote_border_to_area(a_in: Sequence[str], line_id: str) -> bool:
+    '''
+    If line_id is a the id of a non-segmented border, then promote that line to
+    area.
+    '''
+    assert a_in[0] == 'area'
+    e = this.borders.pop(line_id, None)
+    if e is None:
+        return False
     role, type, options = get_props(e)
     type, _ = _pop_subtype(type, {})
     assert (role, type) == ('line', 'border')
@@ -586,6 +599,19 @@ def parse_area(a_in: Sequence[str]):
     type, subtype = _pop_subtype(type_subtype, options)
     e.set('class', 'area %s %s' % (type, subtype))
     set_props(e, 'area', type_subtype, options)
+    return True
+
+
+def promote_borders_to_areas():
+    '''
+    Promote all suitable border+area combinations.
+    '''
+    for line_id, (e_area, a_area) in this.single_line_areas.items():
+        if promote_border_to_area(a_area, line_id):
+            e_area.getparent().remove(e_area)
+
+    this.single_line_areas.clear()
+    this.borders.clear()
 
 
 def parse_BLOCK2COMMENT(a: Sequence[str]):
@@ -733,8 +759,9 @@ def parse_line(a: Sequence[str]):
 
     this.id_count += 1
     e_id = 'line_%s_%d' % (type, this.id_count)
+    is_segmented = any(seg.options for seg in segline.segments)
 
-    if not any(seg.options for seg in segline.segments):
+    if not is_segmented:
         assert len(segline.segments) == 1
 
         if options.pop('reverse', 'off') == 'on':
@@ -796,7 +823,7 @@ def parse_line(a: Sequence[str]):
         getlayer('line', type).insert(0, e_text)
 
     # for areas
-    if type == 'border' and 'id' in options:
+    if type == 'border' and 'id' in options and not is_segmented:
         this.borders[options['id']] = e
 
     set_props(e, 'line', type_subtype, options)
