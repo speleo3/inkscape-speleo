@@ -520,6 +520,9 @@ def load(fp: BinaryIO) -> dict:
     remaining = fp.read()
     assert remaining == b'\0\0\0\0'
 
+    # PocketTopo ignores these
+    top['shots'] = [s for s in top['shots'] if s['from']]
+
     return top
 
 
