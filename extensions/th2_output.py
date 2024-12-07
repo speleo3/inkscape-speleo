@@ -668,9 +668,6 @@ class Th2Output(Th2Effect):
                 self.guess_text_align(node, style, options)
                 self.guess_text_scale(node, style, options, mat)
 
-            if type == 'altitude' and options[key].isdigit():
-                options[key] = "[fix " + options[key] + "]"
-
             if type in ('altitude', 'label') and text == '{ALTITUDE}':
                 type = 'altitude'
                 del options[key]
