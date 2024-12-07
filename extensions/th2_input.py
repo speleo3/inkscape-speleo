@@ -323,8 +323,8 @@ def flipY(a: Iterable[str]) -> List[str]:
     """
     a = list(a)
     # TODO %f rounds to 6 digits, check if sufficient
-    a[0::2] = ['%f' % (floatscale(i)) for i in a[0::2]]
-    a[1::2] = ['%f' % (-floatscale(i)) for i in a[1::2]]
+    a[0::2] = ['%.8f' % (floatscale(i)) for i in a[0::2]]
+    a[1::2] = ['%.8f' % (-floatscale(i)) for i in a[1::2]]
     return a
 
 
@@ -977,7 +977,7 @@ def main() -> None:
         grid.set("spacingy", f"{1 / this.cm_per_uu}")
 
     e = xpath_elems(this.root, 'svg:g[@id="layer-scan"]')[0]
-    e.set('transform', ' scale(1,-1) scale(%f)' % (1. / th2pref.scale_th2_per_uu))
+    e.set('transform', ' scale(1,-1) scale(%s)' % floatscale(1))
 
     e = xpath_elems(this.root, 'svg:g[@id="layer-legend"]')[0]
     e.set('transform', f'translate({this.doc_x} {-this.doc_y})')
