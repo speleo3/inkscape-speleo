@@ -884,6 +884,8 @@ def parse_point(a: Sequence[str]):
             e.set(sodipodi_insensitive, "true")
     else:
         e = etree.Element('circle')
+        e.set('cx', '0')  # https://gitlab.com/inkscape/inbox/-/issues/11365
+        e.set('cy', '0')  # https://gitlab.com/inkscape/inbox/-/issues/11365
         e.set('r', '2')
         color = point_colors.get(type, "blue")
         e.set('style', f'stroke:none;fill:{color};fill-opacity:0.8')
