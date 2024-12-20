@@ -7,6 +7,8 @@ encoding  utf-8
 
 scrap create.s -scale [-128.0 -128.0 620.125 -128.0 0.0 0.0 19.002375 0.0 m]
 
+point 300.0 80.0 u:foo
+
 point 440.0 340.0 altitude -value [fix 5 m]
 
 point 400.0 340.0 altitude -value [fix 5]
