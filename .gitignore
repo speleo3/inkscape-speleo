@@ -8,3 +8,10 @@
 
 /.idea
 /.vscode
+
+# Inkscape managed files
+cphistory.xml
+extension-errors.log
+pages.csv
+preferences.xml
+shell.history
