@@ -203,6 +203,7 @@ def scale_to_fontsize(scale: str) -> UserUnit:
     """
     Convert a scale value ("xs" ... "xl", or numeric) to font size in user units
     """
+    scale = th2ex.scale_aliases.get(scale, scale)
     fonts_setup_default = th2ex.get_fonts_setup_default()
     fontsize_pt = (
         fonts_setup_default.get(scale) or  #

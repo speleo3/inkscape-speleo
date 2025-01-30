@@ -576,6 +576,18 @@ def get_props(e: EtreeElement) -> Tuple[str, str, OptionsDict]:
 ##########################################
 # property translation stuff
 
+scale_aliases = {
+    "L": "l",
+    "M": "m",
+    "S": "s",
+    "XL": "xl",
+    "XS": "xs",
+    "huge": "xl",
+    "large": "l",
+    "normal": "m",
+    "small": "s",
+    "tiny": "xs",
+}
 
 align_shortcuts = {
     'center': 'c',
