@@ -437,7 +437,7 @@ def parse_XTHERION(a: Sequence[str]):
         if href.endswith('.xvi'):
             try:
                 import xvi_input
-                with open(href) as handle:
+                with open(href, encoding="utf-8", errors="ignore") as handle:
                     g_xvi = xvi_input.xvi2svg(handle, False, 2 * th2pref.basescale, XVIroot)
                 img = etree.Element('g')
                 img.append(g_xvi)
@@ -937,7 +937,7 @@ parsedict = {
 def main() -> None:
     th2pref_reload()
 
-    with open(get_template_svg_path()) as template:
+    with open(get_template_svg_path(), encoding="utf-8") as template:
         this.document = etree.parse(template)
 
     this.root = this.document.getroot()

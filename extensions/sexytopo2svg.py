@@ -88,7 +88,7 @@ class BBox:
 
 
 def read_json(path: Path) -> dict:
-    with open(path) as handle:
+    with open(path, encoding="utf-8") as handle:
         return json.load(handle)
 
 

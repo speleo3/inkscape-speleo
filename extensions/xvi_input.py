@@ -140,7 +140,7 @@ def xvi2svg(handle, fullsvg=True, strokewidth=6, XVIroot='',
 
 def _get_input_context():
     if len(sys.argv) > 1:
-        return open(sys.argv[-1])
+        return open(sys.argv[-1], encoding="utf-8")
     return contextlib.nullcontext(sys.stdin)
 
 

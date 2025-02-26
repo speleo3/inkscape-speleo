@@ -60,7 +60,7 @@ class Th2SetProps(Th2Effect):
         self.getdocids()
 
         if self.options.dropstyle and 'th2style' not in self.doc_ids:
-            with open(get_template_svg_path()) as template:
+            with open(get_template_svg_path(), encoding="utf-8") as template:
                 doc_temp = etree.parse(template)
             defs_temp = doc_temp.find(inkex.addNS('defs', 'svg'))
             defs_self = self.document.find(inkex.addNS('defs', 'svg'))

@@ -1236,7 +1236,7 @@ def view_aven(top, tmpname='', exe='aven', _dump=dump_svx, _ext='.svx'):
         svxfilename = os.path.join(d,
                                    os.path.basename(tmpname or 'temp') + _ext)
 
-        with open(svxfilename, 'w') as handle:
+        with open(svxfilename, 'w', encoding="utf-8") as handle:
             _dump(top, file=handle)
 
         subprocess.check_call([exe, svxfilename])
@@ -1308,9 +1308,9 @@ def main(argv=None):
             elif args.dump == 'th2-ee':
                 dump_th2(top, view="sideview")
             elif args.dump == 'th2-xvi':
-                with open(f"{filename}.xvi", "w") as handle:
+                with open(f"{filename}.xvi", "w", encoding="utf-8") as handle:
                     dump_xvi(top, file=handle)
-                with open(f"{filename}.th2", "w") as handle:
+                with open(f"{filename}.th2", "w", encoding="utf-8") as handle:
                     dump_th2(top, file=handle, with_xvi=True)
             elif args.dump == 'tro':
                 dump_tro(top)
