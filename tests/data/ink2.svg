@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="10cm"
+   height="10cm"
+   viewBox="0 0 100 100"
+   version="1.1"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns="http://www.w3.org/2000/svg">
+  <g
+     inkscape:label="scrap1"
+     inkscape:groupmode="layer">
+    <rect
+       style="fill:blue"
+       id="rect1"
+       width="10"
+       height="10"
+       x="30"
+       y="20" />
+  </g>
+</svg>
