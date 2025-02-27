@@ -11,6 +11,7 @@ from th2ex import (
     AffineType,
     EtreeElement,
     OptionsDict,
+    StyleDict,
     th2pref,
     th2pref_load_from_xml,
     svg_polygon,
@@ -37,12 +38,14 @@ from th2ex import (
     parsePath,
     convert_unit,
     Th2Effect,
+    xpath_elems,
 )
 
 from typing import (
     Dict,
     Iterator,
     List,
+    Optional,
     Sequence,
     Tuple,
 )
@@ -150,7 +153,7 @@ class Th2Line:
     def _format_params(params: Sequence[float]) -> List[str]:
         return [fstr(i) for i in params]
 
-    def append(self, params):
+    def append(self, params: Sequence[float]):
         self._last = self._format_params(params)
         self.points.append(" ".join(self._last))
 
@@ -163,7 +166,7 @@ class Th2Line:
         assert len(params) == 2
         return self._last[-2:] == self._format_params(params)
 
-    def close(self):
+    def close(self) -> None:
         self.options['close'] = 'on'
         if self.points and self.points[0].split() != self._last[-2:]:
             self._last = self.points[0].split()
@@ -219,14 +222,14 @@ class Th2Area:
 
 
 class Th2Output(Th2Effect):
-    doc_x = 0
-    doc_y = 0
-    doc_width = 0  # viewBox width
-    doc_height = 0  # viewBox height
-    doc_width_m = 0  # width in meters
-    doc_height_m = 0  # height in meters
+    doc_x = 0.0
+    doc_y = 0.0
+    doc_width = 0.0  # viewBox width
+    doc_height = 0.0  # viewBox height
+    doc_width_m = 0.0  # width in meters
+    doc_height_m = 0.0  # height in meters
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.arg_parser.add_argument("--scale", type=int, default=100)
         self.arg_parser.add_argument("--dpi", type=int, default=0)
@@ -238,8 +241,7 @@ class Th2Output(Th2Effect):
         self.arg_parser.add_argument("--projection", type=str, default="")
         self.arg_parser.add_argument("--author", type=str, default="")
         self.arg_parser.add_argument("--options", type=str, default="")
-        if th2pref.textonpath:
-            self.textpath_dict = dict()
+        self.textpath_dict: Dict[str, OptionsDict] = {}
         self.current_scrap_id = 'none'
         self.outbuf: List[str] = []
 
@@ -260,12 +262,12 @@ class Th2Output(Th2Effect):
         assert 0.9 < (m_per_dots_width / m_per_dots_height) < 1.1
         return (m_per_dots_width + m_per_dots_height) / 2
 
-    def get_style(self, node: EtreeElement) -> Dict[str, str]:
+    def get_style(self, node: Optional[EtreeElement]):
         """
         Get the cascaded style from the style attributes. Does not consider class attributes.
         """
-        style = {}
-        stack = []
+        style: StyleDict = {}
+        stack: List[EtreeElement] = []
         while node is not None:
             stack.append(node)
             node = node.getparent()
@@ -276,7 +278,7 @@ class Th2Output(Th2Effect):
     def get_style_nocascade(self, node: EtreeElement) -> Dict[str, str]:
         return simplestyle.parseStyle(node.get('style', ''))
 
-    def get_style_attr(self, node, style, key, d=''):
+    def get_style_attr(self, node: EtreeElement, style: StyleDict, key: str, d=''):
         d = node.get(key, d)
         return style.get(key, d)
 
@@ -305,11 +307,11 @@ class Th2Output(Th2Effect):
             options.update(parse_options(self.options.options))
             self.println('\nscrap %s %s\n' % (id, format_options(options)))
 
-    def print_scrap_end(self, test):
+    def print_scrap_end(self, test: bool):
         if test:
             self.println("endscrap\n\n")
 
-    def setdefault_doc_dims(self):
+    def setdefault_doc_dims(self) -> None:
         """
         If document dimensions (width, height) are unknown, set them to default values.
         """
@@ -349,7 +351,7 @@ class Th2Output(Th2Effect):
         self.setdefault_doc_dims()
 
         self.classes = {}
-        stylenodes = self.document.xpath('//svg:style', namespaces=inkex.NSS)
+        stylenodes = xpath_elems(self.document, '//svg:style')
         pattern = re.compile(r'\.(\w+)\s*\{(.*?)\}')
         for stylenode in stylenodes:
             if isinstance(stylenode.text, str):
@@ -373,7 +375,7 @@ class Th2Output(Th2Effect):
 
         # text on path
         if th2pref.textonpath:
-            textpaths = self.document.xpath('//svg:textPath', namespaces=inkex.NSS)
+            textpaths = xpath_elems(self.document, '//svg:textPath')
             for node in textpaths:
                 href = node.get(xlink_href).split('#', 1)[-1]
                 options = {'text': self.get_point_text(node)}
@@ -381,8 +383,8 @@ class Th2Output(Th2Effect):
                 self.textpath_dict[href] = options
 
         if self.options.images:
-            images = self.document.xpath('//svg:image', namespaces=inkex.NSS) + \
-                self.document.xpath('//svg:g[@therion:type="xth_me_image_insert"]', namespaces=inkex.NSS)
+            images = list(xpath_elems(self.document, '//svg:image')) + \
+                     list(xpath_elems(self.document, '//svg:g[@therion:type="xth_me_image_insert"]'))
             # for node in reversed(images):
             for node in images:
                 params = [self.unittouu(node.get('x', '0')), self.unittouu(node.get('y', '0'))]
@@ -421,7 +423,7 @@ class Th2Output(Th2Effect):
                 layer = layer.getparent()
             self.output_scrap(layer)
         else:
-            layers = self.document.xpath('/svg:svg/svg:g[@inkscape:groupmode="layer"]', namespaces=inkex.NSS)
+            layers = xpath_elems(self.document, '/svg:svg/svg:g[@inkscape:groupmode="layer"]')
             if len(layers) == 0:
                 inkex.errormsg("Document has no layers!\nFallback to single scrap")
                 layers = [root]
@@ -439,10 +441,10 @@ class Th2Output(Th2Effect):
 
         self.print_scrap_end(not self.options.lay2scr)
 
-    def output_g(self, node):
+    def output_g(self, node: EtreeElement):
         for child in reversed(node):
             if isinstance(child, etree._Comment):
-                if child.text.startswith('#therion'):
+                if child.text and child.text.startswith('#therion'):
                     self.println(child.text.split('\n', 1)[1])
                 continue
 
@@ -467,7 +469,7 @@ class Th2Output(Th2Effect):
             elif child.tag == svg_g:
                 self.output_g(child)
 
-    def output_scrap(self, layer):
+    def output_scrap(self, layer: EtreeElement):
         id = layer.get(inkscape_label)
         if not id:
             id = layer.get('id')
@@ -489,15 +491,24 @@ class Th2Output(Th2Effect):
                     return ''
                 # TODO: i2d_affine of children
                 d = ' M 0,0 '.join(self.get_d(child) for child in reversed(node))
-            elif 'points' in node.attrib:
-                d = 'M' + node.get('points')
+                return d
+            value = node.get('points')
+            if value:
+                d = 'M' + value
                 if node.tag == svg_polygon:
                     d += ' z'
-            elif 'x1' in node.attrib:
-                d = 'M' + node.get('x1') + ',' + node.get('y1') + 'L' + node.get('x2') + ',' + node.get('y2')
-            elif 'width' in node.attrib and 'height' in node.attrib:
-                width = node.get('width')
-                height = node.get('height')
+                return d
+            x1 = node.get('x1')
+            if x1:
+                return ''.join([
+                    'M', x1, ',',
+                    node.get('y1', '0'), 'L',
+                    node.get('x2', '0'), ',',
+                    node.get('y2', '0')
+                ])
+            width = node.get('width')
+            height = node.get('height')
+            if width and height:
                 d = 'M{0},{1}h{2}v{3}h-{2}v-{3}z'.format(node.get('x', '0'), node.get('y', '0'), width, height)
         return d or ''
 
@@ -533,7 +544,7 @@ class Th2Output(Th2Effect):
             point_options = {}
 
 
-    def output_line(self, node):
+    def output_line(self, node: EtreeElement):
         # get therion attributes
         role, type, options = get_props(node)
 
@@ -557,6 +568,7 @@ class Th2Output(Th2Effect):
                 if not join_lines:
                     th2line = Th2Line(type)
                     th2line.options.update(options)
+            assert th2line is not None
             if cmd == 'Z':
                 th2line.close()
             elif not join_lines:
@@ -569,19 +581,19 @@ class Th2Output(Th2Effect):
             inkex.errormsg('no path data for element <{} id="{}">'.format(
                 node, node.get('id')))
 
-    def output_textblock(self, node):
+    def output_textblock(self, node: EtreeElement):
         line = self.get_point_text(node)
         a = line.split()
         if a:
             self.println(line)
-        desc = node.xpath('svg:desc', namespaces=inkex.NSS)
+        desc = xpath_elems(node, 'svg:desc')
         if len(desc) > 0:
             self.println(desc[0].text.rstrip())
         if a:
             self.println('end' + a[0])
         self.println('')
 
-    def get_point_text(self, node):
+    def get_point_text(self, node: EtreeElement):
         text = ''
         if isinstance(node.text, str) and len(node.text.strip()) > 0:
             text = node.text.replace('\n', ' ')
@@ -612,7 +624,7 @@ class Th2Output(Th2Effect):
         'hanging': 'b',
     }
 
-    def guess_text_align(self, node, style, options):
+    def guess_text_align(self, node: EtreeElement, style: StyleDict, options: OptionsDict):
         textanchor = self.get_style_attr(node, style, 'text-anchor', align2anchor_default_out)
         baseline = self.get_style_attr(node, style, 'dominant-baseline', align2baseline_default_out)
         align = self.align_tb.get(baseline, options.get('align', ''))
@@ -623,7 +635,7 @@ class Th2Output(Th2Effect):
         else:
             options.pop('align', None)
 
-    def guess_text_scale(self, node, style, options, mat):
+    def guess_text_scale(self, node: EtreeElement, style: StyleDict, options: OptionsDict, mat: Optional[AffineType]):
         """
         Guess closest text scale (e.g. "xl") from actual font size and set it in
         options if it's not the default scale.
@@ -651,7 +663,7 @@ class Th2Output(Th2Effect):
         if scale != 'm':
             options['scale'] = scale
 
-    def output_point(self, node):
+    def output_point(self, node: EtreeElement):
         mat = self.i2d_affine(node)
 
         # get x/y
@@ -727,8 +739,8 @@ class Th2Output(Th2Effect):
         for line in th2area.output(self.current_scrap_id):
             self.println(line)
 
-    def output_input(self, node):
-        label = node.get(inkscape_label)
+    def output_input(self, node: EtreeElement):
+        label = node.get(inkscape_label, "")
         file_name = label.removeprefix('input ')
         inkex.errormsg(f"Info: input {file_name!r}")
         self.println(f"input {file_name}")

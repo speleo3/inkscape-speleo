@@ -256,33 +256,4 @@ def beziertatlength(arg, l = 0.5, tolerance = 0.001):
 #default bezier length method
 bezierlength = bezierlengthSimpson
 
-if __name__ == '__main__':
-    import timing
-    #print linebezierintersect(((,),(,)),((,),(,),(,),(,)))
-    #print linebezierintersect(((0,1),(0,-1)),((-1,0),(-.5,0),(.5,0),(1,0)))
-    tol = 0.00000001
-    curves = [((0,0),(1,5),(4,5),(5,5)),
-            ((0,0),(0,0),(5,0),(10,0)),
-            ((0,0),(0,0),(5,1),(10,0)),
-            ((-10,0),(0,0),(10,0),(10,10)),
-            ((15,10),(0,0),(10,0),(-5,10))]
-    '''
-    for curve in curves:
-        timing.start()
-        g = bezierlengthGravesen(curve,tol)
-        timing.finish()
-        gt = timing.micro()
-
-        timing.start()
-        s = bezierlengthSimpson(curve,tol)
-        timing.finish()
-        st = timing.micro()
-
-        print g, gt
-        print s, st
-    '''
-    for curve in curves:
-        print(beziertatlength(curve,0.5))
-
-
 # vim: expandtab shiftwidth=4 tabstop=8 softtabstop=4 fileencoding=utf-8 textwidth=99

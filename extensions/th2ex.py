@@ -808,6 +808,15 @@ class Th2Effect:
         self.arg_parser.add_argument("--output")
         self.arg_parser.add_argument("input_file", nargs="?")
 
+    @property
+    def current_layer(self):
+        layerattr = xpath_attrs(self.document, '//sodipodi:namedview/@inkscape:current-layer')
+        if layerattr:
+            layer = xpath_elems(self.document, f'//svg:g[@id="{layerattr[0]}"]')
+            if layer:
+                return layer[0]
+        return self.document.getroot()
+
     def _get_selected(self) -> Dict[str, EtreeElement]:
         selected = {}
         if self.options.ids:
