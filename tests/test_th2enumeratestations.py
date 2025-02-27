@@ -1,5 +1,32 @@
 import pytest
 import th2enumeratestations
+import th2ex
+import subprocess
+import sys
+from pathlib import Path
+from lxml import etree
+
+TESTS_DATA = Path(__file__).resolve().parent / "data"
+
+
+def test_th2setprops():
+    path_input = TESTS_DATA / "ink2.svg"
+    args = [
+        sys.executable,
+        th2enumeratestations.__file__,
+        "--role=point",
+        "--type=station",
+        "--id=rect1",
+        "--id=rect2",
+        "--stationname=5",
+        str(path_input),
+    ]
+    output = subprocess.check_output(args)
+    tree = etree.fromstring(output)
+    props = th2ex.get_props(tree.find(".//*[@id='rect1']"))
+    assert props == ("point", "station", {"name": "5"})
+    props = th2ex.get_props(tree.find(".//*[@id='rect2']"))
+    assert props == ("point", "station", {"name": "6"})
 
 
 def test_StationName():

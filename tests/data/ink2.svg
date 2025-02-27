@@ -16,5 +16,12 @@
        height="10"
        x="30"
        y="20" />
+    <rect
+       style="fill:green"
+       id="rect2"
+       width="10"
+       height="10"
+       x="30"
+       y="40" />
   </g>
 </svg>
