@@ -1,4 +1,3 @@
-import pytest
 import th2enumeratestations
 import th2ex
 import subprocess
@@ -30,6 +29,12 @@ def test_th2setprops():
 
 
 def test_StationName():
+    stationName = th2enumeratestations.StationName("0")
+    assert('0') == stationName.next()
+    assert('1') == stationName.next()
+    stationName = th2enumeratestations.StationName("000")
+    assert('000') == stationName.next()
+    assert('001') == stationName.next()
     stationName = th2enumeratestations.StationName("1")
     assert('1') == stationName.next()
     assert('2') == stationName.next()
@@ -89,5 +94,7 @@ def test_StationName():
 def test_StationName__Z():
     stationName = th2enumeratestations.StationName("Z")
     assert('Z') == stationName.next()
-    pytest.skip("TODO find better solution for Z successor")
-    assert('10') == stationName.next()
+    assert('AA') == stationName.next()
+    stationName = th2enumeratestations.StationName("AAAZZ")
+    assert('AAAZZ') == stationName.next()
+    assert('AABAA') == stationName.next()

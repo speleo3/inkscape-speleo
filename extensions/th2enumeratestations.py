@@ -6,7 +6,7 @@ Distributed under the terms of the GNU General Public License v2 or later
 Enumerate therion station names
 '''
 
-from typing import Tuple
+from typing import Optional
 import inkex
 import re
 
@@ -14,11 +14,24 @@ from th2setprops import Th2SetProps
 
 therion_laststationname = inkex.addNS('laststationname', 'therion')
 
-BS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+BS_lower = "abcdefghijklmnopqrstuvwxyz"
+BS_upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 
-def to_base(n: int, b=len(BS)) -> str:  # noqa: B008
-    return "0" if not n else to_base(n // b, b).lstrip("0") + BS[n % b]
+def to_str(n: int, BS: Optional[str], minwidth: int) -> str:
+    if BS is None:
+        return str(n).zfill(minwidth)
+    b = len(BS)
+    def inner(n: int) -> str:
+        return ("" if n < b else inner(n // b)) + BS[n % b]
+    return inner(n).rjust(minwidth, BS[0])
+
+
+def to_int(s: str, BS: Optional[str]) -> int:
+    if BS is None:
+        return int(s)
+    b = len(BS)
+    return sum(BS.index(c) * b**i for (i, c) in enumerate(reversed(s)))
 
 
 class StationName:
@@ -33,26 +46,33 @@ class StationName:
         self.post = m.group(3)
 
         if incrementingPart.isdigit():
-            self.base = 10
-            self.convertToLower = False
+            self.bs = None
+        elif incrementingPart.islower():
+            self.bs = BS_lower
         else:
-            self.base = 36
-            self.convertToLower = incrementingPart.islower()
-        self.number = int(incrementingPart, self.base)
+            self.bs = BS_upper
+        self.number = to_int(incrementingPart, self.bs)
+        self.minwidth = len(incrementingPart)
+
+    def _get_mid(self) -> str:
+        return to_str(self.number, self.bs, self.minwidth)
 
     def __str__(self) -> str:
-        incrementingPart = to_base(self.number, self.base)
-        if self.convertToLower:
-            incrementingPart = incrementingPart.lower()
-        return self.pre + incrementingPart + self.post
+        return self.pre + self._get_mid() + self.post
 
     def __iter__(self):
         return self
 
     def __next__(self) -> str:
-        s = str(self)
-        self.number += 1
-        return s
+        mid = self._get_mid()
+
+        if self.bs is not None and mid == self.bs[-1] * self.minwidth:
+            self.minwidth += 1
+            self.number = 0
+        else:
+            self.number += 1
+
+        return self.pre + mid + self.post
 
     next = __next__
 
