@@ -1,13 +1,5 @@
+import pytest
 import th2enumeratestations
-
-def test_SeparateStationNames():
-    assert ('', '1') == th2enumeratestations.SeparateStationNameParts("1")
-    assert ('', 'A') == th2enumeratestations.SeparateStationNameParts("A")
-    assert ('abc', '123') == th2enumeratestations.SeparateStationNameParts("abc123")
-    assert ('123', 'abc') == th2enumeratestations.SeparateStationNameParts("123abc")
-    assert ('', '123') == th2enumeratestations.SeparateStationNameParts("123")
-    assert ('', 'abc') == th2enumeratestations.SeparateStationNameParts("abc")
-    assert ('a1b2c', '3') == th2enumeratestations.SeparateStationNameParts("a1b2c3")
 
 
 def test_StationName():
@@ -35,3 +27,40 @@ def test_StationName():
     stationName = th2enumeratestations.StationName("a1b2c3")
     assert('a1b2c3') == stationName.next()
     assert('a1b2c4') == stationName.next()
+    stationName = th2enumeratestations.StationName("1.9")
+    assert('1.9') == stationName.next()
+    assert('1.10') == stationName.next()
+    stationName = th2enumeratestations.StationName("A.9")
+    assert('A.9') == stationName.next()
+    assert('A.10') == stationName.next()
+    stationName = th2enumeratestations.StationName("1/9")
+    assert('1/9') == stationName.next()
+    assert('1/10') == stationName.next()
+    stationName = th2enumeratestations.StationName("1_9")
+    assert('1_9') == stationName.next()
+    assert('1_10') == stationName.next()
+    stationName = th2enumeratestations.StationName("9@1")
+    assert('9@1') == stationName.next()
+    assert('10@1') == stationName.next()
+    stationName = th2enumeratestations.StationName("9@A")
+    assert('9@A') == stationName.next()
+    assert('10@A') == stationName.next()
+    stationName = th2enumeratestations.StationName("abc123@def")
+    assert('abc123@def') == stationName.next()
+    assert('abc124@def') == stationName.next()
+    stationName = th2enumeratestations.StationName("123abc@def")
+    assert('123abc@def') == stationName.next()
+    assert('123abd@def') == stationName.next()
+    stationName = th2enumeratestations.StationName("Aa")
+    assert('Aa') == stationName.next()
+    assert('Ab') == stationName.next()
+    stationName = th2enumeratestations.StationName("aA")
+    assert('aA') == stationName.next()
+    assert('aB') == stationName.next()
+
+
+def test_StationName__Z():
+    stationName = th2enumeratestations.StationName("Z")
+    assert('Z') == stationName.next()
+    pytest.skip("TODO find better solution for Z successor")
+    assert('10') == stationName.next()

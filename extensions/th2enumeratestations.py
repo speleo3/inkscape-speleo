@@ -24,14 +24,13 @@ def to_base(n: int, b=len(BS)) -> str:  # noqa: B008
 class StationName:
     def __init__(self, name: str):
         name = name.strip()
-        m = re.match(r'([0-9a-zA-Z]+)($|@.*)', name)
+        m = re.match(r'(.*?)([0-9]+|[a-z]+|[A-Z]+)($|@.*)', name)
         if m is None:
             raise ValueError("can't increment station name '{}'".format(name))
 
-        stationName = m.group(1)
-        self.post = m.group(2)
-
-        self.pre, incrementingPart = SeparateStationNameParts(stationName)
+        self.pre = m.group(1)
+        incrementingPart = m.group(2)
+        self.post = m.group(3)
 
         if incrementingPart.isdigit():
             self.base = 10
@@ -56,23 +55,6 @@ class StationName:
         return s
 
     next = __next__
-
-
-def SeparateStationNameParts(s: str) -> Tuple[str, str]:
-    part1, part2 = '', ''
-
-    # Check if the string is entirely alphabetic or numeric
-    if s.isalpha() or s.isdigit():
-        return '', s
-
-    # Start from the end of the string and look for the transition point
-    for i in range(len(s) - 1, 0, -1):
-        if (s[i].isdigit() and s[i - 1].isalpha()) or (s[i].isalpha() and s[i - 1].isdigit()):
-            part1 = s[:i]
-            part2 = s[i:]
-            break
-
-    return part1, part2
 
 
 class Th2EnumerateStations(Th2SetProps):
