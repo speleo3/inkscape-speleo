@@ -50,8 +50,10 @@ endline
 
 def test_th2_output(tmp_path):
     path_input = TESTS_DATA / "ink1.svg"
-    th2content = subprocess.check_output(
-        [sys.executable, m.__file__, str(path_input)], encoding="utf-8")
+    path_output = tmp_path / "out.th2"
+    subprocess.check_call(
+        [sys.executable, m.__file__, f"--output={path_output}", str(path_input)])
+    th2content = path_output.read_text(encoding="utf-8")
     assert re.search(r"point .* altitude", th2content) is not None
     assert re.search(
         r'point .* label .* -text "<lang:de>German<lang:en>English<lang:fr>French"',

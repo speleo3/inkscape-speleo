@@ -834,8 +834,11 @@ class Th2Effect:
     def effect(self) -> None:
         pass
 
+    def get_output_bytes(self) -> bytes:
+        return etree.tostring(self.document, encoding="utf-8")
+
     def output(self) -> None:
-        xmlstr = etree.tostring(self.document, encoding="utf-8")
+        xmlstr = self.get_output_bytes()
         if self.options.output and self.options.output != "-":
             with open(self.options.output, "wb") as handle:
                 handle.write(xmlstr)

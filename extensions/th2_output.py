@@ -55,8 +55,6 @@ import re
 import collections
 import os
 
-print_utf8 = print
-
 
 def parse_options_node(node: EtreeElement):
     options = node.get(therion_options, '')
@@ -171,11 +169,13 @@ class Th2Line:
             self._last = self.points[0].split()
             self.points.append(self.points[0])
 
-    def output(self):
+    def output(self) -> List[str]:
         formatted_options = format_options_leading_space(self.options)
-        print_utf8(f"line {self.type}{formatted_options}")
-        print("  " + "\n  ".join(self.points))
-        print("endline\n")
+        return [
+            f"line {self.type}{formatted_options}",
+            "  " + "\n  ".join(self.points),
+            "endline\n",
+        ]
 
 
 class Th2Area:
@@ -195,7 +195,7 @@ class Th2Area:
     def append_line(self) -> None:
         self._lines.append(Th2Line('border'))
 
-    def output(self, prefix: str):
+    def output(self, prefix: str) -> Iterator[str]:
         ids = []
 
         # if only one line, assume it must be closed
@@ -208,14 +208,14 @@ class Th2Area:
                 Th2Area.count[id_prefix] += 1
                 line.options['id'] = id_prefix + str(Th2Area.count[id_prefix])
             ids.append(line.options['id'])
-            line.output()
+            yield from line.output()
 
         # output area
         formatted_options = format_options_leading_space(self.options)
-        print_utf8(f"area {self.type}{formatted_options}")
+        yield f"area {self.type}{formatted_options}"
         for lineid in ids:
-            print_utf8("  " + lineid)
-        print("endarea\n")
+            yield "  " + lineid
+        yield "endarea\n"
 
 
 class Th2Output(Th2Effect):
@@ -241,6 +241,15 @@ class Th2Output(Th2Effect):
         if th2pref.textonpath:
             self.textpath_dict = dict()
         self.current_scrap_id = 'none'
+        self.outbuf: List[str] = []
+
+    def get_output_bytes(self) -> bytes:
+        if not self.outbuf:
+            return b""
+        return b"\n".join(s.encode("utf-8") for s in self.outbuf + [""])
+
+    def println(self, s: str):
+        self.outbuf.append(str(s))
 
     def get_m_per_uu(self) -> float:
         """
@@ -294,11 +303,11 @@ class Th2Output(Th2Effect):
             if 'author' not in options and self.options.author:
                 options['author'] = self.options.author
             options.update(parse_options(self.options.options))
-            print_utf8('\nscrap %s %s\n' % (id, format_options(options)))
+            self.println('\nscrap %s %s\n' % (id, format_options(options)))
 
     def print_scrap_end(self, test):
         if test:
-            print("endscrap\n\n")
+            self.println("endscrap\n\n")
 
     def setdefault_doc_dims(self):
         """
@@ -324,7 +333,7 @@ class Th2Output(Th2Effect):
                 f"doc_height: {self.doc_height}    doc_height_m: {self.doc_height_m}\n"
                 f"m_per_dots: {self.get_m_per_uu()}\n")
 
-    def output(self):
+    def effect(self) -> None:
         root = self.document.getroot()
         self.doc_width_m = convert_unit(root.get('width') or '', "m")
         self.doc_height_m = convert_unit(root.get('height') or '', "m")
@@ -347,7 +356,7 @@ class Th2Output(Th2Effect):
                 for x in pattern.finditer(stylenode.text):
                     self.classes[x.group(1)] = simplestyle.parseStyle(x.group(2).strip())
 
-        print('encoding  utf-8')
+        self.println('encoding  utf-8')
         if self.doc_width and self.doc_height:
             params = [
                 self.doc_x,
@@ -355,12 +364,12 @@ class Th2Output(Th2Effect):
                 self.doc_x + self.doc_width,
                 self.doc_y,
             ]
-            print('##XTHERION## xth_me_area_adjust %s %s %s %s' %
+            self.println('##XTHERION## xth_me_area_adjust %s %s %s %s' %
                   tuple(map(fstr2, transformParams(self.r2d, params))))
 
         area_zoom_to = root.get(th2ex.therion_area_zoom_to)
         if area_zoom_to:
-            print(f'##XTHERION## xth_me_area_zoom_to {area_zoom_to}')
+            self.println(f'##XTHERION## xth_me_area_zoom_to {area_zoom_to}')
 
         # text on path
         if th2pref.textonpath:
@@ -392,17 +401,17 @@ class Th2Output(Th2Effect):
                 w = node.get('width', '100%')
                 h = node.get('height', '100%')
                 if th2pref.image_inkscape:
-                    print('##INKSCAPE## image %s %s %s %s' % (w, h, simpletransform.formatTransform(mat), href))
+                    self.println('##INKSCAPE## image %s %s %s %s' % (w, h, simpletransform.formatTransform(mat), href))
                     continue
                 if href.startswith('file://'):
                     href = href[7:]
                 document_path = os.getenv("DOCUMENT_PATH")
                 if document_path:
                     href = os.path.relpath(href, os.path.dirname(document_path))
-                print('##XTHERION## xth_me_image_insert {%s 1 1.0} {%s %s} %s 0 {}' %
+                self.println('##XTHERION## xth_me_image_insert {%s 1 1.0} {%s %s} %s 0 {}' %
                       (fstr2(paramsTrans[0], 6), fstr2(paramsTrans[1], 6), XVIroot, optquote(href)))
 
-        print('\n')
+        self.println('\n')
 
         self.print_scrap_begin('scrap1', not self.options.lay2scr)
 
@@ -434,7 +443,7 @@ class Th2Output(Th2Effect):
         for child in reversed(node):
             if isinstance(child, etree._Comment):
                 if child.text.startswith('#therion'):
-                    print_utf8(child.text.split('\n', 1)[1])
+                    self.println(child.text.split('\n', 1)[1])
                 continue
 
             role, type, options = get_props(child)
@@ -543,7 +552,8 @@ class Th2Output(Th2Effect):
                     if th2line.ends_with_point(params):
                         join_lines = True
                     else:
-                        th2line.output()
+                        for line in th2line.output():
+                            self.println(line)
                 if not join_lines:
                     th2line = Th2Line(type)
                     th2line.options.update(options)
@@ -553,7 +563,8 @@ class Th2Output(Th2Effect):
                 th2line.append(params)
             th2line.append_point_options(point_options)
         if th2line is not None:
-            th2line.output()
+            for line in th2line.output():
+                self.println(line)
         else:
             inkex.errormsg('no path data for element <{} id="{}">'.format(
                 node, node.get('id')))
@@ -562,13 +573,13 @@ class Th2Output(Th2Effect):
         line = self.get_point_text(node)
         a = line.split()
         if a:
-            print_utf8(line)
+            self.println(line)
         desc = node.xpath('svg:desc', namespaces=inkex.NSS)
         if len(desc) > 0:
-            print_utf8(desc[0].text.rstrip())
+            self.println(desc[0].text.rstrip())
         if a:
-            print('end' + a[0])
-        print()
+            self.println('end' + a[0])
+        self.println('')
 
     def get_point_text(self, node):
         text = ''
@@ -684,7 +695,7 @@ class Th2Output(Th2Effect):
 
         # output in therion format
         formatted_options = format_options_leading_space(options)
-        print_utf8("point %s %s %s%s\n" % (fstr(params[0]), fstr(params[1]), type, formatted_options))
+        self.println("point %s %s %s%s\n" % (fstr(params[0]), fstr(params[1]), type, formatted_options))
 
     def output_area(self, node: EtreeElement) -> None:
         # get therion attributes
@@ -713,13 +724,14 @@ class Th2Output(Th2Effect):
             inkex.errormsg('no path data for element <{} id="{}">'.format(
                 node, node.get('id')))
 
-        th2area.output(self.current_scrap_id)
+        for line in th2area.output(self.current_scrap_id):
+            self.println(line)
 
     def output_input(self, node):
         label = node.get(inkscape_label)
         file_name = label.removeprefix('input ')
         inkex.errormsg(f"Info: input {file_name!r}")
-        print_utf8(f"input {file_name}")
+        self.println(f"input {file_name}")
 
 
 if __name__ == '__main__':
