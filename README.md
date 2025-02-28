@@ -1,4 +1,5 @@
 [![CI](https://github.com/speleo3/inkscape-speleo/workflows/CI/badge.svg)](https://github.com/speleo3/inkscape-speleo/actions)
+[![codecov](https://codecov.io/gh/speleo3/inkscape-speleo/branch/master/graph/badge.svg)](https://app.codecov.io/gh/speleo3/inkscape-speleo)
 
 # Inkscape extensions for cave surveying
 

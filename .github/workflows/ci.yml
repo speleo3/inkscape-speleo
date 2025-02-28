@@ -10,6 +10,9 @@ jobs:
         python-version:
           - '3.8'
           - '3.12'
+        include:
+          - python-version: '3.12'
+            coverage: true
     steps:
     - uses: actions/checkout@v4
     - name: Install system dependencies
@@ -27,7 +30,22 @@ jobs:
         python3 _pip_install_dummy.py Pillow 7.1
         python3 _pip_install_dummy.py scour 0.37
         python3 _pip_install_dummy.py tinycss2 1.0
-    - run: pip install -r requirements.txt pytest
+    - run: pip install -r requirements.txt pytest coverage
+
     - name: Test
+      if: ${{ ! matrix.coverage }}
       run: |
         python3 -m pytest
+
+    - name: Test with coverage
+      if: ${{ matrix.coverage }}
+      run: |
+        python3 -m coverage run -m pytest
+        python3 -m coverage combine
+        python3 -m coverage xml
+
+    - name: Upload coverage reports to Codecov
+      if: ${{ matrix.coverage }}
+      uses: codecov/codecov-action@v5
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
