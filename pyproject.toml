@@ -45,7 +45,11 @@ pythonpath = ["extensions"]
 testpaths = ["tests"]
 
 [tool.coverage.run]
+parallel = true
 source = ["extensions"]
+omit = [
+    "extensions/inkex0/*",
+]
 
 [tool.mypy]
 files = [

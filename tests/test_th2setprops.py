@@ -2,7 +2,6 @@ import th2setprops as m
 import os
 import pytest
 import subprocess
-import sys
 from pathlib import Path
 from lxml import etree
 
@@ -18,15 +17,14 @@ ns = {
     "utf-8",
     "cp1252",
 ])
-def test_th2setprops(ioencoding, tmp_path):
+def test_th2setprops(ioencoding, tmp_path, executable_args):
     env = os.environ.copy()
     env["PYTHONIOENCODING"] = ioencoding
     env["PYTHONUTF8"] = "1" if ioencoding == "utf-8" else "0"
     env["LC_ALL"] = f"C.{ioencoding}"
     path_input = TESTS_DATA / "ink2.svg"
     path_output = tmp_path / "output.svg"
-    args = [
-        sys.executable,
+    args = executable_args + [
         m.__file__,
         "--role=point",
         "--type=height",

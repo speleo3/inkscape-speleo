@@ -1,4 +1,3 @@
-import sys
 import pytest
 import subprocess
 import importlib
@@ -34,17 +33,16 @@ script_th2_output = _find_script("th2_output")
     ("create", 1),
     ("create", 2),
 ])
-def test_th2_round_trip(stem, basescale, monkeypatch):
+def test_th2_round_trip(stem, basescale, monkeypatch, executable_args):
     monkeypatch.chdir(TESTS_DATA)
     path_input = Path(f"{stem}.th2")
-    svgcontent = subprocess.check_output([
-        sys.executable,
+    svgcontent = subprocess.check_output(executable_args + [
         script_th2_input,
         f"--basescale={basescale}",
         str(path_input),
     ])
     th2content, stderr = subprocess.Popen(
-        [sys.executable, script_th2_output],
+        executable_args + [script_th2_output],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
     ).communicate(svgcontent)

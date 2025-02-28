@@ -1,17 +1,15 @@
 import th2enumeratestations
 import th2ex
 import subprocess
-import sys
 from pathlib import Path
 from lxml import etree
 
 TESTS_DATA = Path(__file__).resolve().parent / "data"
 
 
-def test_th2setprops():
+def test_th2setprops(executable_args):
     path_input = TESTS_DATA / "ink2.svg"
-    args = [
-        sys.executable,
+    args = executable_args + [
         th2enumeratestations.__file__,
         "--role=point",
         "--type=station",

@@ -2,6 +2,7 @@
 *.pyo
 *.swp
 *.egg-info
+__pycache__
 
 /build
 /dist

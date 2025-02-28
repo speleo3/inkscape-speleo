@@ -1,6 +1,5 @@
 import xvi_input
 
-import sys
 import subprocess
 from pathlib import Path
 from lxml import etree
@@ -8,9 +7,8 @@ from lxml import etree
 TESTS_DATA = Path(__file__).resolve().parent / "data"
 
 
-def test_xvi_input_script():
-    svgcontent = subprocess.check_output([
-        sys.executable,
+def test_xvi_input_script(executable_args):
+    svgcontent = subprocess.check_output(executable_args + [
         xvi_input.__file__,
         str(TESTS_DATA / "create.xvi"),
     ])
@@ -27,10 +25,10 @@ def test_xvi_input_script():
     assert root[0][0].get("d") == "M 197.83 179.72 174.41 103.15"
 
 
-def test_xvi_input_script_stdin():
+def test_xvi_input_script_stdin(executable_args):
     with open(TESTS_DATA / "create.xvi") as stdin:
         svgcontent = subprocess.check_output(
-            [sys.executable, xvi_input.__file__],
+            executable_args + [xvi_input.__file__],
             stdin=stdin,
         )
     root = etree.fromstring(svgcontent)

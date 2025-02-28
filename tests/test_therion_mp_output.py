@@ -1,6 +1,5 @@
 import therion_mp_output as m
 import subprocess
-import sys
 import math
 from pathlib import Path
 
@@ -19,10 +18,10 @@ def test_get_metapost_color_arg():
     assert m.get_metapost_color_arg("#00cc00") == " withcolor (0.0,0.8,0.0)"
 
 
-def test_therion_mp_output(tmp_path):
+def test_therion_mp_output(tmp_path, executable_args):
     path_input = TEMPLATES_DIR / "therion_mp.svg"
     mpcontent = subprocess.check_output(
-        [sys.executable, m.__file__, str(path_input)], encoding="utf-8")
+        executable_args + [m.__file__, str(path_input)], encoding="utf-8")
 
     assert """
 def p_u_smiley(expr pos,theta,sc,al) =

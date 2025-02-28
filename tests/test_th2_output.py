@@ -2,7 +2,6 @@ import th2_output as m
 import re
 import pytest
 import subprocess
-import sys
 from pathlib import Path
 
 TESTS_DATA = Path(__file__).resolve().parent / "data"
@@ -48,11 +47,11 @@ endline
 """
 
 
-def test_th2_output(tmp_path):
+def test_th2_output(tmp_path, executable_args):
     path_input = TESTS_DATA / "ink1.svg"
     path_output = tmp_path / "out.th2"
     subprocess.check_call(
-        [sys.executable, m.__file__, f"--output={path_output}", str(path_input)])
+        executable_args + [m.__file__, f"--output={path_output}", str(path_input)])
     th2content = path_output.read_text(encoding="utf-8")
     assert re.search(r"point .* altitude", th2content) is not None
     assert re.search(
@@ -61,9 +60,13 @@ def test_th2_output(tmp_path):
     assert TH2_LINE_SMOOTH_OFF in th2content
 
 
-def test_th2_output__options():
+def test_th2_output__options(executable_args):
     path_input = TESTS_DATA / "ink1.svg"
-    th2content = subprocess.check_output([sys.executable, m.__file__, "--options", '-author 1984 "Mäx Groß"', str(path_input)], encoding="utf-8")
+    th2content = subprocess.check_output(
+        executable_args + [m.__file__, "--options", '-author 1984 "Mäx Groß"', str(path_input)],
+        encoding="utf-8")
     assert 'scrap scrap1 -author 1984 "Mäx Groß"' in th2content
-    th2content = subprocess.check_output([sys.executable, m.__file__, "--options", '-author 1984 Mäx', str(path_input)], encoding="utf-8")
+    th2content = subprocess.check_output(
+        executable_args + [m.__file__, "--options", '-author 1984 Mäx', str(path_input)],
+        encoding="utf-8")
     assert 'scrap scrap1 -author 1984 "Mäx"' in th2content
