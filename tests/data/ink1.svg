@@ -6,6 +6,7 @@
    version="1.1"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:therion="http://therion.speleo.sk/therion"
    xmlns="http://www.w3.org/2000/svg">
   <sodipodi:namedview
      pagecolor="#ffffff"
@@ -38,5 +39,11 @@
        style="fill:none;stroke-width:0.5"
        d="m 10,70 c 0,0 10,20 20,20 10 ,0 10,-10 20,-20 10,10 10,20 20,20 10,0 20,-20 20,-20"
        sodipodi:nodetypes="cscsc" />
+  </g>
+  <g
+     id="s_ex_3"
+     therion:options="-projection extended -author 2024 [John Doe]"
+     inkscape:groupmode="layer">
+    <text x="10" y="90" style="font-size:5">Scrap #3 extended elevation</text>
   </g>
 </svg>

@@ -51,13 +51,18 @@ def test_th2_output(tmp_path, executable_args):
     path_input = TESTS_DATA / "ink1.svg"
     path_output = tmp_path / "out.th2"
     subprocess.check_call(
-        executable_args + [m.__file__, f"--output={path_output}", str(path_input)])
+        executable_args +
+        [m.__file__, "--projection=plan", "--scale=100", f"--output={path_output}",
+         str(path_input)])
     th2content = path_output.read_text(encoding="utf-8")
     assert re.search(r"point .* altitude", th2content) is not None
     assert re.search(
         r'point .* label .* -text "<lang:de>German<lang:en>English<lang:fr>French"',
         th2content) is not None
     assert TH2_LINE_SMOOTH_OFF in th2content
+
+    assert 'scrap scrap1 -projection plan -scale [1000 100 m]' in th2content
+    assert 'scrap s_ex_3 -projection extended -author 2024 [John Doe] -scale [1000 100 m]' in th2content
 
 
 def test_th2_output__options(executable_args):
@@ -69,4 +74,5 @@ def test_th2_output__options(executable_args):
     th2content = subprocess.check_output(
         executable_args + [m.__file__, "--options", '-author 1984 Mäx', str(path_input)],
         encoding="utf-8")
-    assert 'scrap scrap1 -author 1984 "Mäx"' in th2content
+    assert 'scrap scrap1 -author 1984 "Mäx" -scale [1000 100 m]\n' in th2content
+    assert 'scrap s_ex_3 -projection extended -author 1984 "Mäx" -scale [1000 100 m]' in th2content
