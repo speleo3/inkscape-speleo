@@ -396,7 +396,7 @@ class Th2Output(Th2Effect):
                     href = options.get('href', '')
                     XVIroot = options.get('XVIroot', '{}')
                 elif href.startswith('data:'):
-                    inkex.errormsg('Embedded images not supported!')
+                    # inkex.errormsg('Embedded images not supported!')
                     continue
                 paramsTrans = transformParams(mat, params)
                 mat = simpletransform.composeTransform(mat, [[1, 0, params[0]], [0, 1, params[1]]])
