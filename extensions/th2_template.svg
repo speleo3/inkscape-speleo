@@ -734,6 +734,7 @@ path.line.u.purple { stroke:purple }
 		path.line.wall {
 			stroke-width:1.2 /* PenA */;
 			marker-start:url(#PointInStart);
+			marker-end:url(#PointInEnd);
 		}
 		path.line.wall.unsurveyed {
 			stroke-width:0.6 /* PenC */;
