@@ -150,7 +150,7 @@ class this:
     borders: Dict[str, EtreeElement] = {}  # for areas
     sublayers: Dict[str, EtreeElement] = {}
 
-    area_adjust = (0., 0., 0., 0.)
+    area_adjust = (0., 0., 1600., 1200.)
 
     @classproperty
     def doc_x(this):
@@ -978,6 +978,8 @@ def main() -> None:
         grid = xpath_elems(this.root, '/svg:svg/sodipodi:namedview/inkscape:grid')[0]
         grid.set("spacingx", f"{1 / this.cm_per_uu}")
         grid.set("spacingy", f"{1 / this.cm_per_uu}")
+    else:
+        errormsg("document width or height is 0, can't set scale.")
 
     e = xpath_elems(this.root, 'svg:g[@id="layer-scan"]')[0]
     e.set('transform', ' scale(1,-1) scale(%s)' % floatscale(1))
