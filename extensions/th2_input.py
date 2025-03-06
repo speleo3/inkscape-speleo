@@ -40,6 +40,7 @@ from th2ex import (
     get_template_svg_path,
 )
 
+import functools
 import optparse
 import sys
 import os
@@ -725,6 +726,55 @@ class SegmentedLine:
         # to the previous segment
 
 
+@functools.cache
+def get_LPE_width_factor(type: str) -> float:
+    """
+    Factor which maps the width knot to the visible maximum width of the pattern
+    """
+    e_lpe = xpath_elems(this.root, f'//*[@id="LPE-{type}"]')[0]
+    width, scale = th2ex.get_LPE_width(e_lpe)
+    return width / scale
+
+
+def fork_LPE(id_lpe: str) -> str:
+    """
+    Fork (duplicate) the given LPE
+
+    Args:
+      id_lpe: ID of the LPE to fork
+
+    Returns:
+      The ID of the forked LPE
+    """
+    e_lpe = xpath_elems(this.root, f'//*[@id="{id_lpe}"]')[0]
+    for i in range(1, 999_999):
+        id_lpe_new = f"{id_lpe}-{i}"
+        if not xpath_elems(this.root, f'//*[@id="{id_lpe_new}"]'):
+            break
+    else:
+        assert False, "max iterations exceeded"
+    e_lpe_new = etree.fromstring(etree.tostring(e_lpe, encoding="unicode"))
+    e_lpe_new.set("id", id_lpe_new)
+    e_lpe.getparent().append(e_lpe_new)
+    return id_lpe_new
+
+
+def set_LPE(e_path: EtreeElement, type: str) -> bool:
+    """
+    Set LPE for line type.
+
+    Returns:
+      False if given type has no LPE
+    """
+    if type not in this.LPE_symbols:
+        return False
+    id_lpe = "LPE-" + type
+    if type in th2ex.lsize_LPEs:
+        id_lpe = fork_LPE(id_lpe)
+    e_path.set(inkscape_path_effect, '#' + id_lpe)
+    return True
+
+
 def parse_line(a: Sequence[str]):
     assert a[0] == "line"
     options = parse_options(a[2:])
@@ -786,16 +836,20 @@ def parse_line(a: Sequence[str]):
         e_path = etree.Element('path')
         e_path.set('class', 'line %s %s' % (type, subtype))
 
-        if type + '_' + subtype in this.LPE_symbols:
-            e_path.set(inkscape_path_effect, '#LPE-%s_%s' % (type, subtype))
+        if set_LPE(e_path, type + '_' + subtype):
             e_path.set(inkscape_original_d, d)
-        elif type in this.LPE_symbols:
-            e_path.set(inkscape_path_effect, '#LPE-%s' % (type))
+        elif set_LPE(e_path, type):
             e_path.set(inkscape_original_d, d)
         else:
             e_path.set('d', d)
             if seg.options.get('altitude') is not None:
                 e_path.set('style', 'marker-start:url(#linept-altitude)')
+
+        if type in th2ex.lsize_LPEs and seg.options.get("l-size"):
+            factor = get_LPE_width_factor(type)
+            id_lpe = e_path.get(inkscape_path_effect).removeprefix("#")
+            e_lpe = xpath_elems(this.root, f'//*[@id="{id_lpe}"]')[0]
+            e_lpe.set("prop_scale", str(floatscale(seg.options.pop("l-size")) / factor))
 
         e_path.set(sodipodi_nodetypes, "".join(seg.nodetypes))
 

@@ -32,6 +32,7 @@ script_th2_output = _find_script("th2_output")
     ("label-scale", 2),
     ("create", 1),
     ("create", 2),
+    ("slope", 2),
 ])
 def test_th2_round_trip(stem, basescale, monkeypatch, executable_args):
     monkeypatch.chdir(TESTS_DATA)

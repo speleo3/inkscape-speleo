@@ -89,6 +89,25 @@ def xpath_attrs(node: Union[etree._ElementTree, EtreeElement], attrexpr: str):
     return attrs
 
 
+def sign(value: float) -> int:
+    """
+    -1 for negative number, or 1 otherwise.
+    """
+    return -1 if value < 0 else 1
+
+
+def get_LPE_width(e_lpe: EtreeElement) -> Tuple[float, float]:
+    """
+    Visible pattern-along-path (skeletal) LPE width and prop_scale
+    """
+    pattern = e_lpe.get("pattern", "")
+    offset = float(e_lpe.get("normal_offset", 0))
+    scale = float(e_lpe.get("prop_scale", 1))
+    y = [params[-1] for (_, params) in parsePath(pattern) if params]
+    h = (max(y) - min(y)) if y else 0
+    return (h / 2 + abs(offset)) * sign(offset) * -scale, scale
+
+
 def parse_scrap_scale_m_per_dots(scale: str) -> float:
     """
     Parse the value of a scrap's `-scale` option
@@ -309,6 +328,10 @@ option_value_count = {
 repeatable_options = [
     'attr',
     'author',
+]
+
+lsize_LPEs = [
+    "slope",
 ]
 
 # legacy

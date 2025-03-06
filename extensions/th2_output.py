@@ -25,12 +25,14 @@ from th2ex import (
     inkscape_groupmode,
     inkscape_label,
     inkscape_original_d,
+    inkscape_path_effect,
     sodipodi_role,
     sodipodi_nodetypes,
     name_survex2therion,
     parse_options,
     format_options,
     get_props,
+    get_LPE_width,
     align2anchor_default_out,
     align2baseline_default_out,
     text_keys_output,
@@ -524,9 +526,19 @@ class Th2Output(Th2Effect):
                 d = 'M{0},{1}h{2}v{3}h-{2}v-{3}z'.format(node.get('x', '0'), node.get('y', '0'), width, height)
         return d or ''
 
+    def get_LPE_for_node(self, node: EtreeElement) -> Optional[EtreeElement]:
+        """
+        Get the LPE object which is referenced by the given item.
+        """
+        id_lpe = node.get(inkscape_path_effect, "").removeprefix("#")
+        if id_lpe is None:
+            return None
+        return self.getElementById(id_lpe)
+
     def get_line_data(
         self,
         node: EtreeElement,
+        type: Optional[str] = None,
         *,
         inner=False,
     ) -> Iterator[Tuple[str, Sequence[float], OptionsDict]]:
@@ -537,7 +549,7 @@ class Th2Output(Th2Effect):
         """
         if node.tag == svg_g:
             for child in reversed(node):
-                yield from self.get_line_data(child, inner=True)
+                yield from self.get_line_data(child, type, inner=True)
             return
 
         d = self.get_d(node, recursive=False)
@@ -548,6 +560,11 @@ class Th2Output(Th2Effect):
         mat = self.i2d_affine(node)
         p = [(cmd, transformParams(mat, params)) for (cmd, params) in parsePath(d)]
         nodetypes = node.get(sodipodi_nodetypes, "") + "?" * len(p)
+
+        if type in th2ex.lsize_LPEs and "l-size" not in point_options:
+            e_lpe = self.get_LPE_for_node(node)
+            if e_lpe is not None and e_lpe.get("effect") == "skeletal":
+                point_options["l-size"] = get_LPE_width(e_lpe)[0] * descrim(mat)
 
         for ((cmd, params), nodetype) in zip(p, nodetypes):
             if len(params) == 6 and nodetype == "c":
@@ -568,7 +585,7 @@ class Th2Output(Th2Effect):
                 options.update(self.textpath_dict[node_id])
 
         th2line = None
-        for (cmd, params, point_options) in self.get_line_data(node):
+        for (cmd, params, point_options) in self.get_line_data(node, type):
             join_lines = False
             if cmd == 'M':
                 if th2line is not None:
