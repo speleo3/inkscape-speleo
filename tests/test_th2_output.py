@@ -74,5 +74,5 @@ def test_th2_output__options(executable_args):
     th2content = subprocess.check_output(
         executable_args + [m.__file__, "--options", '-author 1984 Mäx', str(path_input)],
         encoding="utf-8")
-    assert 'scrap scrap1 -author 1984 "Mäx" -scale [1000 100 m]\n' in th2content
-    assert 'scrap s_ex_3 -projection extended -author 1984 "Mäx" -scale [1000 100 m]' in th2content
+    assert 'scrap scrap1 -author 1984 "Mäx"\n' in th2content
+    assert 'scrap s_ex_3 -projection extended -author 2024 [John Doe]' in th2content

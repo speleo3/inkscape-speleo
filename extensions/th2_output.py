@@ -231,15 +231,15 @@ class Th2Output(Th2Effect):
 
     def __init__(self) -> None:
         super().__init__()
-        self.arg_parser.add_argument("--scale", type=int, default=100)
-        self.arg_parser.add_argument("--dpi", type=int, default=0)
+        self.arg_parser.add_argument("--scale", type=int, default=0, help="Scale, e.g. 200 for 1:200")
+        self.arg_parser.add_argument("--dpi", type=int, default=0, help="deprecated")
         self.arg_parser.add_argument("--layers", type=str, default="all")
         self.arg_parser.add_argument("--images", type=inkex.Boolean, default=True)
         self.arg_parser.add_argument("--nolpe", type=inkex.Boolean, default=True)
         self.arg_parser.add_argument("--lay2scr", type=inkex.Boolean, default=True)
         self.arg_parser.add_argument("--xyascenter", type=inkex.Boolean, default=True)
         self.arg_parser.add_argument("--projection", type=str, default="")
-        self.arg_parser.add_argument("--author", type=str, default="")
+        self.arg_parser.add_argument("--author", type=str, default="", help='deprecated, use --options="-author ..." instead')
         self.arg_parser.add_argument("--options", type=str, default="")
         self.textpath_dict: Dict[str, OptionsDict] = {}
         self.current_scrap_id = 'none'
@@ -282,13 +282,21 @@ class Th2Output(Th2Effect):
         d = node.get(key, d)
         return style.get(key, d)
 
-    def print_scrap_begin(self, id: str, test: bool, options=None):
-        options = dict(options or {})
-
+    def print_scrap_begin(self, id: str, test: bool, options: Optional[OptionsDict] = None):
+        """
+        Args:
+          id: Scrap name
+          test: If false, don't actually print anything
+          options: Options from the layer element, they have the highest
+            priority and overwrite global command line scrap options.
+        """
         self.current_scrap_id = id
 
         if test:
-            if 'scale' not in options and self.options.scale > 0:
+            options_elem = options or {}
+            options = {}
+
+            if self.options.scale > 0:
                 if self.options.dpi:
                     inkex.errormsg("--dpi is deprecated, use viewBox and width in cm")
                     options['scale'] = '[%d %d inch]' % (
@@ -300,11 +308,12 @@ class Th2Output(Th2Effect):
                         th2pref.scale_th2_per_uu * self.doc_width / self.doc_width_m,
                         self.options.scale,
                     )
-            if 'projection' not in options and self.options.projection:
+            if self.options.projection:
                 options['projection'] = self.options.projection
-            if 'author' not in options and self.options.author:
+            if self.options.author:
                 options['author'] = self.options.author
             options.update(parse_options(self.options.options))
+            options.update(options_elem)
             self.println('\nscrap %s %s\n' % (id, format_options(options)))
 
     def print_scrap_end(self, test: bool):
