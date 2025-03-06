@@ -41,6 +41,11 @@
        sodipodi:nodetypes="cscsc" />
   </g>
   <g
+     inkscape:label="s_sec_2   -projection none -scale [20 2 m]"
+     inkscape:groupmode="layer">
+    <text x="10" y="80" style="font-size:5">Scrap #2 cross section</text>
+  </g>
+  <g
      id="s_ex_3"
      therion:options="-projection extended -author 2024 [John Doe]"
      inkscape:groupmode="layer">

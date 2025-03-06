@@ -62,6 +62,7 @@ def test_th2_output(tmp_path, executable_args):
     assert TH2_LINE_SMOOTH_OFF in th2content
 
     assert 'scrap scrap1 -projection plan -scale [1000 100 m]' in th2content
+    assert 'scrap s_sec_2 -projection none -scale [20 2 m]' in th2content
     assert 'scrap s_ex_3 -projection extended -author 2024 [John Doe] -scale [1000 100 m]' in th2content
 
 
@@ -75,4 +76,5 @@ def test_th2_output__options(executable_args):
         executable_args + [m.__file__, "--options", '-author 1984 Mäx', str(path_input)],
         encoding="utf-8")
     assert 'scrap scrap1 -author 1984 "Mäx"\n' in th2content
+    assert 'scrap s_sec_2 -projection none -author 1984 "Mäx" -scale [20 2 m]' in th2content
     assert 'scrap s_ex_3 -projection extended -author 2024 [John Doe]' in th2content

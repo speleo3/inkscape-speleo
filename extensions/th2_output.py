@@ -484,9 +484,12 @@ class Th2Output(Th2Effect):
             id = layer.get('id')
         if not id:
             id = 'scrapX'
-        id = id.replace(' ', '_')
+        name, sep, optionstail = id.partition(' -')
+        name = name.rstrip().replace(' ', '_')
+        assert name, f"scrap name missing for layer {id!r}"
         options = parse_options_node(layer)
-        self.print_scrap_begin(id, self.options.lay2scr, options)
+        options.update(parse_options(sep + optionstail))
+        self.print_scrap_begin(name, self.options.lay2scr, options)
         self.output_g(layer)
         self.print_scrap_end(self.options.lay2scr)
 

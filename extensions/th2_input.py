@@ -476,10 +476,8 @@ def parse_scrap(a: Sequence[str]):
     e = etree.Element('g')
     e.set(inkscape_groupmode, "layer")
 
-    # e.set(inkscape_label, ' '.join(a))
-    e.set(inkscape_label, a[1])
+    e.set(inkscape_label, ' '.join(a[1:]))
     e.set(therion_role, 'scrap')
-    e.set(therion_options, ' '.join(a[2:]))
 
     options = parse_options(a[2:])
     if "scale" in options:
