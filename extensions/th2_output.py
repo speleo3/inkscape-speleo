@@ -530,7 +530,7 @@ class Th2Output(Th2Effect):
         """
         Get the LPE object which is referenced by the given item.
         """
-        id_lpe = node.get(inkscape_path_effect, "").removeprefix("#")
+        id_lpe = node.get(inkscape_path_effect, "").lstrip("#")  # removeprefix
         if id_lpe is None:
             return None
         return self.getElementById(id_lpe)

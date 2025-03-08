@@ -726,7 +726,7 @@ class SegmentedLine:
         # to the previous segment
 
 
-@functools.cache
+@functools.lru_cache(maxsize=None)
 def get_LPE_width_factor(type: str) -> float:
     """
     Factor which maps the width knot to the visible maximum width of the pattern
@@ -847,7 +847,7 @@ def parse_line(a: Sequence[str]):
 
         if type in th2ex.lsize_LPEs and seg.options.get("l-size"):
             factor = get_LPE_width_factor(type)
-            id_lpe = e_path.get(inkscape_path_effect).removeprefix("#")
+            id_lpe = e_path.get(inkscape_path_effect).lstrip("#")  # removeprefix
             e_lpe = xpath_elems(this.root, f'//*[@id="{id_lpe}"]')[0]
             e_lpe.set("prop_scale", str(floatscale(seg.options.pop("l-size")) / factor))
 
