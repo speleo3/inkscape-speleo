@@ -974,8 +974,10 @@ def main() -> None:
         this.root.set('height', f"{this.doc_height * this.cm_per_uu}cm")
         this.root.set('viewBox', f"{this.doc_x} {-this.doc_y} {this.doc_width} {this.doc_height}")
         grid = xpath_elems(this.root, '/svg:svg/sodipodi:namedview/inkscape:grid')[0]
-        grid.set("spacingx", f"{1 / this.cm_per_uu}")
-        grid.set("spacingy", f"{1 / this.cm_per_uu}")
+        # 1m (real world) grid spacing
+        spacing = 1 / (this.cm_per_uu * th2pref.basescale)
+        grid.set("spacingx", f"{spacing}")
+        grid.set("spacingy", f"{spacing}")
     else:
         errormsg("document width or height is 0, can't set scale.")
 
