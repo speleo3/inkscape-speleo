@@ -172,8 +172,6 @@ class this:
     def cm_per_uu(this):
         return th2pref.scale_paper_cm_per_uu
 
-    m_per_dots_set = False
-
     encoding = 'UTF-8'
     file_stack: List["FileRecord"] = []
 
@@ -291,15 +289,22 @@ class FileRecord:
         self.f_handle.close()
 
 
-def set_m_per_dots(value: float, overwrite: bool = False):
-    if not this.m_per_dots_set:
-        this.m_per_dots_set = True
-        th2pref.set_scale_real_m_per_th2(value)
+def set_m_per_dots(
+    value: float,
+    *,
+    source: str = "",
+    source_value: str = "",
+):
+
+    def describe():
+        sv = source_value or f"[{1/value:g} 1 m]"
+        return f"{source} ({sv})"
+
+    if not th2pref.scale_real_m_per_th2_desc:
+        th2pref.set_scale_real_m_per_th2(value, describe())
         th2pref_store_to_xml(this.root)
     elif not (0.9 < (value / th2pref.scale_real_m_per_th2) < 1.1):
-        errormsg(f"Warning: m/dots {value:g} vs {th2pref.scale_real_m_per_th2:g}")
-        if overwrite:
-            errormsg("overwrite ignored")
+        errormsg(f"Warning: Scale for {describe()} differs from {th2pref.scale_real_m_per_th2_desc}")
 
 
 def floatscale(x: Union[str, Th2Coord]) -> UserUnit:
@@ -450,7 +455,7 @@ def parse_XTHERION(a: Sequence[str]):
 
                 dx = g_xvi.get(therion_xvi_dx)
                 if dx:
-                    set_m_per_dots(1 / float(dx), overwrite=True)
+                    set_m_per_dots(1 / float(dx), source=os.path.basename(href))
 
             except BaseException as e:
                 errormsg('xvi2svg failed ({})'.format(e))
@@ -481,7 +486,9 @@ def parse_scrap(a: Sequence[str]):
 
     options = parse_options(a[2:])
     if "scale" in options:
-        set_m_per_dots(parse_scrap_scale_m_per_dots(options["scale"]))
+        set_m_per_dots(parse_scrap_scale_m_per_dots(options["scale"]),
+                       source=' '.join(a[:2]),
+                       source_value=options['scale'])
 
     if th2pref.sublayers:
         this.sublayers = {

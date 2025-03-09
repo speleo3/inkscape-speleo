@@ -124,6 +124,7 @@ class _th2pref:
         self.image_inkscape = False
         self.basescale = 1.0
         self._scale_real_m_per_th2 = 0.0  # from scrap or xvi
+        self.scale_real_m_per_th2_desc: str = ""
         self.xyascenter = True
 
     def _get_u(self) -> float:
@@ -180,8 +181,14 @@ class _th2pref:
         """
         return self._scale_real_m_per_th2 or self.scale_paper_cm_per_uu
 
-    def set_scale_real_m_per_th2(self, value: float):
+    def set_scale_real_m_per_th2(self, value: float, desc: str = ""):
+        """
+        Args:
+          value: Meters per drawing unit
+          desc: Description of the value source
+        """
         self._scale_real_m_per_th2 = value
+        self.scale_real_m_per_th2_desc = desc
 
     @property
     def _secondary_basescale(self) -> float:
