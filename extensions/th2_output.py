@@ -142,6 +142,42 @@ def format_options_leading_space(options: OptionsDict):
     return ""
 
 
+def scrap_options_updater(
+    options: OptionsDict,
+    *,
+    scrap_id: str = "",
+    dots_per_scale_m: float = 0.0,
+):
+    """
+    Like options.update(new_options) but warn about overwriting existing keys.
+    """
+
+    def scale_from_m_per_dots(m_per_dots: str) -> float:
+        return m_per_dots * dots_per_scale_m
+
+    def set_kv(key: str, value: th2ex.OptionValue):
+        if key in options:
+            if key == "projection":
+                pass
+            elif key == "scale":
+                value_old = th2ex.parse_scrap_scale_m_per_dots(options[key])
+                value_new = th2ex.parse_scrap_scale_m_per_dots(value)
+                if not (0.9 < (value_old / value_new) < 1.1):
+                    inkex.errormsg(  #
+                        f"Scrap {scrap_id} has -{key} {value}"
+                        f" (1:{scale_from_m_per_dots(value_new):g}) which is different from"
+                        f" 1:{scale_from_m_per_dots(value_old):g}")
+            elif options[key] != value:
+                inkex.errormsg(f"Overwriting -{key} {options[key]!r} with {value!r}")
+        options[key] = value
+
+    def inner(new_options: OptionsDict):
+        for key, value in new_options.items():
+            set_kv(key, value)
+
+    return inner
+
+
 class Th2Line:
     def __init__(self, type: str = 'wall'):
         self.type = type
@@ -296,6 +332,8 @@ class Th2Output(Th2Effect):
             options_elem = options or {}
             options = {}
 
+            dots_per_scale_m = th2pref.scale_th2_per_uu * self.doc_width / self.doc_width_m
+
             if self.options.scale > 0:
                 if self.options.dpi:
                     inkex.errormsg("--dpi is deprecated, use viewBox and width in cm")
@@ -305,15 +343,20 @@ class Th2Output(Th2Effect):
                     )
                 elif self.doc_width_m:
                     options['scale'] = '[%g %g m]' % (
-                        th2pref.scale_th2_per_uu * self.doc_width / self.doc_width_m,
+                        dots_per_scale_m,
                         self.options.scale,
                     )
             if self.options.projection:
                 options['projection'] = self.options.projection
             if self.options.author:
                 options['author'] = self.options.author
-            options.update(parse_options(self.options.options))
-            options.update(options_elem)
+            options_update = scrap_options_updater(
+                options,
+                scrap_id=id,
+                dots_per_scale_m=dots_per_scale_m,
+            )
+            options_update(parse_options(self.options.options))
+            options_update(options_elem)
             self.println('\nscrap %s %s\n' % (id, format_options(options)))
 
     def print_scrap_end(self, test: bool):

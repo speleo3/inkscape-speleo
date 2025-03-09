@@ -80,3 +80,47 @@ def test_th2_empty(executable_args):
         str(path_input),
     ])
     _assert_grid_spacing_is_1m(svgcontent, 3)
+
+
+def test_th2_scale_inconsistent(executable_args):
+
+    def run_input(path_input: Path):
+        return subprocess.Popen(
+            executable_args + [script_th2_input, str(path_input), "--basescale=2"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            encoding="utf-8",
+        ).communicate()
+
+    def run_output(svgcontent: bytes, scale: int):
+        return subprocess.Popen(
+            executable_args + [script_th2_output, f"--scale={scale}"],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            encoding="utf-8",
+        ).communicate(svgcontent)
+
+    stderr = run_input(TESTS_DATA / "scale-inconsistent-xvi.th2")[1]
+    assert "[line 8] Warning: Scale for scrap s1 ([19.685 2 m]) differs from create.xvi ([19.685 1 m])" in stderr
+
+    stderr = run_input(TESTS_DATA / "scale-inconsistent-scrap.th2")[1]
+    assert "[line 18] Warning: Scale for scrap s2 ([19.685 1 m]) differs from scrap s1 ([19.685 2 m])" in stderr
+
+    svgcontent, stderr = run_input(TESTS_DATA / "scale-inconsistent-none.th2")
+    assert not stderr
+
+    stderr = run_output(svgcontent, 0)[1]
+    assert not stderr
+
+    stderr = run_output(svgcontent, 200)[1]
+    assert not stderr
+
+    stderr = run_output(svgcontent, 100)[1]
+    assert 'Scrap s1 has -scale [39.37 2 m] (1:200) which is different from 1:100' in stderr
+
+    stderr = run_output(svgcontent, 500)[1]
+    assert 'Scrap s1 has -scale [39.37 2 m] (1:200) which is different from 1:500' in stderr
+
+    svgcontent, stderr = run_input(TESTS_DATA / "scale-missing.th2")
+    assert '`-scale` undefined for scrap scrap1' in stderr

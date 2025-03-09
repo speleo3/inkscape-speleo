@@ -1,0 +1,27 @@
+encoding  utf-8
+##XTHERION## xth_me_area_adjust 0 0 800 700
+##XTHERION## xth_me_area_zoom_to 100
+
+
+
+scrap s1 -scale [19.685 2 m]
+
+line wall
+  146.0 120.0
+  245.0 120.0
+endline
+
+endscrap
+
+
+
+scrap s2 -scale [19.685 1 m]
+
+line wall
+  146.0 200.0
+  344.0 200.0
+endline
+
+endscrap
+
+

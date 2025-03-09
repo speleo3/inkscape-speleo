@@ -1,0 +1,50 @@
+encoding  utf-8
+##XTHERION## xth_me_area_adjust 0 0 800 700
+##XTHERION## xth_me_area_zoom_to 100
+##XTHERION## xth_me_image_insert {600.0 1 1.0} {180.0 0@create.} create.xvi 0 {}
+
+
+
+scrap s1 -scale [39.37 2 m]
+
+line wall
+  146.0 120.0
+  344.0 120.0
+endline
+
+endscrap
+
+
+
+scrap s2 -scale [19.685 1 m]
+
+line wall
+  146.0 200.0
+  344.0 200.0
+endline
+
+endscrap
+
+
+
+scrap s3 -scale [100 50 100 450 10 20 30.32004064008128 20 m]
+
+line wall
+  200.0 146.0
+  200.0 344.0
+endline
+
+endscrap
+
+
+
+scrap s4 -scale [100 50 500 450 10 20 30.32004064008128 40.32004064008128 m]
+
+line wall
+  200.0 146.0
+  400.0 344.0
+endline
+
+endscrap
+
+

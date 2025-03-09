@@ -72,9 +72,13 @@ def test_th2_output__options(executable_args):
         executable_args + [m.__file__, "--options", '-author 1984 "Mäx Groß"', str(path_input)],
         encoding="utf-8")
     assert 'scrap scrap1 -author 1984 "Mäx Groß"' in th2content
-    th2content = subprocess.check_output(
+    th2content, stderr = subprocess.Popen(
         executable_args + [m.__file__, "--options", '-author 1984 Mäx', str(path_input)],
-        encoding="utf-8")
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        encoding="utf-8",
+    ).communicate()
     assert 'scrap scrap1 -author 1984 "Mäx"\n' in th2content
     assert 'scrap s_sec_2 -projection none -author 1984 "Mäx" -scale [20 2 m]' in th2content
     assert 'scrap s_ex_3 -projection extended -author 2024 [John Doe]' in th2content
+    assert "Overwriting -author [('1984', 'Mäx')] with [('2024', '[John Doe]')]" in stderr
