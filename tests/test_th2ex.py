@@ -8,8 +8,6 @@ def _skipunexpected(s):
     raise UserWarning(s)
 
 
-th2ex._skipunexpected = _skipunexpected
-
 multival = lambda *a: tuple(a)
 
 
@@ -48,6 +46,7 @@ def test_parse_scrap_scale_m_per_dots():
 
 
 def test_quote():
+    assert '""' == th2ex.quote("")
     assert "foo" == th2ex.quote("foo")
     assert '"foo bar"' == th2ex.quote('foo bar')
     assert '"foo"" bar"' == th2ex.quote('foo" bar')
@@ -127,12 +126,21 @@ def test_format_options():
     assert m.format_options(m.parse_options('-align b -orientation 25.723')) == '-orientation 25.723 -align b'
 
 
+def test_format_options__legacy(capsys):
+    assert th2ex.format_options({'author-2000': "Max"}) == '-author 2000 Max'
+    captured = capsys.readouterr()
+    assert "Legacy two-arg key: author-2000" in captured.err
+
+
 def test_name_survex2therion():
+    assert th2ex.name_survex2therion('3') == '3'
     assert th2ex.name_survex2therion('ab.cd.3') == '3@cd.ab'
 
 
 def test_name_therion2survex():
+    assert th2ex.name_therion2survex('3') == '3'
     assert th2ex.name_therion2survex('3@cd.ab') == 'ab.cd.3'
+    assert th2ex.name_therion2survex('3.4@cd.ab') == 'ab.cd.4.3'
 
 
 def test_is_numeric():
@@ -149,13 +157,16 @@ def test_maybe_key():
     assert th2ex.maybe_key('-1e10') is False
 
 
-def test_zero_division():
+def test_parse_options__unexpected(monkeypatch):
+    monkeypatch.setattr(th2ex, '_skipunexpected', _skipunexpected)
     # unexpected "foo", expect key
     with pytest.raises(UserWarning):
         th2ex.parse_options('foo')
     # unexpected "com" because -attr takes two values
     with pytest.raises(UserWarning):
         th2ex.parse_options('-attr foo -bar com')
+    with pytest.raises(UserWarning, match="assertion failed on $"):
+        m.parse_options(['-text', 'bar', '""'])
 
 
 def test_get_fonts_setup_default():
@@ -163,3 +174,10 @@ def test_get_fonts_setup_default():
     assert m.get_fonts_setup_default(200) == m.fonts_setup_defaults[200]
     assert m.get_fonts_setup_default(250) == m.fonts_setup_defaults[500]
     assert m.get_fonts_setup_default(999) == m.fonts_setup_defaults[float("inf")]
+
+
+def test_parseViewBox():
+    mat = m.parseViewBox("0 0 15 10", "30", "20")
+    assert mat == [[2, 0, 0], [0, 2, 0]]
+    mat = m.parseViewBox("12 34 15 10", "30", "20")
+    assert mat == [[2, 0, -12], [0, 2, -34]]
