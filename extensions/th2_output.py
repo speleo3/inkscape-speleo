@@ -57,6 +57,7 @@ import math
 import re
 import collections
 import os
+from pathlib import Path
 
 
 def parse_options_node(node: EtreeElement):
@@ -462,8 +463,9 @@ class Th2Output(Th2Effect):
                 document_path = os.getenv("DOCUMENT_PATH")
                 if document_path:
                     href = os.path.relpath(href, os.path.dirname(document_path))
+                path = Path(href)
                 self.println('##XTHERION## xth_me_image_insert {%s 1 1.0} {%s %s} %s 0 {}' %
-                      (fstr2(paramsTrans[0], 6), fstr2(paramsTrans[1], 6), XVIroot, optquote(href)))
+                      (fstr2(paramsTrans[0], 6), fstr2(paramsTrans[1], 6), XVIroot, optquote(path.as_posix())))
 
         self.println('\n')
 
