@@ -815,7 +815,7 @@ def parse_line(a: Sequence[str]):
             e = e_path
         else:
             e.insert(0, e_path)
-            set_props(e_path, '@', '@', seg.options)
+            set_props(e_path, th2ex.WILDCARD, th2ex.WILDCARD, seg.options)
 
     assert e is not None
 

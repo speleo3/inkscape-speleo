@@ -60,6 +60,8 @@ def distance(lhs: Sequence[float], rhs: Sequence[float]) -> float:
     return sum((a - b)**2 for (a, b) in zip(lhs, rhs))**0.5
 
 
+WILDCARD = "@"
+
 METERS_PER = {
     'in': 0.0254,
     'inch': 0.0254,
@@ -511,7 +513,7 @@ def is_closed_line(node: EtreeElement) -> bool:
     return d.rstrip()[-1:].lower() == 'z'
 
 
-def set_props(e, role: str, type: str, options: Optional[OptionsDict] = None):
+def set_props(e: EtreeElement, role: str, type: str, options: Optional[OptionsDict] = None):
     '''
     Annotate SVG element with role, type and options.
     '''
