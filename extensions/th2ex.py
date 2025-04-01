@@ -813,7 +813,7 @@ class Th2Effect:
     def __init__(self) -> None:
         self.arg_parser = argparse.ArgumentParser()
         self.arg_parser.add_argument("--id", action="append", dest="ids")
-        self.arg_parser.add_argument("--selected-nodes")
+        self.arg_parser.add_argument("--selected-nodes", action="append")
         self.arg_parser.add_argument("--output")
         self.arg_parser.add_argument("input_file", nargs="?")
 
