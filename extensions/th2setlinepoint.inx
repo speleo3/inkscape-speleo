@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<inkscape-extension>
+  <_name>Set Line Point Options</_name>
+  <id>speleo.th2setlinepoint</id>
+  <dependency type="executable" location="extensions">th2setlinepoint.py</dependency>
+  <effect>
+    <object-type>all</object-type>
+    <effects-menu>
+      <submenu _name="Therion" />
+    </effects-menu>
+  </effect>
+  <script>
+    <command location="inx" interpreter="python">th2setlinepoint.py</command>
+  </script>
+</inkscape-extension>
