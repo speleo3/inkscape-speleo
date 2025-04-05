@@ -737,6 +737,26 @@ class SegmentedLine:
         # to the previous segment
 
 
+def set_line_d_and_style(e_path: EtreeElement, d: str, type: str, subtype: str,
+                         options: th2ex.OptionsDict):
+    """
+    Set path data (e.g. "d"), class, style, and/or LPE for the given type,
+    subtype and line-point options.
+    """
+    e_path.set('class', f'line {type} {subtype}')
+
+    if type + '_' + subtype in this.LPE_symbols:
+        e_path.set(inkscape_path_effect, f'#LPE-{type}_{subtype}')
+        e_path.set(inkscape_original_d, d)
+    elif type in this.LPE_symbols:
+        e_path.set(inkscape_path_effect, f'#LPE-{type}')
+        e_path.set(inkscape_original_d, d)
+    else:
+        e_path.set('d', d)
+        if options.get('altitude') is not None:
+            e_path.set('style', 'marker-start:url(#linept-altitude)')
+
+
 def parse_line(a: Sequence[str]):
     assert a[0] == "line"
     options = parse_options(a[2:])
@@ -796,18 +816,7 @@ def parse_line(a: Sequence[str]):
         subtype = seg.options.get('subtype', subtype)
 
         e_path = etree.Element('path')
-        e_path.set('class', 'line %s %s' % (type, subtype))
-
-        if type + '_' + subtype in this.LPE_symbols:
-            e_path.set(inkscape_path_effect, '#LPE-%s_%s' % (type, subtype))
-            e_path.set(inkscape_original_d, d)
-        elif type in this.LPE_symbols:
-            e_path.set(inkscape_path_effect, '#LPE-%s' % (type))
-            e_path.set(inkscape_original_d, d)
-        else:
-            e_path.set('d', d)
-            if seg.options.get('altitude') is not None:
-                e_path.set('style', 'marker-start:url(#linept-altitude)')
+        set_line_d_and_style(e_path, d, type, subtype, seg.options)
 
         e_path.set(sodipodi_nodetypes, "".join(seg.nodetypes))
 
