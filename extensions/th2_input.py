@@ -668,7 +668,7 @@ def preserve_literal_as_textblock(a: Sequence[str], lines: Sequence[str] = ()):
 
 class LineSegment:
     def __init__(self) -> None:
-        self.options: Dict[str, str] = {}
+        self.options: th2ex.OptionsDict = {}
         self.nodetypes: List[str] = []
         self.x_list: ParsedPath[str] = []
 
@@ -723,7 +723,7 @@ class SegmentedLine:
             seg_new.nodetypes.append(seg.nodetypes[-1])
             self.segments.append(seg_new)
             seg = seg_new
-        seg.options[a[0]] = " ".join(a[1:])
+        seg.options.update(parse_options("-" + " ".join(a)))
 
     def is_empty(self) -> bool:
         return all(seg.is_empty() for seg in self.segments)

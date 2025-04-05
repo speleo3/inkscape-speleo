@@ -7,6 +7,14 @@ encoding  utf-8
 
 scrap create.s -scale [-128.0 -128.0 620.125 -128.0 0.0 0.0 19.002375 0.0 m]
 
+line label
+  -30.0 200.0
+  scale xl
+  text "Text as line point option"
+  -30.0 60.0 80.0 -60.0 240.0 -60.0
+  smooth off
+endline
+
 point 300.0 80.0 u:foo
 
 point 440.0 340.0 altitude -value [fix 5 m]

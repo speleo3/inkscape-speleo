@@ -431,7 +431,8 @@ class Th2Output(Th2Effect):
             textpaths = xpath_elems(self.document, '//svg:textPath')
             for node in textpaths:
                 href = node.get(xlink_href).split('#', 1)[-1]
-                options = {'text': self.get_point_text(node)}
+                text = self.get_point_text(node)
+                options = {'text': text} if text else {}
                 self.guess_text_scale(node, self.get_style(node.getparent()), options, self.i2d_affine(node))
                 self.textpath_dict[href] = options
 
