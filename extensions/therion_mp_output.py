@@ -14,13 +14,7 @@ import inkex.paths as inkpa
 import inkex.elements as inkel
 from inkex.extensions import OutputExtension
 
-pens = [
-    (1.0 / 10, "PenA"),
-    (0.7 / 10, "PenB"),
-    (0.5 / 10, "PenC"),
-    (0.35 / 10, "PenD"),
-    (1.2 / 10, "PenX"),
-]
+nan = float("nan")
 
 T = TypeVar("T")
 
@@ -65,7 +59,10 @@ def get_pen_for_width(width: float) -> str:
     Args:
       width: Stroke width in centimeters
     """
-    return min(pens, key=lambda pen: abs(pen[0] - width))[1]
+    if width == 0:
+        return ""
+
+    return f"pencircle scaled {uround(width)}u"
 
 
 def get_label(node: inkel.ShapeElement) -> str:
@@ -132,11 +129,16 @@ class PointBuilder:
 
         out_draws = ';\n    '.join(self.draws)
         out = f"""
+def {self.lname}(expr pos) =
+    T:=identity shifted pos;
+    {out_draws};
+enddef;""" if self.lname.startswith("p_station_") else f"""
 def {self.lname}(expr pos,theta,sc,al) =
     U:={self.format_point_abs(bbox.width / 2, bbox.height / 2)};
     T:=identity aligned al rotated theta scaled sc shifted pos;
     {out_draws};
-enddef;
+enddef;"""
+        out += f"""
 if unknown ID_{self.lname}:
   initsymbol("{self.lname}");
 fi
@@ -199,7 +201,7 @@ fi
     def check_mainpath(self, segments: List[inkpa.AbsolutePathCommand]) -> bool:
         return False
 
-    def finish_mainpath(self, pen: str, draw_args: str):
+    def finish_mainpath(self, pen: str, draw_args: str, fill_args: str):
         raise AssertionError("bug")
 
     def _get_circle_p(self, etc: ShapeEtc):
@@ -261,17 +263,23 @@ fi
                 raise TypeError(type(seg))
 
         style = etc.shape.specified_style()
-        stroke = style.get("stroke")
-        fill = style.get("fill")
+        stroke = style.get("stroke", "none")
         fill_opacity = float(style.get("fill-opacity") or 1)
+        fill = style.get("fill", "black") if fill_opacity else "none"
+        scale = nan
+        pen = ""
 
         draw_args = ""
         fill_args = ""
 
         if stroke != "none":
-            draw_args += get_metapost_color_arg(stroke)
-
             scale = descrim(etc.transform)
+            stroke_width = etc.shape.to_dimensionless(
+                style.get("stroke-width", "1")) * scale
+            pen = get_pen_for_width(stroke_width)
+
+        if pen:
+            draw_args += get_metapost_color_arg(stroke)
 
             stroke_dasharray = style.get("stroke-dasharray")
             if stroke_dasharray and stroke_dasharray[0].isdigit():
@@ -284,22 +292,22 @@ fi
                     for (onoff, v) in zip(itertools.cycle(["on", "off"]), values))
                 draw_args += f" dashed dashpattern({pattern})"
 
-            stroke_width = etc.shape.to_dimensionless(
-                style.get("stroke-width", "1")) * scale
-            pen = get_pen_for_width(stroke_width)
             if is_mainpath:
-                self.finish_mainpath(pen, draw_args)
+                pass
             elif pen != self.pen:
                 self.draws.append("pickup " + pen)
                 self.pen = pen
 
-        if fill != "none" and fill_opacity > 0:
+        if fill != "none":
             fill_args += get_metapost_color_arg(fill)
             if fill_opacity < 1:
                 fill_args += f" withalpha {1.0 - fill_opacity}"
 
+        if is_mainpath:
+            self.finish_mainpath(pen, draw_args, fill_args)
+
         for p in ps:
-            if stroke != "none":
+            if pen:
                 if fill != "none":
                     self.draws.append("p:=" + ''.join(p))
                     self.draws.append("thfill p" + fill_args)
@@ -372,6 +380,10 @@ fi
         return path.bounding_box()
 
     def get_center_and_width(self) -> Tuple[Tuple[float, float], float]:
+        if len(self.shapes_etc) == 1 and (self.shape_U_in is None
+                                          or self.shape_U_out is None):
+            # just mainpath style
+            return (nan, nan), 0
         if self.shape_U_in is None:
             raise UserWarning("Missing U_in")
         if self.shape_U_out is None:
@@ -388,6 +400,8 @@ fi
         assert_approx_equal(bbox_in.left, bbox_out.left, "left-aligned")
         assert_approx_equal(bbox_in.width, bbox_out.width, "same width")
         assert_approx_equal(bbox_in.bottom, bbox_out.top, "aligned bottom to top")
+
+        assert bbox_in.width > 0
 
         return (
             uround(bbox_in.center_x),
@@ -413,6 +427,9 @@ fi
         True if the path is the main path, which means it's on the x-axis and
         has self.width length.
         """
+        if self.width <= 0:
+            assert len(self.shapes_etc) <= 1
+            return True
         if not (len(segments) == 2 and isinstance(segments[1], inkpa.Line)):
             return False
         assert isinstance(segments[0], inkpa.Move)
@@ -426,12 +443,15 @@ fi
             return False
         return True
 
-    def finish_mainpath(self, pen: str, draw_args: str):
+    def finish_mainpath(self, pen: str, draw_args: str, fill_args: str):
         """
         Add draws for the main path with given pen and draw arguments.
         """
-        self.draws_main.append("pickup " + pen)
-        self.draws_main.append(f"thdraw P{draw_args}")
+        if fill_args:
+            self.draws_main.append(f"thfill P{fill_args}")
+        if pen:
+            self.draws_main.append("pickup " + pen)
+            self.draws_main.append(f"thdraw P{draw_args}")
 
 
 class MetapostBuilder:

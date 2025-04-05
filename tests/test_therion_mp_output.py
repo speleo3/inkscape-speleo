@@ -27,7 +27,7 @@ def test_therion_mp_output(tmp_path, executable_args):
 def p_u_smiley(expr pos,theta,sc,al) =
     U:=(0.4u,0.4u);
     T:=identity aligned al rotated theta scaled sc shifted pos;
-    pickup PenC;
+    pickup pencircle scaled 0.05u;
     p:=fullcircle scaled 0.4u;
     thfill p withcolor (1.0,1.0,0.0);
     thdraw p withcolor (0.0,0.502,0.0);
@@ -41,7 +41,7 @@ enddef;
 def p_stalactite_UIS(expr pos,theta,sc,al) =
     U:=(0.15u,0.4u);
     T:=identity aligned al rotated theta scaled sc shifted pos;
-    pickup PenC;
+    pickup pencircle scaled 0.05u;
     thdraw (0.0u,-0.4u)--(0.0u,0.15u)--(-0.15u,0.4u);
     thdraw (0.0u,0.15u)--(0.15u,0.4u);
 enddef;
@@ -65,7 +65,22 @@ def l_pit(expr P) =
     endfor;
   fi;
   T:=identity;
-  pickup PenA;
+  pickup pencircle scaled 0.1u;
   thdraw P withcolor (1.0,0.0,1.0);
+enddef;
+""" in mpcontent
+
+    assert """
+def l_rockborder_FANCY(expr P) =
+  T:=identity;
+  thfill P withcolor (0.0,0.502,0.502);
+enddef;
+""" in mpcontent
+
+    assert """
+def l_rockedge_FANCY(expr P) =
+  T:=identity;
+  pickup pencircle scaled 0.2u;
+  thdraw P withcolor (0.0,0.0,1.0);
 enddef;
 """ in mpcontent
