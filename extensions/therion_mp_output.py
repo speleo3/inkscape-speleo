@@ -1,7 +1,7 @@
 """
 SVG -> Therion Metapost
 
-Scale is 1cm SVG = 1u MetaPost
+Scale is 1pc SVG = 1u MetaPost
 """
 
 from dataclasses import dataclass
@@ -439,7 +439,7 @@ class MetapostBuilder:
     def __init__(self, extension: OutputExtension, stream: IO[bytes]):
         self.stream = stream
         svg = cast(inkel.SvgDocumentElement, extension.svg)
-        self.px_to_u: float = 1.0 / svg.viewport_to_unit("1cm", "px")
+        self.px_to_u: float = 1.0 / svg.viewport_to_unit("1pc", "px")
         self.process_group(svg)
 
     def process_group(self, group: Union[inkel.Group, inkel.SvgDocumentElement]):
