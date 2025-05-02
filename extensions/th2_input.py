@@ -303,7 +303,7 @@ def set_m_per_dots(
     if not th2pref.scale_real_m_per_th2_desc:
         th2pref.set_scale_real_m_per_th2(value, describe())
         th2pref_store_to_xml(this.root)
-    elif not (0.9 < (value / th2pref.scale_real_m_per_th2) < 1.1):
+    elif not (0.98 < (value / th2pref.scale_real_m_per_th2) < 1.02):
         errormsg(f"Warning: Scale for {describe()} differs from {th2pref.scale_real_m_per_th2_desc}")
 
 
