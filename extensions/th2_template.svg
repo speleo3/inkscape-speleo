@@ -658,7 +658,6 @@
     <!-- LPEs -->
     <inkscape:path-effect effect="skeletal" id="LPE-contour" prop_scale="-3" pattern="m 0,0 2,0 m -1,0 0,1" normal_offset="0.5" hide_knot="true" />
     <inkscape:path-effect effect="skeletal" id="LPE-pit" copytype="repeated_stretched" fuse_tolerance="0.1" prop_scale="-3" pattern="m 0,0 4,0 m -2,0 0,1" normal_offset="0.5" hide_knot="true" />
-    <inkscape:path-effect effect="skeletal" id="LPE-flowstone" copytype="repeated_stretched" prop_scale="-1" pattern="m 0,0 c 2,4 8,4 10,0" fuse_tolerance="0.1" normal_offset="1.5" hide_knot="true" />
     <inkscape:path-effect effect="skeletal" id="LPE-moonmilk" copytype="repeated_stretched" prop_scale="-1" pattern="M 0,0 C 1,2 4,2 5,0" fuse_tolerance="0.1" normal_offset="1.0" hide_knot="true" />
     <inkscape:path-effect effect="skeletal" id="LPE-floor-step" prop_scale="-3" pattern="m 0,0 -6,0 m 3,0 0,1" normal_offset="0.5" fuse_tolerance="0.1" copytype="repeated_stretched" hide_knot="true" />
     <inkscape:path-effect effect="skeletal" id="LPE-ceiling-step" prop_scale="-3" pattern="m 0,0 -6,0 m 3,0 0,1" normal_offset="0.5" copytype="repeated_stretched" spacing="3" hide_knot="true" />
@@ -805,8 +804,12 @@ path.line.u.purple { stroke:purple }
 			marker-end:url(#ArrowEnd);
 			stroke-dasharray:1,2;
 		}
-		path.line.flowstone,
-		path.line.moonmilk {
+		path.line.flowstone {
+			stroke:orange;
+			stroke-dasharray:2,1;
+		}
+		path.line.rimstone-dam {
+			stroke:orange;
 		}
 		path.line.rope,
 		path.line.via-ferrata {
