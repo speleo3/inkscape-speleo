@@ -372,7 +372,7 @@
       <path d="m0,0 0,-8" style="fill:none;stroke:#000;stroke-width:1;marker-start:none;marker-end:url(#ArrowEnd)" />
 	</marker>
 	<marker id="ArrowGradient" orient="auto">
-      <path d="m -2.5,-2 5,2 -5,2 0,-4 z" style="fill:black;stroke:black;stroke-width:0.75;stroke-linejoin:round;" transform="scale(1.5)" />
+      <path d="m -5,-2 5,2 -5,2 0,-4 z" style="fill:black;stroke:black;stroke-width:0.75;stroke-linejoin:round;" transform="scale(1.5)" />
 	</marker>
     <!-- Symbols -->
 <!--
