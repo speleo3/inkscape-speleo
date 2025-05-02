@@ -434,6 +434,9 @@ def key_options_item(item: Tuple[str, OptionValue]) -> tuple:
         return '1' + item[0], item[1]
     if item[0] == 'projection':  # scrap
         return '1' + item[0], item[1]
+    if item[0] == 'subtype':
+        # error if height is before subtype: wall -subtype pit -height 7
+        return '1' + item[0], item[1]
     return item
 
 
