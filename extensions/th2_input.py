@@ -300,11 +300,31 @@ def set_m_per_dots(
         sv = source_value or f"[{1/value:g} 1 m]"
         return f"{source} ({sv})"
 
+    def fulldesc(value: float, desc: str) -> str:
+        if th2pref.warnlevel_scale_mismatch < 2:
+            return " " + desc
+        return (  #
+            "\n    "
+            f" [{value/.01:.3f} cm]"
+            f" [{value/.0254:.3f} inch]"
+            f" [{1/value:.2f}/m]"
+            f" [{.0254/value:.3f}/inch]"
+            f" {desc}"  #
+        )
+
     if not th2pref.scale_real_m_per_th2_desc:
         th2pref.set_scale_real_m_per_th2(value, describe())
         th2pref_store_to_xml(this.root)
-    elif not (0.98 < (value / th2pref.scale_real_m_per_th2) < 1.02):
+    elif th2pref.warnlevel_scale_mismatch == 0 or (
+            0.98 < (value / th2pref.scale_real_m_per_th2) < 1.02):
+        pass
+    elif th2pref.warnlevel_scale_mismatch == 1:
         errormsg(f"Warning: Scale for {describe()} differs from {th2pref.scale_real_m_per_th2_desc}")
+    else:
+        errormsg(
+            "Scales differ:" +  #
+            fulldesc(value, describe()) +  #
+            fulldesc(th2pref.scale_real_m_per_th2, th2pref.scale_real_m_per_th2_desc))
 
 
 def floatscale(x: Union[str, Th2Coord]) -> UserUnit:
@@ -783,10 +803,12 @@ def parse_line(a: Sequence[str]):
 
         e = None
     else:
-        if options.get('reverse', 'off') == 'on':
+        if (options.get('reverse', 'off') == 'on'
+                and th2pref.warn_reversed_line_with_point_options):
             errormsg(f'cannot reverse path with point options ({e_id})')
 
-        if options.get('close', 'off') == 'on':
+        if (options.get('close', 'off') == 'on'
+                and th2pref.warn_closed_line_with_point_options):
             errormsg(f'cannot close path with point options ({e_id})')
 
         e = etree.Element('g')
