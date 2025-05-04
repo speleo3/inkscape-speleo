@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<inkscape-extension>
+  <_name>Join Paths</_name>
+  <id>speleo.filter.joinpaths</id>
+  <effect>
+    <object-type>path</object-type>
+    <effects-menu>
+      <submenu _name="Speleo" />
+    </effects-menu>
+  </effect>
+  <script>
+    <command location="inx" interpreter="python">joinpaths.py</command>
+  </script>
+</inkscape-extension>
