@@ -19,10 +19,18 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 """
-from . import simplepath 
-from math import *
+from . import simplepath
+from math import acos, cos, pi, sin, sqrt, tan
+from typing import List, Sequence, Union
 
-def matprod(mlist):
+AffineType = List[List[float]]
+Point = List[float]  # len 2
+HandledPoint = List[Point]  # len 3
+SubPath = List[HandledPoint]
+SuperPath = List[SubPath]
+
+
+def matprod(mlist: Sequence[AffineType]) -> AffineType:
     prod=mlist[0]
     for m in mlist[1:]:
         a00=prod[0][0]*m[0][0]+prod[0][1]*m[1][0]
@@ -31,17 +39,17 @@ def matprod(mlist):
         a11=prod[1][0]*m[0][1]+prod[1][1]*m[1][1]
         prod=[[a00,a01],[a10,a11]]
     return prod
-def rotmat(teta):
+def rotmat(teta: float) -> AffineType:
     return [[cos(teta),-sin(teta)],[sin(teta),cos(teta)]]
-def applymat(mat, pt):
+def applymat(mat: AffineType, pt: Point):
     x=mat[0][0]*pt[0]+mat[0][1]*pt[1]
     y=mat[1][0]*pt[0]+mat[1][1]*pt[1]
     pt[0]=x
     pt[1]=y
-def norm(pt):
+def norm(pt: Point) -> float:
     return sqrt(pt[0]*pt[0]+pt[1]*pt[1])
 
-def ArcToPath(p1,params):
+def ArcToPath(p1: Point, params: Sequence[Union[float, int]]) -> List[HandledPoint]:
     A=p1[:]
     rx,ry,teta,longflag,sweepflag,x2,y2=params[:]
     teta = teta*pi/180.0
@@ -58,7 +66,7 @@ def ArcToPath(p1,params):
     d=sqrt(max(0,1-d/4))
     if longflag==sweepflag:
         d*=-1
-    O=[(B[0]+A[0])/2+d*k[0],(B[1]+A[1])/2+d*k[1]]
+    O=[(B[0]+A[0])/2+d*k[0],(B[1]+A[1])/2+d*k[1]]  # noqa: E741
     OA=[A[0]-O[0],A[1]-O[1]]
     OB=[B[0]-O[0],B[1]-O[1]]
     start=acos(OA[0]/norm(OA))
@@ -96,15 +104,15 @@ def ArcToPath(p1,params):
         applymat(mat, pts[1])
         applymat(mat, pts[2])
     return(p)
-    
-def CubicSuperPath(simplepath):
-    csp = []
+
+def CubicSuperPath(simplepath: simplepath.ParsedPath[float]) -> SuperPath:
+    csp: List[SubPath] = []
     subpath = -1
-    subpathstart = []
-    last = []
-    lastctrl = []
+    subpathstart: Point = []
+    last: Point = []
+    lastctrl: List[Union[float, int]] = []  # Params
     for s in simplepath:
-        cmd, params = s        
+        cmd, params = s
         if cmd == 'M':
             if last:
                 csp[subpath].append([lastctrl[:],last[:],last[:]])
@@ -148,21 +156,21 @@ def CubicSuperPath(simplepath):
             lastctrl = subpathstart[:]
     #append final superpoint
     csp[subpath].append([lastctrl[:],last[:],last[:]])
-    return csp    
+    return csp
 
-def unCubicSuperPath(csp):
-    a = []
+def unCubicSuperPath(csp: SuperPath):
+    a: simplepath.ParsedPath[float] = []
     for subpath in csp:
         if subpath:
-            a.append(['M',subpath[0][1][:]])
+            a.append(('M',subpath[0][1][:]))
             for i in range(1,len(subpath)):
-                a.append(['C',subpath[i-1][2][:] + subpath[i][0][:] + subpath[i][1][:]])
+                a.append(('C',subpath[i-1][2][:] + subpath[i][0][:] + subpath[i][1][:]))
     return a
 
-def parsePath(d):
+def parsePath(d: str) -> SuperPath:
     return CubicSuperPath(simplepath.parsePath(d))
 
-def formatPath(p):
+def formatPath(p: SuperPath) -> str:
     return simplepath.formatPath(unCubicSuperPath(p))
 
 

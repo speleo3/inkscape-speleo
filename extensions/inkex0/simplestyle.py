@@ -19,6 +19,8 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 """
+import sys
+from typing import Any, Dict, Optional, Tuple
 
 svgcolors={
     'aliceblue':'#f0f8ff',
@@ -171,18 +173,17 @@ svgcolors={
     'yellowgreen':'#9acd32'
 }
 
-def parseStyle(s):
+def parseStyle(s: Optional[str]) -> Dict[str, str]:
     """Create a dictionary from the value of an inline style attribute"""
     if s is None:
-      return {}
-    else:
-      return dict([[x.strip() for x in i.split(":")] for i in s.split(";") if len(i.strip())])
+        return {}
+    return dict([x.strip() for x in i.split(":")] for i in s.split(";") if i.strip())
 
-def formatStyle(a):
+def formatStyle(a: Dict[str, Any]) -> str:
     """Format an inline style attribute from a dictionary"""
     return ";".join([att+":"+str(val) for att,val in a.items()])
 
-def isColor(c):
+def isColor(c: str) -> bool:
     """Determine if its a color we can use. If not, leave it unchanged."""
     if c.startswith('#') and (len(c)==4 or len(c)==7):
         return True
@@ -192,7 +193,7 @@ def isColor(c):
     #however, rgb() shouldnt occur at this point
     return False
 
-def parseColor(c):
+def parseColor(c: str) -> Tuple[int, int, int]:
     """Creates a rgb int array"""
     tmp = svgcolors.get(c.lower())
     if tmp is not None:
@@ -210,35 +211,36 @@ def parseColor(c):
                     converted_numbers.append(int(float(num[0:-1])*255/100))
                 else:
                     converted_numbers.append(int(num))
-            return tuple(converted_numbers)
-        else:    
+            return tuple(converted_numbers)  # type: ignore[return-value]
+        else:
             return (0,0,0)
     try:
         r=int(c[1:3],16)
         g=int(c[3:5],16)
         b=int(c[5:],16)
-    except:
+    except Exception as ex:
+        print(f"Error: parseColor({c!r}) -> {ex}", file=sys.stderr)
         # unknown color ...
         # Return a default color. Maybe not the best thing to do but probably
-        # better than raising an exception. 
-       return(0,0,0)
+        # better than raising an exception.
+        return(0,0,0)
     return (r,g,b)
 
-def formatColoria(a):
+def formatColoria(a: Tuple[int, int, int]) -> str:
     """int array to #rrggbb"""
-    return '#%02x%02x%02x' % (a[0],a[1],a[2])
+    return formatColor3i(a[0], a[1], a[2])
 
-def formatColorfa(a):
+def formatColorfa(a: Tuple[float, float, float]) -> str:
     """float array to #rrggbb"""
-    return '#%02x%02x%02x' % (int(round(a[0]*255)),int(round(a[1]*255)),int(round(a[2]*255)))
+    return formatColor3f(a[0], a[1], a[2])
 
-def formatColor3i(r,g,b):
+def formatColor3i(r: int, g: int, b: int) -> str:
     """3 ints to #rrggbb"""
     return '#%02x%02x%02x' % (r,g,b)
 
-def formatColor3f(r,g,b):
+def formatColor3f(r: float, g: float, b: float) -> str:
     """3 floats to #rrggbb"""
-    return '#%02x%02x%02x' % (int(round(r*255)),int(round(g*255)),int(round(b*255)))
+    return formatColor3i(round(r * 255), round(g * 255), round(b * 255))
 
 
 # vim: expandtab shiftwidth=4 tabstop=8 softtabstop=4 fileencoding=utf-8 textwidth=99

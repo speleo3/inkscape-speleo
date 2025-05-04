@@ -21,14 +21,23 @@ This code defines several functions to make handling of transform
 attribute easier.
 '''
 import inkex
-from . import cubicsuperpath, bezmisc, simplestyle
-import copy, math, re
+from . import cubicsuperpath
+import math, re
+from typing import List, Optional, Tuple, TYPE_CHECKING, Union
 
-def parseTransform(transf,mat=[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]]):
-    if transf=="" or transf==None:
+if TYPE_CHECKING:
+    from lxml.etree import _Element as EtreeElement
+
+BBoxType = Union[List[float], Tuple[float, float, float, float]]
+AffineType = List[List[float]]
+Point = List[float]  # len 2
+
+def parseTransform(transf: Optional[str], mat: AffineType = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]]) -> AffineType:  # noqa: B006
+    if not transf:
         return(mat)
     stransf = transf.strip()
     result=re.match(r"(translate|scale|rotate|skewX|skewY|matrix)\s*\(([^)]*)\)\s*,?",stransf)
+    assert result is not None
 #-- translate --
     if result.group(1)=="translate":
         args=result.group(2).replace(',',' ').split()
@@ -76,10 +85,10 @@ def parseTransform(transf,mat=[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]]):
     else:
         return matrix
 
-def formatTransform(mat):
+def formatTransform(mat: AffineType) -> str:
     return ("matrix(%f,%f,%f,%f,%f,%f)" % (mat[0][0], mat[1][0], mat[0][1], mat[1][1], mat[0][2], mat[1][2]))
 
-def invertTransform(mat):
+def invertTransform(mat: AffineType) -> AffineType:
     det = mat[0][0]*mat[1][1] - mat[0][1]*mat[1][0]
     if det !=0:  # det is 0 only in case of 0 scaling
         # invert the rotation/scaling part
@@ -94,7 +103,7 @@ def invertTransform(mat):
     else:
         return[[0,0,-mat[0][2]],[0,0,-mat[1][2]]]
 
-def composeTransform(M1,M2):
+def composeTransform(M1: AffineType, M2: AffineType) -> AffineType:
     a11 = M1[0][0]*M2[0][0] + M1[0][1]*M2[1][0]
     a12 = M1[0][0]*M2[0][1] + M1[0][1]*M2[1][1]
     a21 = M1[1][0]*M2[0][0] + M1[1][1]*M2[1][0]
@@ -104,40 +113,42 @@ def composeTransform(M1,M2):
     v2 = M1[1][0]*M2[0][2] + M1[1][1]*M2[1][2] + M1[1][2]
     return [[a11,a12,v1],[a21,a22,v2]]
 
-def composeParents(node, mat):
+def composeParents(node: "EtreeElement", mat: AffineType) -> AffineType:
     trans = node.get('transform')
     if trans:
         mat = composeTransform(parseTransform(trans), mat)
-    if node.getparent().tag == inkex.addNS('g','svg'):
-        mat = composeParents(node.getparent(), mat)
+    parent = node.getparent()
+    assert parent is not None
+    if parent.tag == inkex.addNS('g','svg'):
+        mat = composeParents(parent, mat)
     return mat
 
-def applyTransformToNode(mat,node):
+def applyTransformToNode(mat: AffineType, node: "EtreeElement"):
     m=parseTransform(node.get("transform"))
     newtransf=formatTransform(composeTransform(mat,m))
     node.set("transform", newtransf)
 
-def applyTransformToPoint(mat,pt):
+def applyTransformToPoint(mat: AffineType, pt: List[float]):
     x = mat[0][0]*pt[0] + mat[0][1]*pt[1] + mat[0][2]
     y = mat[1][0]*pt[0] + mat[1][1]*pt[1] + mat[1][2]
     pt[0]=x
     pt[1]=y
 
-def applyTransformToPath(mat,path):
+def applyTransformToPath(mat: AffineType, path: cubicsuperpath.SuperPath):
     for comp in path:
         for ctl in comp:
             for pt in ctl:
                 applyTransformToPoint(mat,pt)
 
-def fuseTransform(node):
-    if node.get('d')==None:
+def fuseTransform(node: "EtreeElement"):
+    d = node.get('d')
+    if d is None:
         #FIXME: how do you raise errors?
         raise AssertionError('can not fuse "transform" of elements that have no "d" attribute')
     t = node.get("transform")
-    if t == None:
+    if t is None:
         return
     m = parseTransform(t)
-    d = node.get('d')
     p = cubicsuperpath.parsePath(d)
     applyTransformToPath(m,p)
     node.set('d', cubicsuperpath.formatPath(p))
@@ -147,11 +158,11 @@ def fuseTransform(node):
 ##-- Some functions to compute a rough bbox of a given list of objects.
 ##-- this should be shipped out in an separate file...
 
-def boxunion(b1,b2):
+def boxunion(b1: Optional[BBoxType], b2: Optional[BBoxType]) -> Optional[BBoxType]:
     if b1 is None:
         return b2
     elif b2 is None:
-        return b1    
+        return b1
     else:
         return((min(b1[0],b2[0]), max(b1[1],b2[1]), min(b1[2],b2[2]), max(b1[3],b2[3])))
 
@@ -204,7 +215,7 @@ def cubicExtrema(y0, y1, y2, y3):
             cmax = max(cmax, y)
     return cmin, cmax
 
-def computeBBox(aList,mat=[[1,0,0],[0,1,0]]):
+def computeBBox(aList,mat=[[1,0,0],[0,1,0]]):  # noqa: B006
     bbox=None
     for node in aList:
         m = parseTransform(node.get('transform'))
@@ -237,7 +248,7 @@ def computeBBox(aList,mat=[[1,0,0],[0,1,0]]):
             d = 'M %f %f ' % (x1, cy) + \
                 'A' + rx + ',' + ry + ' 0 1 0 %f,%f' % (x2, cy) + \
                 'A' + rx + ',' + ry + ' 0 1 0 %f,%f' % (x1, cy)
- 
+
         if d is not None:
             p = cubicsuperpath.parsePath(d)
             applyTransformToPath(m,p)
@@ -248,12 +259,12 @@ def computeBBox(aList,mat=[[1,0,0],[0,1,0]]):
             path = '//*[@id="%s"]' % refid[1:]
             refnode = node.xpath(path)
             bbox=boxunion(computeBBox(refnode,m),bbox)
-            
+
         bbox=boxunion(computeBBox(node,m),bbox)
     return bbox
 
 
-def computePointInNode(pt, node, mat=[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]]):
+def computePointInNode(pt: Point, node: "EtreeElement", mat: AffineType = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]]) -> Point:  # noqa: B006
     if node.getparent() is not None:
         applyTransformToPoint(invertTransform(composeParents(node, mat)), pt)
     return pt
