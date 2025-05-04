@@ -20,10 +20,11 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 """
 import re, math
+from typing import Dict, Iterator, List, Literal, Tuple, Type, TypeVar, Union
 
-def lexPath(d):
+def lexPath(d: str) -> Iterator[Tuple[str, bool]]:
     """
-    returns and iterator that breaks path data 
+    returns and iterator that breaks path data
     identifies command and parameter tokens
     """
     offset = 0
@@ -39,15 +40,14 @@ def lexPath(d):
             break
         m = command.match(d, offset)
         if m:
-            yield [d[offset:m.end()], True]
+            yield (d[offset:m.end()], True)
             offset = m.end()
             continue
         m = parameter.match(d, offset)
         if m:
-            yield [d[offset:m.end()], False]
+            yield (d[offset:m.end()], False)
             offset = m.end()
             continue
-        #TODO: create new exception
         raise Exception('Invalid path data!')
 '''
 pathdefs = {commandfamily:
@@ -58,43 +58,45 @@ pathdefs = {commandfamily:
     [coord type,x,y,0]
     ]}
 '''
-pathdefs = {
-    'M':['L', 2, [float, float], ['x','y']], 
-    'L':['L', 2, [float, float], ['x','y']], 
-    'H':['H', 1, [float], ['x']], 
-    'V':['V', 1, [float], ['y']], 
-    'C':['C', 6, [float, float, float, float, float, float], ['x','y','x','y','x','y']], 
-    'S':['S', 4, [float, float, float, float], ['x','y','x','y']], 
-    'Q':['Q', 4, [float, float, float, float], ['x','y','x','y']], 
-    'T':['T', 2, [float, float], ['x','y']], 
-    'A':['A', 7, [float, float, float, int, int, float, float], ['r','r','a',0,'s','x','y']], 
-    'Z':['L', 0, [], []]
+pathdefs: Dict[str, Tuple[str, int, List[Type[Union[float, int]]], List[Union[str, Literal[0]]]]] = {
+    'M':('L', 2, [float, float], ['x','y']),
+    'L':('L', 2, [float, float], ['x','y']),
+    'H':('H', 1, [float], ['x']),
+    'V':('V', 1, [float], ['y']),
+    'C':('C', 6, [float, float, float, float, float, float], ['x','y','x','y','x','y']),
+    'S':('S', 4, [float, float, float, float], ['x','y','x','y']),
+    'Q':('Q', 4, [float, float, float, float], ['x','y','x','y']),
+    'T':('T', 2, [float, float], ['x','y']),
+    'A':('A', 7, [float, float, float, int, int, float, float], ['r','r','a',0,'s','x','y']),
+    'Z':('L', 0, [], []),
     }
-def parsePath(d):
+_StrOrFloat = TypeVar("_StrOrFloat", bound=Union[str, float])
+ParsedPath = List[Tuple[str, List[_StrOrFloat]]]
+def parsePath(d: str) -> ParsedPath[float]:
     """
     Parse SVG path and return an array of segments.
     Removes all shorthand notation.
     Converts coordinates to absolute.
     """
-    retval = []
+    retval: ParsedPath[float] = []
     lexer = lexPath(d)
 
-    pen = (0.0,0.0)
+    pen: tuple = (0.0,0.0)
     subPathStart = pen
     lastControl = pen
     lastCommand = ''
-    
+
     while 1:
         try:
             token, isCommand = next(lexer)
         except StopIteration:
             break
-        params = []
+        params: List[Union[float, int]] = []
         needParam = True
         if isCommand:
             if not lastCommand and token.upper() != 'M':
-                raise Exception('Invalid path, must begin with moveto.')    
-            else:                
+                raise Exception('Invalid path, must begin with moveto.')
+            else:
                 command = token
         else:
             #command was omited
@@ -106,16 +108,16 @@ def parsePath(d):
                 else:
                     command = pathdefs[lastCommand.upper()][0].lower()
             else:
-                raise Exception('Invalid path, no initial command.')    
+                raise Exception('Invalid path, no initial command.')
         numParams = pathdefs[command.upper()][1]
         while numParams > 0:
             if needParam:
-                try: 
+                try:
                     token, isCommand = next(lexer)
                     if isCommand:
                         raise Exception('Invalid number of parameters')
                 except StopIteration:
-                    raise Exception('Unexpected end of path')
+                    raise Exception('Unexpected end of path') from None
             cast = pathdefs[command.upper()][2][-numParams]
             param = cast(token)
             if command.islower():
@@ -128,8 +130,8 @@ def parsePath(d):
             numParams -= 1
         #segment is now absolute so
         outputCommand = command.upper()
-    
-        #Flesh out shortcut notation    
+
+        #Flesh out shortcut notation
         if outputCommand in ('H','V'):
             if outputCommand == 'H':
                 params.append(pen[1])
@@ -159,14 +161,14 @@ def parsePath(d):
             lastControl = pen
         lastCommand = command
 
-        retval.append([outputCommand,params])
+        retval.append((outputCommand,params))
     return retval
 
-def formatPath(a):
+def formatPath(a: ParsedPath) -> str:
     """Format SVG path data from an array"""
     return "".join([cmd + " ".join([str(p) for p in params]) for cmd, params in a])
 
-def translatePath(p, x, y):
+def translatePath(p, x: float, y: float):
     for cmd,params in p:
         defs = pathdefs[cmd]
         for i in range(defs[1]):
@@ -175,7 +177,7 @@ def translatePath(p, x, y):
             elif defs[3][i] == 'y':
                 params[i] += y
 
-def scalePath(p, x, y):
+def scalePath(p, x: float, y: float):
     for cmd,params in p:
         defs = pathdefs[cmd]
         for i in range(defs[1]):
