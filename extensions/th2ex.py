@@ -120,6 +120,10 @@ def parse_scrap_scale_m_per_dots(scale: str) -> float:
 
 # some prefs
 class _th2pref:
+    warnlevel_scale_mismatch = 1
+    warn_reversed_line_with_point_options = True
+    warn_closed_line_with_point_options = False
+
     def __init__(self):
         self.howtostore = 'inkscape_label'
         self.textonpath = True
