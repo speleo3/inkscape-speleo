@@ -482,6 +482,14 @@ class Th2Output(Th2Effect):
             if len(layers) == 0:
                 inkex.errormsg("Document has no layers!\nFallback to single scrap")
                 layers = [root]
+            else:
+                rootshapes = xpath_elems(self.document, ' | '.join([
+                    '/svg:svg/svg:path',
+                    '/svg:svg/svg:text',
+                    '/svg:svg/svg:use',
+                ]))
+                if rootshapes:
+                    inkex.errormsg(f"Warning: {len(rootshapes)} shapes not in a layer")
             for layer in layers:
                 if layer.get(therion_role) == 'none':
                     continue
