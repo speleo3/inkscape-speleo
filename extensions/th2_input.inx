@@ -4,7 +4,6 @@
   <id>speleo.input.th2</id>
   <dependency type="executable" location="extensions">th2_input.py</dependency>
   <param name="basescale" type="optiongroup" appearance="combo" gui-text="Base-Scale"
-      gui-hidden="true"
       gui-description="Render signatures to this scale. Depends on scrap scale (-scale option) or scale derived from an XVI background image.">
     <item value="0.25">1:25</item>
     <item value="0.5">1:50</item>
@@ -16,8 +15,8 @@
     <item value="20">1:2000</item>
   </param>
   <param name="howtostore" gui-hidden="true" type="string">inkscape_label</param>
-  <param name="sublayers" gui-hidden="true" type="boolean" _gui-text="Organize different Symbols in Sublayers">false</param>
-  <param name="lock-stations" gui-hidden="true" type="boolean" _gui-text="Lock Stations">true</param>
+  <param name="sublayers" type="boolean" _gui-text="Organize different Symbols in Sublayers">false</param>
+  <param name="lock-stations" type="boolean" _gui-text="Lock Stations">false</param>
   <input>
     <extension>.th2</extension>
     <mimetype>application/x-therion-th2</mimetype>
