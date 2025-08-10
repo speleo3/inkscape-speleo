@@ -1,7 +1,7 @@
 """
 SVG -> Therion Metapost
 
-Scale is 1pc SVG = 1u MetaPost
+Scale is 1pc SVG = 1u MetaPost at <svg therion:basescale="2"> for 1:200
 """
 
 from dataclasses import dataclass
@@ -17,6 +17,8 @@ from inkex.extensions import OutputExtension
 nan = float("nan")
 
 T = TypeVar("T")
+
+inkex.NSS['therion'] = 'http://therion.speleo.sk/therion'
 
 
 def cast_assert(typ: Type[T], val) -> T:
@@ -208,16 +210,16 @@ fi
         if not isinstance(etc.shape, (inkex.Circle, inkex.Ellipse)) or len(etc.path) < 2:
             return None
         arc = cast_assert(inkpa.Arc, etc.path[1])
-        rx, ry = uround(arc.rx), uround(arc.ry)
+        sx, sy = uround(arc.rx * 2), uround(arc.ry * 2)
         rot = uround(arc.x_axis_rotation) % 180
         if rot >= 90:
             rot -= 90
-            rx, ry = ry, rx
+            sx, sy = sy, sx
         buf = ["fullcircle"]
-        if rx != ry:
-            buf.append(f" xscaled {rx}u yscaled {ry}u")
+        if sx != sy:
+            buf.append(f" xscaled {sx}u yscaled {sy}u")
         else:
-            buf.append(f" scaled {rx}u")
+            buf.append(f" scaled {sx}u")
         if rot != 0:
             buf.append(f" rotated {rot}")
         center_formatted = self.format_point(*etc.path.bounding_box().center)
@@ -454,12 +456,32 @@ fi
             self.draws_main.append(f"thdraw P{draw_args}")
 
 
+def _get_u(basescale: float = 2) -> float:
+    """
+    Get points (pt) per user unit (u) for given basescale.
+
+    Copied from th2ex._th2pref._get_u
+
+    Args:
+      basescale: E.g. 2 => 1:200
+    """
+    if basescale <= 1:
+        return 14
+    elif basescale <= 2:
+        return 12
+    elif basescale <= 5:
+        return 10
+    else:
+        return 7
+
+
 class MetapostBuilder:
 
     def __init__(self, extension: OutputExtension, stream: IO[bytes]):
         self.stream = stream
         svg = cast(inkel.SvgDocumentElement, extension.svg)
-        self.px_to_u: float = 1.0 / svg.viewport_to_unit("1pc", "px")
+        pt_per_u = _get_u(float(svg.get("therion:basescale") or 2))
+        self.px_to_u: float = 1.0 / svg.viewport_to_unit(f"{pt_per_u}pt", "px")
         self.process_group(svg)
 
     def process_group(self, group: Union[inkel.Group, inkel.SvgDocumentElement]):

@@ -28,12 +28,12 @@ def p_u_smiley(expr pos,theta,sc,al) =
     U:=(0.4u,0.4u);
     T:=identity aligned al rotated theta scaled sc shifted pos;
     pickup pencircle scaled 0.05u;
-    p:=fullcircle scaled 0.4u;
+    p:=fullcircle scaled 0.8u;
     thfill p withcolor (1.0,1.0,0.0);
     thdraw p withcolor (0.0,0.502,0.0);
     thdraw (0.2u,-0.1u)..controls (0.18u,-0.2u) and (0.1u,-0.25u)..(0.0u,-0.25u)..controls (-0.1u,-0.25u) and (-0.18u,-0.2u)..(-0.2u,-0.1u) withcolor (0.0,0.502,0.0);
-    thdraw fullcircle xscaled 0.03u yscaled 0.05u shifted (0.15u,0.15u) withcolor (0.0,0.502,0.0);
-    thdraw fullcircle xscaled 0.03u yscaled 0.05u shifted (-0.15u,0.15u) withcolor (0.0,0.502,0.0);
+    thdraw fullcircle xscaled 0.06u yscaled 0.1u shifted (0.15u,0.15u) withcolor (0.0,0.502,0.0);
+    thdraw fullcircle xscaled 0.06u yscaled 0.1u shifted (-0.15u,0.15u) withcolor (0.0,0.502,0.0);
 enddef;
 """ in mpcontent
 
