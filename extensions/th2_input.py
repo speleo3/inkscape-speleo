@@ -140,6 +140,7 @@ class classproperty:
 class this:
     document: etree._ElementTree
     root: EtreeElement
+    root_insert_pos: int
     layer_stack: List[EtreeElement]
 
     line_nr = 0
@@ -181,6 +182,12 @@ class this:
     @classmethod
     def getcurrentlayer(this):
         return this.layer_stack[-1] if this.layer_stack else this.root
+
+    @classmethod
+    def currentlayer_prepend(this, e: EtreeElement):
+        layer = this.getcurrentlayer()
+        pos = this.root_insert_pos if layer is this.root else 0
+        layer.insert(pos, e)
 
     @classmethod
     def getcurrentfilename(this) -> str:
@@ -521,7 +528,7 @@ def parse_scrap(a: Sequence[str]):
             'labe': etree.SubElement(e, 'g', {inkscape_groupmode: 'layer', inkscape_label: u'Labels'}),
         }
 
-    this.getcurrentlayer().append(e)
+    this.currentlayer_prepend(e)
     this.layer_stack.append(e)
 
     while True:
@@ -555,7 +562,7 @@ def preserve_literal(a: Sequence[str], lines: Sequence[str] = ()):
     chunks.extend(lines)
     desc.text = ''.join(chunks)
     assert desc.text.endswith("\n")
-    this.getcurrentlayer().insert(0, e)
+    this.currentlayer_prepend(e)
     return e
 
 
@@ -575,7 +582,7 @@ def preserve_literal_as_comment(a: Sequence[str], lines: Sequence[str] = ()):
     assert text.endswith("\n")
     e = etree.Comment()
     e.text = text
-    this.getcurrentlayer().insert(0, e)
+    this.currentlayer_prepend(e)
 
 
 def read_block_lines(sentinel: str, *, skip_blank: bool = False) -> List[str]:
@@ -682,7 +689,7 @@ def preserve_literal_as_textblock(a: Sequence[str], lines: Sequence[str] = ()):
     desc = etree.SubElement(e, 'desc')
     desc.tail = ' '.join(a)
     desc.text = ''.join(lines[:-1])
-    this.getcurrentlayer().insert(0, e)
+    this.currentlayer_prepend(e)
     this.textblock_count += 1
 
 
@@ -947,7 +954,7 @@ def parse_input(a: Sequence[str]):
     e.set(inkscape_label, ' '.join(a))
     e.set(therion_role, "input")
 
-    this.getcurrentlayer().append(e)
+    this.currentlayer_prepend(e)
     this.layer_stack.append(e)
 
 
@@ -973,6 +980,7 @@ def main() -> None:
         this.document = etree.parse(template)
 
     this.root = this.document.getroot()
+    this.root_insert_pos = len(this.root)
     this.layer_stack = [this.root]
 
     # save input prefs to file

@@ -490,7 +490,7 @@ class Th2Output(Th2Effect):
                 ]))
                 if rootshapes:
                     inkex.errormsg(f"Warning: {len(rootshapes)} shapes not in a layer")
-            for layer in layers:
+            for layer in reversed(layers):
                 if layer.get(therion_role) == 'none':
                     continue
                 if layer.get(therion_role) == 'input':
