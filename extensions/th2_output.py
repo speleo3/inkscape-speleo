@@ -739,9 +739,10 @@ class Th2Output(Th2Effect):
         # get therion attributes
         role, type, options = get_props(node)
 
-        if node.tag == svg_text:
+        key = text_keys_output.get(type) if node.tag == svg_text else None
+
+        if key is not None:
             # restore text for labels etc.
-            key = text_keys_output.get(type, 'text')
             text = self.get_point_text(node).strip()
 
             if type == "station" and "." in text and "@" not in text:

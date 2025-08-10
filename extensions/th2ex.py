@@ -632,6 +632,7 @@ align2baseline = {
 }
 
 text_keys = {
+    'continuation': 'text',
     'label': 'text',
     'remark': 'text',
     'station-name': 'text',
