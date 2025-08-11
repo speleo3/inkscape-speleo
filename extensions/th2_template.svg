@@ -430,8 +430,8 @@
       <path d="M -2.25,-9 0,-15 2.25,-9 z" style="fill:black;fill-opacity:1;fill-rule:evenodd;stroke:black;stroke-width:0.75;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10" />
     </symbol>
     <symbol id="point-water-flow">
-      <path d="m -0.12,7.5 c 0,-1.238 -2.1,-1.675 -1.8,-3 0.387,-1.725 4,-0.125 4.05,-2.25 0,-2.3125 -3.725,-0.587 -4.2,-2.25 -0.538,-1.875 2.4375,-1.725 3.15,-3 0.862,-1.55 -1.2,-2.9 -1.2,-4.5" style="fill:none;stroke:black;stroke-width:0.75;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10" />
-      <path d="M 2.105,-5.325 C 1.392,-6.037 0.2675,-6.562 -0.12,-7.5 c -0.3875,0.938 0,2.1 0,3.113 z" style="fill:black;fill-opacity:1;fill-rule:evenodd;stroke:black;stroke-width:0.75;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10" />
+      <path d="m -0.12,7.5 c 0,-1.238 -2.1,-1.675 -1.8,-3 0.387,-1.725 4,-0.125 4.05,-2.25 0,-2.3125 -3.725,-0.587 -4.2,-2.25 -0.538,-1.875 2.4375,-1.725 3.15,-3 0.862,-1.55 -1.2,-2.9 -1.2,-4.5" style="fill:none;stroke:#134094;stroke-width:0.75;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10" />
+      <path d="M 2.105,-5.325 C 1.392,-6.037 0.2675,-6.562 -0.12,-7.5 c -0.3875,0.938 0,2.1 0,3.113 z" style="fill:#134094;fill-opacity:1;fill-rule:evenodd;stroke:#134094;stroke-width:0.75;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10" />
     </symbol>
     <symbol id="point-entrance">
       <path d="m -3,7.5 3,-15 3,15 z" style="fill:black;fill-rule:evenodd;stroke:none" />
@@ -708,6 +708,12 @@ path.area.flowstone { fill:url(#pattern-flowstone) }
 			fill:blue;
 			fill-opacity:0.5;
 		}
+		path.line.u.waterwithborder {
+			stroke:#00c;
+			stroke-width:0.6 /* PenC */;
+			fill:blue;
+			fill-opacity:0.5;
+		}
 		path.line.u.sand {
 			stroke:none;
 			fill:yellow;
@@ -739,6 +745,15 @@ path.line.u.purple { stroke:purple }
 		}
 		path.line.wall.presumed {
 			stroke-dasharray:5, 3;
+		}
+		path.line.wall.underlying {
+			stroke-dasharray:4 2;
+			stroke:#666;
+		}
+		path.line.wall.overlying {
+			stroke-dasharray:3 2 0.2 2;
+			stroke:#333;
+			stroke-opacity: 0.8;
 		}
 		path.line.wall.debris,
 		path.line.wall.pebbles {
@@ -791,6 +806,7 @@ path.line.u.purple { stroke:purple }
 		path.line.water-flow {
 			marker-end:url(#ArrowEnd);
 			stroke-width:0.42 /* PenD */;
+			stroke:#134094;
 		}
 		path.line.gradient {
 			marker-end:url(#ArrowGradient);
