@@ -367,6 +367,8 @@ class Th2Output(Th2Effect):
     def setdefault_doc_dims(self) -> None:
         """
         If document dimensions (width, height) are unknown, set them to default values.
+
+        TODO get basescale from XVI
         """
         if self.doc_width_m and self.doc_width:
             m_per_dots = self.doc_width_m / self.doc_width
