@@ -23,6 +23,7 @@ import time
 import calendar
 import collections
 import math
+import tempfile
 from html import escape
 from lxml import etree
 from typing import (
@@ -1226,7 +1227,6 @@ def dump_info(top):
 def view_aven(top, tmpname='', exe='aven', _dump=dump_svx, _ext='.svx'):
     '''View survey data in aven
     '''
-    import tempfile
     import shutil
     import subprocess
 
@@ -1275,8 +1275,11 @@ def main(argv=None):
     argparser.add_argument("--prefixstrip", help="station name prefix to strip", default="")
     argparser.add_argument("--no-avg", help="don't average repeated legs", action='store_true', default=False)
     argparser.add_argument("--do-sep", help="separate legs from splays", action='store_true', default=False)
+    argparser.add_argument("--outfile", help="Output file (default: STDOUT)")
     argparser.add_argument('filenames', metavar='FILENAME', nargs='+', help='one or more .top files')
     args = argparser.parse_args(argv)
+
+    file = tempfile.TemporaryFile("w+", encoding="utf-8") if args.outfile else sys.stdout
 
     for filename in args.filenames:
         if not filename.endswith('.top'):
@@ -1289,31 +1292,32 @@ def main(argv=None):
             top['filename'] = filename
 
             if args.dump == 'json':
-                dump_json(top)
+                dump_json(top, file=file)
             elif args.dump in ('svx', 'th'):
                 dump_svx(top,
+                         file=file,
                          therion=args.dump == 'th',
                          doavg=not args.no_avg,
                          dosep=args.do_sep,
                          prefixstrip=args.prefixstrip,
                          prefixadd=args.prefixadd)
             elif args.dump == 'svg':
-                dump_svg(top)
+                dump_svg(top, file=file)
             elif args.dump == 'xvi':
-                dump_xvi(top)
+                dump_xvi(top, file=file)
             elif args.dump == 'xvi-ee':
-                dump_xvi(top, view="sideview")
+                dump_xvi(top, view="sideview", file=file)
             elif args.dump == 'th2':
-                dump_th2(top)
+                dump_th2(top, file=file)
             elif args.dump == 'th2-ee':
-                dump_th2(top, view="sideview")
+                dump_th2(top, view="sideview", file=file)
             elif args.dump == 'th2-xvi':
                 with open(f"{filename}.xvi", "w", encoding="utf-8") as handle:
                     dump_xvi(top, file=handle)
                 with open(f"{filename}.th2", "w", encoding="utf-8") as handle:
                     dump_th2(top, file=handle, with_xvi=True)
             elif args.dump == 'tro':
-                dump_tro(top)
+                dump_tro(top, file=file)
             elif not args.view:
                 dump_info(top)
 
@@ -1329,6 +1333,12 @@ def main(argv=None):
             print(filename, file=sys.stderr)
             print(e, file=sys.stderr)
         '''
+
+    if args.outfile:
+        with file:
+            file.seek(0)
+            with open(args.outfile, "wb") as handle:
+                handle.write(file.buffer.read())
 
 
 if __name__ == '__main__':

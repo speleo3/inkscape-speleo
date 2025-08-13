@@ -19,6 +19,10 @@ def assert_stripped_lines_equal(lhs: str, rhs = "", path = None):
     assert lines_lhs == lines_rhs
 
 
+def assert_is_test1_svx_content(content: str):
+    assert "*data normal " in content
+
+
 @pytest.mark.skipif(sys.version_info < (3, 10), reason="Python version")
 @pytest.mark.parametrize("s, suffix", [
     ("foobar", "bar"),
@@ -163,7 +167,7 @@ def test_dump_svx():
     out = io.StringIO()
     m.dump_svx(top, file=out)
     content = out.getvalue()
-    assert "*data normal " in content
+    assert_is_test1_svx_content(content)
 
 
 def test_dump_tro():
@@ -191,3 +195,14 @@ def test_dump_xvi__sideview():
     m.dump_xvi(top, file=out, view="sideview")
     content = out.getvalue()
     assert_stripped_lines_equal(content, path=TESTS_DATA / "test1.top.sideview.xvi")
+
+
+def test_main__stdout(capsys):
+    m.main(["--dump", "svx", str(TESTS_DATA / "test1.top")])
+    assert_is_test1_svx_content(capsys.readouterr().out)
+
+
+def test_main__outfile(tmp_path):
+    path = tmp_path / "out.svx"
+    m.main(["--outfile", str(path), "--dump", "svx", str(TESTS_DATA / "test1.top")])
+    assert_is_test1_svx_content(path.read_text(encoding="utf-8"))
