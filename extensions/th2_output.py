@@ -55,8 +55,8 @@ from inkex0 import simpletransform
 from inkex0 import simplestyle
 import math
 import re
-import collections
 import os
+import uuid
 from pathlib import Path
 
 
@@ -131,6 +131,15 @@ def optquote(x: str) -> str:
     if re.search(r"\s", x) is None:
         return x
     return f'"{x}"'
+
+
+def get_id(options: OptionsDict) -> str:
+    """
+    Get the ID or insert a new unique ID if missing.
+    """
+    if not options.get('id'):
+        options['id'] = uuid.uuid4().hex
+    return options['id']
 
 
 def format_options_leading_space(options: OptionsDict):
@@ -219,8 +228,6 @@ class Th2Line:
 
 
 class Th2Area:
-    count: Dict[str, int] = collections.defaultdict(int)
-
     def __init__(self, type: str):
         self.type = type
         self.options: OptionsDict = {}
@@ -235,7 +242,7 @@ class Th2Area:
     def append_line(self) -> None:
         self._lines.append(Th2Line('border'))
 
-    def output(self, prefix: str) -> Iterator[str]:
+    def output(self) -> Iterator[str]:
         ids = []
 
         # if only one line, assume it must be closed
@@ -243,11 +250,7 @@ class Th2Area:
             self._lines[0].close()
 
         for line in self._lines:
-            if not line.options.get('id'):
-                id_prefix = "%s_%s_" % (prefix, self.type.replace(':', '_'))
-                Th2Area.count[id_prefix] += 1
-                line.options['id'] = id_prefix + str(Th2Area.count[id_prefix])
-            ids.append(line.options['id'])
+            ids.append(get_id(line.options))
             yield from line.output()
 
         # output area
@@ -279,7 +282,6 @@ class Th2Output(Th2Effect):
         self.arg_parser.add_argument("--author", type=str, default="", help='deprecated, use --options="-author ..." instead')
         self.arg_parser.add_argument("--options", type=str, default="")
         self.textpath_dict: Dict[str, OptionsDict] = {}
-        self.current_scrap_id = 'none'
         self.outbuf: List[str] = []
 
     def get_output_bytes(self) -> bytes:
@@ -327,8 +329,6 @@ class Th2Output(Th2Effect):
           options: Options from the layer element, they have the highest
             priority and overwrite global command line scrap options.
         """
-        self.current_scrap_id = id
-
         if test:
             options_elem = options or {}
             options = {}
@@ -803,7 +803,7 @@ class Th2Output(Th2Effect):
             inkex.errormsg('no path data for element <{} id="{}">'.format(
                 node, node.get('id')))
 
-        for line in th2area.output(self.current_scrap_id):
+        for line in th2area.output():
             self.println(line)
 
     def output_input(self, node: EtreeElement):

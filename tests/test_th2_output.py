@@ -34,6 +34,30 @@ def test_fstr_trim_zeros():
         m.fstr_trim_zeros("123")
 
 
+def test_get_id():
+    d1 = {}
+    d2 = {"id": "someid"}
+    d3 = {"foo": "bar", "value": 123}
+    i1 = m.get_id(d1)
+    i2 = m.get_id(d2)
+    i3 = m.get_id(d3)
+    assert i1
+    assert i2 == "someid"
+    assert i3
+    assert i1 == m.get_id(d1)
+    assert i2 == m.get_id(d2)
+    assert i3 == m.get_id(d3)
+    assert i1 == d1["id"]
+    assert i2 == d2["id"]
+    assert i3 == d3["id"]
+    assert i1 != i3
+    assert i1 != "someid"
+    assert i3 != "someid"
+    assert sorted(d1) == ["id"]
+    assert sorted(d2) == ["id"]
+    assert sorted(d3) == ["foo", "id", "value"]
+
+
 TH2_LINE_SMOOTH_OFF = """
 line u:unknown
   10.0 -70.0
