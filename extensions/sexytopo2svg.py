@@ -95,7 +95,13 @@ def read_json(path: Path) -> dict:
 def write_drawing(parent: EtreeElement, data: dict, bbox: BBox):
     for path in data["paths"]:
         color = path["colour"].lower()
-        d = "M " + " L ".join(f"{point['x']} {point['y']}" for point in path["points"])
+        points = path["points"]
+
+        # repeat single points to make line visible
+        if len(points) == 1:
+            points = points + points
+
+        d = "M " + " L ".join(f"{point['x']} {point['y']}" for point in points)
         etree.SubElement(parent, "path", {
             "d": d,
             "style": f"stroke:{color}",
