@@ -120,6 +120,7 @@ def parse_scrap_scale_m_per_dots(scale: str) -> float:
 
 # some prefs
 class _th2pref:
+    detect_roberts_station_symbol = False
     warnlevel_scale_mismatch = 1
     warn_reversed_line_with_point_options = True
     warn_closed_line_with_point_options = False
@@ -1087,7 +1088,16 @@ class Th2Effect:
             node_bbox = refinedBBox(p)
 
         if recurse:
-            for child in node:
+            children = list(node)
+
+            # Hack for Robert's triangular stations: Remove (unfilled) triangle, keep (filled) center dot
+            if th2pref.detect_roberts_station_symbol and get_props(node)[:2] == ("point", "station"):
+                children = [
+                    child
+                    for child in children if get_style(child).get("fill") != "none"
+                ] or children
+
+            for child in children:
                 child_bbox = self.compute_bbox(child, True, use_cache)
                 if node_bbox is None:
                     node_bbox = child_bbox
