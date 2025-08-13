@@ -79,7 +79,9 @@ def test_th2_output(tmp_path, executable_args):
         [m.__file__, "--projection=plan", "--scale=100", f"--output={path_output}",
          str(path_input)])
     th2content = path_output.read_text(encoding="utf-8")
-    assert re.search(r"point .* altitude", th2content) is not None
+    assert re.search(r"point 10\b.* altitude ", th2content) is not None
+    assert re.search(r"point 50\b.* altitude .* -value 10\b", th2content) is not None
+    assert re.search(r"point 70\b.* altitude .* -value \[fix 200\]", th2content) is not None
     assert re.search(
         r'point .* label .* -text "<lang:de>German<lang:en>English<lang:fr>French"',
         th2content) is not None

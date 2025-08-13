@@ -59,6 +59,8 @@ import os
 import uuid
 from pathlib import Path
 
+ALTITUDE_THRESHOLD_INFER_FIX = 100
+
 
 def parse_options_node(node: EtreeElement):
     options = node.get(therion_options, '')
@@ -761,6 +763,11 @@ class Th2Output(Th2Effect):
             if type in ('altitude', 'label') and text == '{ALTITUDE}':
                 type = 'altitude'
                 del options[key]
+            elif type in ('altitude',) and text.isdigit() and int(text) >= ALTITUDE_THRESHOLD_INFER_FIX:
+                # "value specified is the altitude difference from the nearest
+                # station" (thbook) -> Assume fix values if >= threshold.
+                # Useful for converting existing drawings to th2.
+                options[key] = f"[fix {text}]"
 
             if type in ('station-name', 'label') and text == '{STATION-NAME}':
                 type = 'station-name'
