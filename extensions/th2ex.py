@@ -1071,7 +1071,16 @@ class Th2Effect:
             node_bbox = refinedBBox(p)
 
         if recurse:
-            for child in node:
+            children = list(node)
+
+            # Hack for Robert's triangular stations: Remove (unfilled) triangle, keep (filled) center dot
+            if get_props(node)[:2] == ("point", "station"):
+                children = [
+                    child
+                    for child in children if get_style(child).get("fill") != "none"
+                ] or children
+
+            for child in children:
                 child_bbox = self.compute_bbox(child, True, use_cache)
                 if node_bbox is None:
                     node_bbox = child_bbox
