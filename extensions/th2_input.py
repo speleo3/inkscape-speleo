@@ -939,6 +939,7 @@ def parse_point(a: Sequence[str]):
 
     this.id_count += 1
     e.set('id', 'point_%s_%d' % (type, this.id_count))
+    e.set('class', f'point {type}')
 
     set_props(e, 'point', a[3], options)
     getlayer('point', type).insert(0, e)

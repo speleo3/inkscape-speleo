@@ -621,9 +621,8 @@
         style="fill:none;stroke:#000000;stroke-width:1.2" />
     </symbol>
     <symbol id="point-altitude">
-      <text x="1.4" y="2" style="font-size: 7px" transform="scale(0.7,1.4)">altitude</text>
-      <path d="m -9.35,0.35 a 0.812,1 0 0 1 -0.812,1 0.812,1 0 0 1 -0.812,-1 0.812,1 0 0 1 0.812,-1 0.812,1 0 0 1 0.812,1 z"
-        style="fill:#000000;stroke:none" />
+      <text style="font-size:7;dominant-baseline:middle;text-anchor:middle;fill:#90c" transform="scale(0.6,1)">altitude</text>
+      <circle style="fill:#c0e;stroke:none" r="1" />
     </symbol>
     <symbol id="point-height">
       <text x="-0.5" y="1.8" transform="scale(1,1.2)" style="font-size: 9px"><tspan style="font-size: 6px">±</tspan><tspan dy="1.5" dx="1">X</tspan></text>
@@ -836,6 +835,8 @@ path.line.u.purple { stroke:purple }
 			stroke:#2795e2;
 			stroke-width:3.5;
 		}
+
+text.point.altitude { fill:#90c; }
 	</style>
   </defs>
   <g id="layer-scan"
