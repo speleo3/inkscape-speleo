@@ -1173,8 +1173,14 @@ def dump_th2(top, *, file=sys.stdout, with_xvi: bool = False, view="outline"):
             return
 
         for poly in top[view]['polys']:
+            coord = poly['coord']
+
+            # repeat single points to make line visible
+            if len(coord) == 1:
+                coord = coord + coord
+
             out.append(f"line u:{poly[KEY_COLOR]} -clip off")
-            for pnt in poly['coord']:
+            for pnt in coord:
                 x, y = to_th2_space(pnt)
                 out.append(f'  {fstr(x)} {fstr(y)}')
             out.append("endline")
