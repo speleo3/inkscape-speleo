@@ -763,6 +763,9 @@ class Th2Output(Th2Effect):
             if type in ('altitude', 'label') and text == '{ALTITUDE}':
                 type = 'altitude'
                 del options[key]
+            elif type in ('altitude',) and text and "[" not in text:
+                # TEMP hack for loutoti
+                options[key] = f"[fix {text}]"
 
             if type in ('station-name', 'label') and text == '{STATION-NAME}':
                 type = 'station-name'
