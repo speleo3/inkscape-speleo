@@ -6,6 +6,7 @@
   <!-- param name="role" type="string" _gui-text="Role" / -->
   <param name="role" type="optiongroup" appearance="combo" gui-text="Role">
     <option value="_none_">(undefined)</option>
+    <option value="none">None</option>
     <option value="line">Line</option>
     <option value="point">Point</option>
   </param>
