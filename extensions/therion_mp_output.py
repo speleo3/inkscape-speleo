@@ -290,7 +290,7 @@ fi
                     for v in re.split(r"[\s,]+", stroke_dasharray)
                 ]
                 pattern = " ".join(
-                    f"{onoff} {v}u"
+                    f"{onoff} {uround(v)}u"
                     for (onoff, v) in zip(itertools.cycle(["on", "off"]), values))
                 draw_args += f" dashed dashpattern({pattern})"
 
