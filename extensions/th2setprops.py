@@ -63,12 +63,13 @@ class Th2SetProps(Th2Effect):
             with open(get_template_svg_path(), encoding="utf-8") as template:
                 doc_temp = etree.parse(template)
             defs_temp = doc_temp.find(inkex.addNS('defs', 'svg'))
+            assert defs_temp is not None
             defs_self = self.document.find(inkex.addNS('defs', 'svg'))
             if defs_self is None:
                 doc_temp.getroot().remove(defs_temp)
                 self.document.getroot().insert(0, defs_temp)
             else:
-                children = defs_temp.getchildren()
+                children = list(defs_temp)
                 defs_temp.clear()
                 defs_self.extend(children)
             self.getdocids()
@@ -123,6 +124,7 @@ class Th2SetProps(Th2Effect):
                     bbox = self.compute_bbox(node, False)
                     if bbox is not None:
                         parent = node.getparent()
+                        assert parent is not None
                         parent.remove(node)
                         node = etree.SubElement(parent, svg_use, {
                             "x": str((bbox[0] + bbox[1]) / 2.0),
@@ -143,15 +145,15 @@ class Th2SetProps(Th2Effect):
                     if role == 'line' and href in self.doc_ids:
                         node.set(inkscape_path_effect, '#' + href)
                         if inkscape_original_d not in node.attrib:
-                            node.set(inkscape_original_d, node.get('d'))
-                        node.attrib.pop('d', None)
+                            node.set(inkscape_original_d, node.get('d', ''))
+                        node.attrib.pop('d', '')
                         break
                 else:
                     if self.options.dropstyle and \
                             inkscape_path_effect in node.attrib:
                         del node.attrib[inkscape_path_effect]
                         if inkscape_original_d in node.attrib:
-                            node.set('d', node.get(inkscape_original_d))
+                            node.set('d', node.get(inkscape_original_d, ''))
                             del node.attrib[inkscape_original_d]
 
             set_props(node, role, type_, options)
