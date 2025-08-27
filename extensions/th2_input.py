@@ -30,15 +30,12 @@ from th2ex import (
     format_options,
     set_props,
     get_props,
-    align_shortcuts,
-    align2anchor_default_in,
-    align2anchor,
-    align2baseline_default_in,
-    align2baseline,
     text_keys_input,
     find_in_pwd,
     get_template_svg_path,
 )
+
+from inkex0.simplestyle import formatStyle
 
 import optparse
 import sys
@@ -890,38 +887,34 @@ def text_to_styles(text: str):
 
 def parse_point(a: Sequence[str]):
     options = parse_options(a[4:])
-    type = a[3].split(':')[0]
+    type, _, subtype = a[3].partition(':')
+    if not subtype:
+        subtype = options.get('subtype', '')
+    type_subtype = type + ":" + subtype
 
-    as_text = False
-    if type in text_keys_input:
-        key = text_keys_input[type]
-        if key in options:
-            as_text = True
-    if as_text:
+    text_key = text_keys_input.get(type)
+    if text_key in options:
         e = etree.Element('text')
         y = 0
         styles: StyleDict = {}
-        for line in options[key].split('<br>'):
+        for line in options[text_key].split('<br>'):
             t = etree.SubElement(e, 'tspan', {sodipodi_role: 'line', 'x': '0', 'y': '%dem' % (y)})
             t.text = line
             styles.update(text_to_styles(line))
             if styles:
-                t.set("style", ";".join(f"{key}:{value}" for (key, value) in styles.items()))
+                t.set("style", formatStyle(styles))
             y += 1
-        del options[key]
-        fontsize = scale_to_fontsize(options.pop("scale", "m"))
-        align = options.pop('align', '')
-        align = align_shortcuts.get(align, align)
-        textanchor = align2anchor.get(align.strip('tb'), align2anchor_default_in)
-        baseline = align2baseline.get(align.strip('lr'), align2baseline_default_in)
-        e.set('style', "font-size:%s;text-anchor:%s;text-align:%s;dominant-baseline:%s" % (fontsize,
-                                                                                           textanchor, textanchor, baseline))
+        del options[text_key]
+        style = th2ex.get_text_align_style(options.pop('align', ''))
+        style['font-size'] = str(scale_to_fontsize(options.pop('scale', 'm')))
+        e.set('style', formatStyle(style))
         e.set(xml_space, 'preserve')
+    elif type_subtype in this.point_symbols:
+        e = etree.Element('use')
+        e.set(xlink_href, "#point-" + type_subtype)
     elif type in this.point_symbols:
         e = etree.Element('use')
         e.set(xlink_href, "#point-" + type)
-        if type == "station" and th2pref.lock_stations:
-            e.set(sodipodi_insensitive, "true")
     else:
         e = etree.Element('circle')
         e.set('cx', '0')  # https://gitlab.com/inkscape/inbox/-/issues/11365
@@ -929,6 +922,9 @@ def parse_point(a: Sequence[str]):
         e.set('r', '2')
         color = point_colors.get(type, "blue")
         e.set('style', f'stroke:none;fill:{color};fill-opacity:0.8')
+
+    if type == "station" and th2pref.lock_stations:
+        e.set(sodipodi_insensitive, "true")
 
     # position and orientation
     transform = 'translate(%s,%s)' % tuple(flipY(a[1:3]))
@@ -959,6 +955,12 @@ def parse_input(a: Sequence[str]):
     this.layer_stack.append(e)
 
 
+def parse_import(a: Sequence[str]):
+    assert a[0] == "import"
+    file3d = a[1]
+    errormsg(f"TODO: 3dtosvg {file3d!r}")
+
+
 parsedict = {
     '##XTHERION##': parse_XTHERION,
     '##INKSCAPE##': parse_INKSCAPE,
@@ -968,9 +970,11 @@ parsedict = {
     'encoding': parse_encoding,
     'area': parse_area,
     'map': parse_BLOCK2COMMENT,
+    'layout': parse_BLOCK2COMMENT,
     'centerline': parse_BLOCK2COMMENT,
     'centreline': parse_BLOCK2COMMENT,
     'input': parse_input,
+    'import': parse_import,
 }
 
 
