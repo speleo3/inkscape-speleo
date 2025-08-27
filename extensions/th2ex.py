@@ -679,6 +679,23 @@ tag2style = {
 }
 
 ##########################################
+
+
+def get_text_align_style(align: str) -> StyleDict:
+    """
+    Get CSS text properties for Therion 'align' option
+    """
+    align = align_shortcuts.get(align, align)
+    textanchor = align2anchor.get(align.strip('tb'), align2anchor_default_in)
+    baseline = align2baseline.get(align.strip('lr'), align2baseline_default_in)
+    return {
+        'text-anchor': textanchor,
+        'text-align': textanchor,
+        'dominant-baseline': baseline,
+    }
+
+
+##########################################
 # font stuff
 
 # fonts-setup defaults in "pt" for scales up to 1:N

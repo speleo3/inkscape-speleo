@@ -43,3 +43,20 @@ def test_th2setprops(ioencoding, tmp_path, executable_args):
     nodes = tree.xpath("//svg:use[@xlink:href='#point-height']", namespaces=ns)
     assert len(nodes) == 1
     assert nodes[0].attrib["x"].rstrip(".0") == "35"
+
+
+def test_th2setprops__align(tmp_path, executable_args):
+    path_input = TESTS_DATA / "ink1.svg"
+    args = executable_args + [
+        m.__file__,
+        "--options=-align left",
+        "--id=multiline",
+        str(path_input),
+    ]
+    bytes_output = subprocess.check_output(args)
+    tree = etree.fromstring(bytes_output)
+    style: str = tree.xpath("//svg:text[@id='multiline']/@style",
+                            namespaces=ns,
+                            smart_strings=False)[0]  # type: ignore
+    assert "text-anchor:end" in style
+    assert "dominant-baseline:middle" in style

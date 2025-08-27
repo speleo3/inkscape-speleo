@@ -6,6 +6,7 @@ Distributed under the terms of the GNU General Public License v2 or later
 Annotate SVG elements for therion export.
 '''
 
+import th2ex
 from th2ex import (
     Th2Effect,
     get_props,
@@ -19,6 +20,8 @@ from th2ex import (
     th2pref_load_from_xml,
     xlink_href,
 )
+
+from inkex0.simplestyle import formatStyle
 
 import inkex
 import sys
@@ -135,6 +138,12 @@ class Th2SetProps(Th2Effect):
 
                 if href and node.tag == svg_use:
                     node.set(xlink_href, '#' + href)
+
+                # update text align
+                if node.tag == th2ex.svg_text:
+                    style = th2ex.get_style(node)
+                    style = th2ex.get_text_align_style(options.get('align', ''))
+                    node.set('style', formatStyle(style))
 
             # update path effects
             elif node.tag == svg_path and role in ['line', 'area', '']:

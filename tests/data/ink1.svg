@@ -30,7 +30,7 @@
      inkscape:label="scrap1"
      inkscape:groupmode="layer">
     <text x="10" y="20" style="font-size:5">{ALTITUDE}</text>
-    <text x="10" y="40" style="font-size:5;line-height:2">
+    <text x="10" y="40" style="font-size:5;line-height:2" id="multiline">
       <tspan sodipodi:role="line" x="10" y="40">&lt;lang:de&gt;German</tspan>
       <tspan sodipodi:role="line" x="10" y="50">&lt;lang:en&gt;English</tspan>
       <tspan sodipodi:role="line" x="10" y="60">&lt;lang:fr&gt;French</tspan>
