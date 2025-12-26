@@ -348,7 +348,10 @@ def is_numeric(s: str) -> bool:
 
 
 def maybe_key(s: str) -> bool:
-    return re.match(r'-\S+$', s) is not None and not is_numeric(s)
+    """
+    True if s looks like a therion option key or a comment start.
+    """
+    return re.match(r'-\S+$|#', s) is not None and not is_numeric(s)
 
 
 def splitquoted(ustr: str, comments=False):
@@ -400,6 +403,11 @@ def parse_options(a: Union[str, Sequence[str]]):
     n = len(a)
     i = 0
     while i < n:
+        if a[i].startswith("#"):
+            # TODO find a way to preserve comments
+            inkex.errormsg("Skipping comment in options: " + ' '.join(a[i:]))
+            break
+
         try:
             assert a[i][0] == '-'
         except (AssertionError, IndexError):
