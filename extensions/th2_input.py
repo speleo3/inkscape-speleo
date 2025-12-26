@@ -42,9 +42,11 @@ import sys
 import os
 import re
 from typing import (
+    BinaryIO,
     Dict,
     Iterable,
     List,
+    Optional,
     Sequence,
     Tuple,
     Union,
@@ -282,6 +284,8 @@ def getlayer(role: str, type: str):
 
 
 class FileRecord:
+    f_handle: Optional[BinaryIO] = None
+
     def __init__(self, patharg: str):
         searchpath: List[str] = [this.file_stack[-1].dirname] if this.file_stack else []
         self.filename: str = find_in_pwd(patharg, searchpath)
@@ -290,7 +294,8 @@ class FileRecord:
         self.f_enum = enumerate(self.f_handle)
 
     def __del__(self):
-        self.f_handle.close()
+        if self.f_handle is not None:
+            self.f_handle.close()
 
 
 def set_m_per_dots(
@@ -890,6 +895,7 @@ def parse_point(a: Sequence[str]):
     type, _, subtype = a[3].partition(':')
     if not subtype:
         subtype = options.get('subtype', '')
+        assert isinstance(subtype, str), subtype
     type_subtype = type + ":" + subtype
 
     text_key = text_keys_input.get(type)
