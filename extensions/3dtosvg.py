@@ -44,7 +44,8 @@ def boolchoice(choices=()) -> dict:
 
     meta = "{" + ",".join(("0", "1") + tuple(choices)) + "}"
 
-    return {"metavar": meta, "type": mapper.__getitem__}
+    _mapper_getitem = lambda v: mapper[v]
+    return {"metavar": meta, "type": _mapper_getitem}
 
 
 STATIONNAMES_FULL = "full"

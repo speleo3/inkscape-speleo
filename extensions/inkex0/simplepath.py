@@ -20,7 +20,15 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 """
 import re, math
-from typing import Dict, Iterator, List, Literal, Tuple, Type, TypeVar, Union
+from typing import Dict, Iterator, List, Tuple, Type, TypeVar, Union
+
+try:
+    from typing import Literal
+except ImportError:
+    # Python < 3.8
+    class Literal:
+        def __class_getitem__(cls, *args): pass
+
 
 def lexPath(d: str) -> Iterator[Tuple[str, bool]]:
     """
