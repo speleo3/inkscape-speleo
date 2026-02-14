@@ -51,13 +51,13 @@ def xvi2svg(handle, fullsvg=True, strokewidth=6, XVIroot='',
     stationcoords = set(tuple(line.split()[:2]) for line in stations)
 
     root = etree.fromstring("""<?xml version="1.0" ?>
-    <svg
-    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
-    xmlns:therion="http://therion.speleo.sk/therion"
-    xmlns="http://www.w3.org/2000/svg">
-    </svg>
-    """)
+<svg
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:therion="http://therion.speleo.sk/therion"
+   xmlns="http://www.w3.org/2000/svg">
+</svg>
+""")
 
     if not fullsvg:
         root = etree.SubElement(root, th2ex.svg_g)
@@ -88,7 +88,7 @@ def xvi2svg(handle, fullsvg=True, strokewidth=6, XVIroot='',
                     + coords_dict[str(coords[0:2])][0] \
                     + " -> " + \
                     coords_dict[str(coords[2:4])][0]
-                layer =g_shots
+                layer = g_shots
             else:
                 label = "Splay shot"
                 layer = coords_dict[str(coords[0:2])][1]
@@ -100,7 +100,6 @@ def xvi2svg(handle, fullsvg=True, strokewidth=6, XVIroot='',
                 'style': f'fill:none;' + style,
                 th2ex.inkscape_label: label,
             })
-
 
     process_shots(True)
     process_shots(False)
