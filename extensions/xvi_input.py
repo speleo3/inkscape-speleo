@@ -13,6 +13,11 @@ import tkinter
 
 from lxml import etree
 
+FMT_LABEL_STATION = 'Station {name}'
+FMT_LABEL_LEG = 'Leg {name_from} -> {name_to}'
+FMT_LABEL_SPLAY = 'Splay shot'
+FMT_LABEL_SPLAY_GROUP = 'Splay from {name}'
+
 
 def xvi2svg(handle, fullsvg=True, strokewidth=6, XVIroot='',
             scale: float = 200.0):
@@ -48,7 +53,9 @@ def xvi2svg(handle, fullsvg=True, strokewidth=6, XVIroot='',
     sketchlines = list_tcl2py('XVIsketchlines')
     grid = list_tcl2py('XVIgrid')
     root_translate = None
-    stationcoords = set(tuple(line.split()[:2]) for line in stations)
+
+    _make_sc_item = lambda a: (tuple(a[:2]), a[2])
+    stationcoords = dict(_make_sc_item(line.split()) for line in stations)
 
     root = etree.fromstring("""<?xml version="1.0" ?>
 <svg
@@ -64,13 +71,16 @@ def xvi2svg(handle, fullsvg=True, strokewidth=6, XVIroot='',
 
     g_shots = etree.SubElement(root, th2ex.svg_g, {th2ex.inkscape_label: 'Shots'})
 
-    # dict mapping coordinates to (a,b) where a is the name of the
-    # corresponding station and b the svg layer that will contain
-    # the splay shots from station a
-    coords_dict = {str(line.split()[:2]) :
-                   (a:=line.split()[2],
-                    etree.SubElement(g_shots, th2ex.svg_g, {th2ex.inkscape_label: 'Splay from ' + a}))
-                       for line in stations}
+    splay_groups = {}
+
+    def get_splay_group(coord_from: tuple):
+        if coord_from not in splay_groups:
+            splay_groups[coord_from] = etree.SubElement(
+                g_shots, th2ex.svg_g, {
+                    th2ex.inkscape_label: FMT_LABEL_SPLAY_GROUP.format(
+                        name=stationcoords[coord_from])
+                })
+        return splay_groups[coord_from]
 
     def process_shots(splays: bool):
         style = (f"stroke:#f00;stroke-width:{strokewidth / 2}" if (not splays) else
@@ -84,14 +94,14 @@ def xvi2svg(handle, fullsvg=True, strokewidth=6, XVIroot='',
 
             if is_leg:
                 # label with names of origin and destination stations
-                label = "Leg " \
-                    + coords_dict[str(coords[0:2])][0] \
-                    + " -> " + \
-                    coords_dict[str(coords[2:4])][0]
+                label = FMT_LABEL_LEG.format(
+                    name_from=stationcoords[tuple(coords[0:2])],
+                    name_to=stationcoords[tuple(coords[2:4])],
+                )
                 layer = g_shots
             else:
-                label = "Splay shot"
-                layer = coords_dict[str(coords[0:2])][1]
+                label = FMT_LABEL_SPLAY
+                layer = get_splay_group(tuple(coords[0:2]))
 
             coords[1::2] = map(invert_str, coords[1::2])
             coords_str = ' '.join(coords)
@@ -130,7 +140,7 @@ def xvi2svg(handle, fullsvg=True, strokewidth=6, XVIroot='',
             'style': f'font-size: {strokewidth * 10}',
             'x': x,
             'y': y,
-            th2ex.inkscape_label: 'Station ' + label,
+            th2ex.inkscape_label: FMT_LABEL_STATION.format(name=label),
         })
         e.text = label
         # station could exist multiple times, take first one

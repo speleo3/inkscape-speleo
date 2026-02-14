@@ -43,3 +43,4 @@ def test_xvi2svg():
     assert root[0].get("{http://www.inkscape.org/namespaces/inkscape}label") == "Shots"
     assert root[0][0].tag == "{http://www.w3.org/2000/svg}path"
     assert root[0][0].get("d") == "M 197.83 179.72 174.41 103.15"
+    assert root[0][2].get("{http://www.inkscape.org/namespaces/inkscape}label") == "Leg 2@create. -> 0@sub.create."
