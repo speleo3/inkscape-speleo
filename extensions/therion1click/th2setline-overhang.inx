@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<inkscape-extension>
+  <name>line overhang</name>
+  <id>speleo.th2setline-overhang</id>
+  <param name="role" gui-hidden="true" type="string">line</param>
+  <param name="type" gui-hidden="true" type="string">overhang</param>
+  <param name="dropstyle" type="bool" gui-hidden="true">true</param>
+  <effect needs-live-preview="false">
+    <effects-menu>
+      <submenu name="Therion 1Click" />
+    </effects-menu>
+  </effect>
+  <script>
+    <command location="inx" interpreter="python">../th2setprops.py</command>
+  </script>
+</inkscape-extension>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<inkscape-extension>
+  <_name>3) align tr</_name>
+  <id>speleo.th2setprops-align-tr</id>
+  <param name="options" gui-hidden="true" type="string">-align tr</param>
+  <param name="merge" gui-hidden="true" type="bool">true</param>
+  <effect needs-live-preview="false">
+    <effects-menu>
+      <submenu name="Therion 1Click" />
+    </effects-menu>
+  </effect>
+  <script>
+    <command location="inx" interpreter="python">../th2setprops.py</command>
+  </script>
+</inkscape-extension>

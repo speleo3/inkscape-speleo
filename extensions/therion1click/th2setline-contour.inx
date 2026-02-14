@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<inkscape-extension>
+  <name>line contour</name>
+  <id>speleo.th2setline-contour</id>
+  <param name="role" gui-hidden="true" type="string">line</param>
+  <param name="type" gui-hidden="true" type="string">contour</param>
+  <param name="dropstyle" type="bool" gui-hidden="true">true</param>
+  <effect needs-live-preview="false">
+    <effects-menu>
+      <submenu name="Therion 1Click" />
+    </effects-menu>
+  </effect>
+  <script>
+    <command location="inx" interpreter="python">../th2setprops.py</command>
+  </script>
+</inkscape-extension>

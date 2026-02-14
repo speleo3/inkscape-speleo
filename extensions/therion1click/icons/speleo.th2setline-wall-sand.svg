@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   version="1.1"
+   id="svg1"
+   width="51.359"
+   height="32.173"
+   viewBox="0 0 51.359 32.173"
+   sodipodi:docname="speleo.th2setline-wall-sand.svg"
+   inkscape:version="1.4 (e7c3feb100, 2024-10-09)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1">
+    <inkscape:path-effect
+       effect="skeletal"
+       id="LPE-wall_sand"
+       copytype="repeated_stretched"
+       prop_scale="1"
+       pattern="M 0,0 H 8 M 2,3 H 2.1 M 4,2 H 4.1 M 6,3 H 6.1 M 8,2 h 0.1"
+       normal_offset="0.5"
+       prop_units="true"
+       is_visible="true"
+       lpeversion="0"
+       scale_y_rel="false"
+       spacing="0"
+       tang_offset="0"
+       vertical_pattern="false"
+       hide_knot="false"
+       fuse_tolerance="0" />
+  </defs>
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:current-layer="svg1" />
+  <path
+     inkscape:original-d="m -60,600 c 19.52641,1.96669 17.47419,-13.70967 36.930362,-11.6025"
+     inkscape:path-effect="#LPE-wall_sand"
+     d="m -60,600 c 3.275967,0.32995 6.649277,0.20814 9.784767,-0.75194 m -7.387591,3.91882 c 0.04546,0.001 0.09094,0.002 0.136441,0.003 m 2.544133,-1.06392 c 0.04438,-0.003 0.08877,-0.006 0.133155,-0.01 m 2.697787,0.66678 c 0.04605,-0.008 0.09209,-0.0166 0.13813,-0.0251 m 2.321135,-1.58539 c 0.04344,-0.0132 0.08685,-0.0265 0.130235,-0.04 m -0.595956,-1.90096 c 0.462244,-0.14492 0.919209,-0.30823 1.369813,-0.49117 2.600084,-1.05566 4.881157,-2.7487 7.094076,-4.47643 m -4.888387,6.77145 c 0.04297,-0.0206 0.08583,-0.0413 0.128585,-0.0622 m 1.798668,-2.13038 c 0.0376,-0.0232 0.07512,-0.0465 0.112569,-0.0698 m 2.64717,-0.58134 c 0.03557,-0.0258 0.07106,-0.0516 0.106477,-0.0774 m 1.326276,-2.27323 c 0.0327,-0.0258 0.06535,-0.0516 0.09796,-0.0774 m -1.23199,-1.57577 c 0.0094,-0.007 0.01872,-0.0146 0.02807,-0.0219 2.245797,-1.75648 4.560112,-3.4867 7.206301,-4.54808 l 1e-6,0 c 0.398679,-0.1599 0.802309,-0.30423 1.210134,-0.43386 m -4.698923,5.93029 c 0.03117,-0.0229 0.06233,-0.0458 0.09347,-0.0686 m 1.231267,-2.06229 c 0.03214,-0.0204 0.06429,-0.0407 0.09646,-0.0609 m 2.288217,-0.13528 c 0.03107,-0.0148 0.06216,-0.0295 0.09327,-0.044 m 1.499815,-1.66035 c 0.03471,-0.0112 0.06946,-0.0222 0.104269,-0.0331 m -0.590496,-1.90254 c 3.132098,-0.97211 6.506371,-1.08601 9.782283,-0.74285 m -6.875518,3.11316 c 0.03464,-0.006 0.06933,-0.0117 0.104062,-0.0174 m 1.956489,-1.21961 c 0.03778,-0.002 0.07559,-0.005 0.113427,-0.007 m 2.149883,0.97539 c 0.03707,0.001 0.07415,0.002 0.111247,0.003 m 2.231964,-0.85823 c 0.03863,0.004 0.07727,0.008 0.115897,0.0115"
+     id="path4794"
+     style="font-size:6px;text-anchor:middle;display:inline;fill:none;stroke:#000000;stroke-width:1.2;stroke-linecap:round;stroke-linejoin:round"
+     transform="matrix(1.3392027,0,0,1.3392027,81.320922,-779.65962)" />
+</svg>

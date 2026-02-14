@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   version="1.1"
+   id="svg1"
+   width="51.359"
+   height="32.173"
+   viewBox="0 0 51.359 32.173"
+   sodipodi:docname="speleo.th2setline-flowstone.svg"
+   inkscape:version="1.3.2 (091e20ef0f, 2023-11-25, custom)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <g
+     id="g1">
+    <path
+       d="M 5.5898,12.99 C 10.816,10.951 16.736,13.364 18.576,18.564"
+       style="fill:none;stroke:#231f20;stroke-width:0.79998;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1"
+       id="path558" />
+    <path
+       d="m 18.576,18.564 c 3.733,-4.36 10.48,-4.36 14.213,0"
+       style="fill:none;stroke:#231f20;stroke-width:0.79998;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1"
+       id="path559" />
+    <path
+       d="m 32.789,18.564 c 1.84,-5.2 7.773,-7.613 12.987,-5.574"
+       style="fill:none;stroke:#231f20;stroke-width:0.79998;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1"
+       id="path560" />
+    <path
+       d="m 45.776,12.99 v 0"
+       style="fill:none;stroke:#231f20;stroke-width:0.79998;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1"
+       id="path561" />
+  </g>
+</svg>
