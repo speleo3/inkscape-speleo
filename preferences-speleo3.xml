@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<inkscape>
+  <group id="tools">
+    <eventcontext id="nodes" show_path_direction="1" />
+  </group>
+  <group id="options">
+    <group id="savewindowgeometry" value="0" />
+    <group id="snapweight" value="0.8" />
+    <group id="snapclosestonly" value="1" />
+    <group id="defaultwindowsize" value="-1" />
+    <group id="boot" enabled="0" />
+    <group id="savedialogposition" value="0" />
+    <group id="savedocviewport" value="0" />
+    <group id="boot" mode="1" />
+  </group>
+</inkscape>
