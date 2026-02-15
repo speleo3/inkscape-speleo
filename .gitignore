@@ -16,3 +16,14 @@ extension-errors.log
 pages.csv
 preferences.xml
 shell.history
+keys/default.xml
+fontcollections/recently_used_fonts.log
+
+.coverage
+htmlcov
+
+*.bak
+tmp-*/
+_backup/
+extensions/_trash/
+extensions/playground/
