@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<inkscape-extension>
+  <_name>Make Rock</_name>
+  <id>speleo.filter.makerock</id>
+  <effect>
+    <object-type>path</object-type>
+    <effects-menu>
+      <submenu _name="Speleo" />
+    </effects-menu>
+  </effect>
+  <script>
+    <command location="inx" interpreter="python">makerock.py</command>
+  </script>
+</inkscape-extension>
