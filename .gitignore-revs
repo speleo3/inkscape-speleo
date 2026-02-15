@@ -1,0 +1,5 @@
+# Commits which are ignored by "git blame" after you run this command:
+# git config --local blame.ignoreRevsFile .gitignore-revs
+
+58dd3238278faa279a0d53d8fb1b3064b90eb525 # autopep8
+486cce201e04c64ab9a7db276669c8436dfba572 # reindent th2ex
