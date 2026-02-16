@@ -123,7 +123,8 @@ def avgdeg(deg: List[float]) -> float:
 
 
 def reverse_shot(s: ShotDict) -> ShotDict:
-    return s | {
+    return {
+        **s,
         'from': s['to'],
         'to': s['from'],
         'compass': s['compass'] + 180.0,
