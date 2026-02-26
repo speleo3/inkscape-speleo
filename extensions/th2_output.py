@@ -750,8 +750,7 @@ class Th2Output(Th2Effect):
             if type == "station" and "." in text and "@" not in text:
                 text = name_survex2therion(text)
 
-            options[key] = text
-            if options[key] == "":
+            if text == "":
                 # inkex.errormsg("dropping empty text element (point %s)" % (type))
                 return
 
@@ -760,18 +759,23 @@ class Th2Output(Th2Effect):
                 self.guess_text_align(node, style, options)
                 self.guess_text_scale(node, style, options, mat)
 
-            if type in ('altitude', 'label') and text == '{ALTITUDE}':
-                type = 'altitude'
-                del options[key]
-            elif type in ('altitude',) and text.isdigit() and int(text) >= ALTITUDE_THRESHOLD_INFER_FIX:
+            for labeltype, placeholders in th2ex.text_placeholders.items():
+                if type in (labeltype, 'label') and text in placeholders:
+                    type = labeltype
+                    text = ""
+                    break
+
+            if type in ('altitude',) and text.isdigit() and int(text) >= ALTITUDE_THRESHOLD_INFER_FIX:
                 # "value specified is the altitude difference from the nearest
                 # station" (thbook) -> Assume fix values if >= threshold.
                 # Useful for converting existing drawings to th2.
-                options[key] = f"[fix {text}]"
+                text = f"[fix {text}]"
 
-            if type in ('station-name', 'label') and text == '{STATION-NAME}':
-                type = 'station-name'
-                del options[key]
+            if text:
+                options[key] = text
+            else:
+                options.pop(key, None)
+
 
         # restore orientation from transform
         if type not in ['station']:
