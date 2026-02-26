@@ -648,6 +648,11 @@ align2baseline = {
     'b': 'hanging',
 }
 
+text_placeholders = {
+    'continuation': ['?'],
+    'station-name': ['{st-name}', '{STATION-NAME}'],
+    'altitude': ['{alt}', '{ALTITUDE}'],
+}
 text_keys = {
     'continuation': 'text',
     'label': 'text',
