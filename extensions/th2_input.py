@@ -898,19 +898,21 @@ def parse_point(a: Sequence[str]):
         assert isinstance(subtype, str), subtype
     type_subtype = type + ":" + subtype
 
-    text_key = text_keys_input.get(type)
-    if text_key in options:
+    placeholder = th2ex.text_placeholders_input.get(type)
+    text_key = text_keys_input.get(type, "")
+    text_value = options.pop(text_key, placeholder)
+
+    if text_value:
         e = etree.Element('text')
         y = 0
         styles: StyleDict = {}
-        for line in options[text_key].split('<br>'):
+        for line in text_value.split('<br>'):
             t = etree.SubElement(e, 'tspan', {sodipodi_role: 'line', 'x': '0', 'y': '%dem' % (y)})
             t.text = line
             styles.update(text_to_styles(line))
             if styles:
                 t.set("style", formatStyle(styles))
             y += 1
-        del options[text_key]
         style = th2ex.get_text_align_style(options.pop('align', ''))
         style['font-size'] = str(scale_to_fontsize(options.pop('scale', 'm')))
         e.set('style', formatStyle(style))

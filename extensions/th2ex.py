@@ -653,6 +653,10 @@ text_placeholders = {
     'station-name': ['{st-name}', '{STATION-NAME}'],
     'altitude': ['{alt}', '{ALTITUDE}'],
 }
+text_placeholders_input = {
+    'station-name': text_placeholders['station-name'][0],
+    'altitude': text_placeholders['altitude'][0],
+}
 text_keys = {
     'continuation': 'text',
     'label': 'text',
