@@ -829,6 +829,9 @@ def parse_line(a: Sequence[str]):
         e_path = etree.Element('path')
         e_path.set('class', 'line %s %s' % (type, subtype))
 
+        if options.get('outline') == 'out_please_check':
+            e_path.set('style', 'stroke:#f00')
+
         if type + '_' + subtype in this.LPE_symbols:
             e_path.set(inkscape_path_effect, '#LPE-%s_%s' % (type, subtype))
             e_path.set(inkscape_original_d, d)

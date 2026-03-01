@@ -189,21 +189,111 @@ def scrap_options_updater(
 
     return inner
 
+def angle_between_vectors(x1: float, y1: float, x2: float, y2: float) -> float:
+    """Given two vectors in 2D space, v1=(x1, y1) and v2=(x2, y2), compute the
+    angle which rotates v1 onto v2.
+
+    Args:
+        x1: X of vector 1
+        y1: Y of vector 1
+        x2: X of vector 2
+        y2: Y of vector 2
+
+    Returns:
+        float: Angle between vectors in (-pi, pi]
+    """
+    cross = x1 * y2 - y1 * x2
+    dot = x1 * x2 + y1 * y2
+    angle = math.atan2(cross, dot)
+    assert -math.pi < angle <= math.pi
+    return angle
+
+
+def test_angle_between_vectors():
+    assert angle_between_vectors(0, 0, 0, 0) == 0
+    assert angle_between_vectors(4, 7, 4, 7) == 0
+    assert angle_between_vectors(1, 0, 0, 1) == math.pi / 2
+    assert angle_between_vectors(5, 0, 0, 1) == math.pi / 2
+    assert angle_between_vectors(0, 1, 1, 0) == -math.pi / 2
+    assert angle_between_vectors(0, 5, 3, 0) == -math.pi / 2
+    assert angle_between_vectors(1, 0, 3, 3) == math.pi / 4
+    assert angle_between_vectors(1, 0, -3, 3) == math.pi / 4 * 3
+
+
+def winding_number(points: list[tuple[float, float]]) -> int:
+    """
+    Args:
+        points: Closed polygon
+
+    Returns:
+        Winding number of the polygon
+    """
+    if len(points) < 3:
+        return 0
+
+    total_angle = 0.0
+
+    def gen():
+        x0, y0 = points[-2]
+        for i in range(-1, len(points)):
+            x1, y1 = points[i]
+            if x1 == x0 and y1 == y0:
+                continue
+            yield x1 - x0, y1 - y0
+            x0, y0 = x1, y1
+
+    points_it = iter(gen())
+    x1, y1 = next(points_it, (0.0, 0.0))
+    for x2, y2 in points_it:
+        total_angle += angle_between_vectors(x1, y1, x2, y2)
+        x1, y1 = x2, y2
+
+    return round(total_angle / (2 * math.pi))
+
+
+def _assert_wn(winding_number, points, wn: int):
+    assert winding_number(points) == wn
+    assert winding_number([(x + 10, y + 10) for (x, y) in points]) == wn
+    assert winding_number([(x + 10, y - 10) for (x, y) in points]) == wn
+    assert winding_number([(x - 10, y + 10) for (x, y) in points]) == wn
+    assert winding_number([(x - 10, y - 10) for (x, y) in points]) == wn
+
+
+def test_winding_number():
+    square_ccw = [(1, 0), (0, 1), (-1, 0), (0, -1), (1, 0)]
+    _assert_wn(winding_number, square_ccw, 1)
+    _assert_wn(winding_number, [(1, 0), (0, -1), (-1, 0), (0, 1), (1, 0)], -1)
+    _assert_wn(winding_number, square_ccw + square_ccw[1:], 2)
+    _assert_wn(winding_number, [(1, 0), (1, 0)], 0)
+    _assert_wn(winding_number, [(1.0, 0.0), (0.0, 1.0), (-1.0, 0.0), (0.0, -1.0)], 1)
+    _assert_wn(winding_number, [(0.0, -1.0), (-1.0, 0.0), (0.0, 1.0), (1.0, 0.0)], -1)
+    _assert_wn(winding_number, [(2.0, 2.0), (3.0, 2.0), (3.0, 3.0), (2.0, 3.0)], 1)
+    _assert_wn(winding_number, [(0.0, 0.0)], 0)
+
 
 class Th2Line:
     def __init__(self, type: str = 'wall'):
         self.type = type
         self.options: OptionsDict = {}
         self.points: List[str] = []
+        self._points_float: List[Tuple[float, float]] = []
         self._last: Sequence[str] = []
+
+    def _winding_number(self) -> int:
+        return winding_number(self._points_float)
 
     @staticmethod
     def _format_params(params: Sequence[float]) -> List[str]:
         return [fstr(i) for i in params]
 
     def append(self, params: Sequence[float]):
-        self._last = self._format_params(params)
+        params_formatted = self._format_params(params)
+        if len(params) == 2 and self._ends_with_point_formatted(params_formatted):
+            return
+        self._last = params_formatted
         self.points.append(" ".join(self._last))
+        for i in range(0, len(params), 2):
+            self._points_float.append((params[i], params[i + 1]))
 
     def append_point_options(self, point_options: OptionsDict):
         # point options follow points, so there must be at least one
@@ -211,16 +301,26 @@ class Th2Line:
         self.points.extend(th2ex.format_options_iter(point_options, prefix=""))
 
     def ends_with_point(self, params: Sequence[float]) -> bool:
+        return self._ends_with_point_formatted(self._format_params(params))
+
+    def _ends_with_point_formatted(self, params: Sequence[str]) -> bool:
         assert len(params) == 2
-        return self._last[-2:] == self._format_params(params)
+        return self._last[-2:] == params
 
     def close(self) -> None:
         self.options['close'] = 'on'
-        if self.points and self.points[0].split() != self._last[-2:]:
-            self._last = self.points[0].split()
-            self.points.append(self.points[0])
+        if self.points:
+            start_formatted = self.points[0].split()
+            if not self._ends_with_point_formatted(start_formatted):
+                self._last = start_formatted
+                self.points.append(self.points[0])
 
     def output(self) -> List[str]:
+        # inkex.errormsg(f"line {self.type} has {len(self.points)} points, winding number: {self._winding_number()}, options: {self.options}")
+        if (self.type == "wall" and self.options.get('close') == 'on'
+                and "outline" not in self.options and self._winding_number() == -1):
+            inkex.errormsg("closed ccw wall without outline option")
+            self.options["outline"] = "out_please_check"
         formatted_options = format_options_leading_space(self.options)
         return [
             f"line {self.type}{formatted_options}",
