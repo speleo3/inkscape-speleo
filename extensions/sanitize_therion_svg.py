@@ -7,12 +7,13 @@ Given an SVG or PDF (imported into Inkscape) produced by Therion, do some
 
 import re
 from math import log10
-from pathlib import Path
 from typing import Sequence
+from lxml import etree
 import inkex
 
 Vec2D = tuple[float, float] | Sequence[float]
 CubicNode = tuple[Vec2D, Vec2D, Vec2D] | Sequence[Vec2D]
+EtreeElement = etree._Element
 
 
 class NotLinear(Exception):
@@ -184,23 +185,37 @@ class SanitizeTherionSvgExtension(inkex.EffectExtension):
             shape.set("clip-path", None)
 
     def _unlink_exclusive_clones(self):
-        for use in self.svg.findall(".//svg:use"):
-            self._unlink_if_exclusive_clone(use)
+        defsmap: dict[str, EtreeElement] = {}
+        for elem in self.svg.findall(".//svg:defs/*"):
+            elem_id = elem.get("id")
+            if elem_id and not isinstance(elem, inkex.Symbol):
+                defsmap[elem_id] = elem
 
-    def _unlink_if_exclusive_clone(self, use: inkex.BaseElement):
-        href = use.get("xlink:href")
+        hrefmap: dict[str, list] = {}
+        for use in self.svg.findall(".//svg:use"):
+            href = use.get("xlink:href", "")
+            hrefmap.setdefault(href, []).append(use)
+
+        for href, used_by in hrefmap.items():
+            self._unlink_if_exclusive_clone(href, used_by, defsmap)
+
+    def _unlink_if_exclusive_clone(
+        self,
+        href: str,
+        used_by: list[inkex.Use],
+        defsmap: dict[str, EtreeElement],
+    ):
         if not href.startswith("#"):
             inkex.errormsg(f"Unhandled href: {href!r}")
             return
 
-        used_by = self.svg.findall(f'.//*[@xlink:href="{href}"]')
         if len(used_by) != 1:
             inkex.errormsg(f"Used by {len(used_by)} clones: {href!r}")
             return
 
-        assert used_by[0] is use
+        use = used_by[0]
 
-        linked = self.svg.getElementById(href.removeprefix("#"), literal=True)
+        linked = defsmap.pop(href.removeprefix("#"), None)
         if linked is None:
             inkex.errormsg(f"Element {href!r} not found")
             return
