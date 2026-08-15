@@ -24,6 +24,24 @@ FONT_MAPPING = {
     "thss00": "Arial",
 }
 
+STYLESHEET_TEXT = """
+text {
+    font-family: Arial, sans-serif;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-opacity: 0.9;
+    paint-order: stroke fill markers;
+}
+text.sw {
+    stroke: #fff;
+    stroke-width: 1;
+}
+text.sb {
+    stroke: #000;
+    stroke-width: 1;
+}
+"""
+
 
 def id_to_clip_path_value(id: str) -> str:
     """
@@ -98,9 +116,30 @@ def clipPath_is_aligned_rect(elem: inkex.ClipPath) -> bool:
         return False
 
 
+def color_to_gray(color: str) -> float:
+    """
+    Convert the given CSS color to a grayscale value in [0, 1].
+    """
+    try:
+        c: inkex.colors.ColorRGB = inkex.colors.Color(color).to("rgb")
+    except LookupError:
+        return 0.0
+    R, G, B = c.red / 255, c.green / 255, c.blue / 255
+    return 0.2126 * R + 0.7152 * G + 0.0722 * B
+
+
 class SanitizeTherionSvgExtension(inkex.EffectExtension):
 
     svg: inkex.SvgDocumentElement
+
+    def __init__(self):
+        super().__init__()
+        self.arg_parser.add_argument(
+            "--fancy-fonts",
+            action="store_true",
+            default=False,
+            help="Drop font-family and add stroke to text elements for better contrast",
+        )
 
     def effect(self):
         self._original_doc_content = self.svg.tostring().decode("utf-8", "replace")
@@ -111,8 +150,75 @@ class SanitizeTherionSvgExtension(inkex.EffectExtension):
         self._consolidate_clipPaths()
         self._ungroup_trivial_groups()
         self._substitute_fonts()
+        self._classify_paths()
+
+    def _add_stylesheet(self, stylesheet_text: str):
+        style_elem = inkex.StyleElement()
+        style_elem.text = stylesheet_text
+        defs = self.svg.findone("svg:defs")
+        if defs is None:
+            defs = inkex.Defs()
+            self.svg.insert(0, defs)
+        defs.append(style_elem)
+
+    def _classify_paths(self):
+        """
+        maps (fill, stroke, stroke-width) -> class name
+        """
+        classes: dict[tuple, str] = {}
+        stroke_short_map = {
+            "inherit": "i",
+            "#000000": "b",
+        }
+
+        for elem in self.svg.findall('.//svg:path'):
+            fill = elem.get("fill", "")
+            stroke = elem.get("stroke", "")
+            stroke_width = elem.get("stroke-width", "")
+            key = (fill, stroke, stroke_width)
+
+            if key not in classes:
+                stroke_short = stroke_short_map.get(stroke)
+
+                if fill != "none" or not stroke_short or "." not in stroke_width:
+                    continue
+
+                class_name = "".join([
+                    "s",
+                    stroke_short,
+                    stroke_width.rstrip('0').replace('.', ''),
+                ])
+
+                classes[key] = class_name
+
+            elem.set("class", classes[key])
+            elem.attrib.pop("fill", "")
+            elem.attrib.pop("stroke", "")
+            elem.attrib.pop("stroke-width", "")
+
+        if classes:
+            stylesheet_text = "\n".join(
+                f"path.{class_name} {{fill:{fill};stroke:{stroke};stroke-width:{stroke_width}}}"
+                for (fill, stroke, stroke_width), class_name in classes.items()
+            )
+            self._add_stylesheet(stylesheet_text)
 
     def _substitute_fonts(self):
+        if self.options.fancy_fonts:
+            for elem in self.svg.findall('.//svg:text'):
+                elem.attrib.pop("font-family", "")
+                fill = elem.get("fill")
+                stroke = elem.get("stroke", "none")
+                if stroke == "none":
+                    elem.attrib.pop("stroke", None)
+                    graylevel = color_to_gray(fill) if fill else 0.0
+                    if graylevel > 0.5:
+                        elem.set("class", "sb")
+                    else:
+                        elem.set("class", "sw")
+            self._add_stylesheet(STYLESHEET_TEXT)
+            return
+
         for elem in self.svg.findall('.//svg:text[@font-family]'):
             ff = elem.get("font-family")
             elem.set("font-family", FONT_MAPPING.get(ff, ff))

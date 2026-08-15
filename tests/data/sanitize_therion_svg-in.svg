@@ -4,10 +4,10 @@
    xmlns="http://www.w3.org/2000/svg">
   <defs>
     <g id="single_used_defs_group">
-      <text x="20" y="35">Single-used group</text>
+      <text x="20" y="35" font-family="thss00">Single-used group</text>
     </g>
     <g id="multi_used_defs_group">
-      <text x="20" y="35">Multi-used group</text>
+      <text x="20" y="35" font-family="monospace">Multi-used group</text>
     </g>
     <g id="unused_defs_group">
       <text x="20" y="35">Unused group</text>

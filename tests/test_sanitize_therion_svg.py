@@ -60,6 +60,15 @@ def test_clipPath_is_aligned_rect():
     assert not m.clipPath_is_aligned_rect(inkex.ClipPath.new(inkex.PathElement.new(d)))
 
 
+def test_color_to_gray():
+    assert m.color_to_gray("#000000") == 0.0
+    assert m.color_to_gray("#FFFFFF") == 1.0
+    assert m.color_to_gray("#FF0000") == 0.2126
+    assert m.color_to_gray("#00FF00") == 0.7152
+    assert m.color_to_gray("#0000FF") == 0.0722
+    assert m.color_to_gray("#123456") == pytest.approx(0.1852, abs=1e-4)
+
+
 def _read_xml(path: Path) -> str:
     tree = etree.parse(str(path), parser=etree.XMLParser(remove_blank_text=True))
     return etree.tostring(tree, encoding="utf-8").decode("utf-8")
@@ -71,3 +80,11 @@ def test_SanitizeTherionSvgExtension_run(tmp_path):
     out = _read_xml(tmp_path / "out.svg")
     ref = _read_xml(TESTS_DATA / "sanitize_therion_svg-out.svg")
     assert out == ref
+
+
+def test_fancy_fonts(tmp_path):
+    m.SanitizeTherionSvgExtension().run(
+        [str(TESTS_DATA / "sanitize_therion_svg-in.svg"), "--fancy-fonts"], str(tmp_path / "out.svg"))
+    content = (tmp_path / "out.svg").read_text(encoding="utf-8")
+    assert "font-family=" not in content
+    assert "font-family:" in content
