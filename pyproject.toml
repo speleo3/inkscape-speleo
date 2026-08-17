@@ -11,6 +11,11 @@ dynamic = ["dependencies"]
 [project.urls]
 repository = "https://github.com/speleo3/inkscape-speleo"
 
+[dependency-groups]
+dev = [
+    "pytest>=6",
+]
+
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
 
