@@ -14,6 +14,7 @@ from typing import (
     Any,
     Dict,
     List,
+    Optional,
     Tuple,
 )
 
@@ -94,7 +95,7 @@ def read_json(path: Path) -> dict:
         return json.load(handle)
 
 
-def _back(items: list[str], default: str | None = None) -> str | None:
+def _back(items: List[str], default: Optional[str] = None) -> Optional[str]:
     """Last item of a possibly empty list"""
     return items[-1] if items else default
 
