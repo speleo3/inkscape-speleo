@@ -4,12 +4,14 @@ Converts SexyTopo drawing files to SVG format.
 """
 
 import argparse
+import gzip
 import json
 import sys
 from math import cos, sin, radians
 from pathlib import Path
 from lxml import etree
 from typing import (
+    Any,
     Dict,
     List,
     Tuple,
@@ -90,6 +92,39 @@ class BBox:
 def read_json(path: Path) -> dict:
     with open(path, encoding="utf-8") as handle:
         return json.load(handle)
+
+
+def _back(items: list[str], default: str | None = None) -> str | None:
+    """Last item of a possibly empty list"""
+    return items[-1] if items else default
+
+
+def read_sexy(filename: Path) -> Dict[str, Any]:
+    """Read any SexyTopo file into a combined data layout"""
+    suffixes = filename.name.split(".")
+    content = filename.read_bytes()
+
+    if _back(suffixes) == "gz":
+        suffixes.pop()
+        content = gzip.decompress(content)
+
+    if _back(suffixes) == "json":
+        suffixes.pop()
+    else:
+        raise AssertionError("expect .json suffix")
+
+    sexy = json.loads(content.decode("utf-8"))
+
+    key = _back(suffixes)
+    if key in ["data", "plan", "ext-elevation"]:
+        sexy = {key: sexy}
+
+    if "data" not in sexy:
+        datafilename = filename.with_suffix("").with_suffix(".data.json")
+        if datafilename.is_file():
+            sexy["data"] = read_json(datafilename)
+
+    return sexy
 
 
 def write_drawing(parent: EtreeElement, data: dict, bbox: BBox):
@@ -258,15 +293,9 @@ def main(args=None):
     options = argparser.parse_args(args)
     filename = options.filename
 
-    assert filename.suffix == ".json"
+    sexy = read_sexy(filename)
 
-    is_data = filename.name.endswith(".data.json")
-    is_plan = filename.name.endswith(".plan.json")
-    is_ext = filename.name.endswith(".ext-elevation.json")
-
-    assert is_data or is_plan or is_ext
-
-    datafilename = filename.with_suffix("").with_suffix(".data.json")
+    assert any(key in sexy for key in ["data", "plan", "ext-elevation"])
 
     root = etree.fromstring(SVG_TEMPLATE)
 
@@ -284,13 +313,19 @@ def main(args=None):
 
     bbox = BBox()
     drawing = None
+    is_ext = False
 
-    if is_plan or is_ext:
-        drawing = read_json(filename)
+    if "plan" in sexy:
+        drawing = sexy["plan"]
+    elif "ext-elevation" in sexy:
+        drawing = sexy["ext-elevation"]
+        is_ext = True
+
+    if drawing:
         write_drawing(g_drawing, drawing, bbox)
 
-    if datafilename.is_file():
-        name2pos = write_shots(g_shots, read_json(datafilename), bbox, is_ext)
+    if "data" in sexy:
+        name2pos = write_shots(g_shots, sexy["data"], bbox, is_ext)
 
         if drawing:
             write_xsections(g_shots, name2pos, drawing)

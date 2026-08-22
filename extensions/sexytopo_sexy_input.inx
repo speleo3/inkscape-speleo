@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<inkscape-extension>
+  <name>SexyTopo Combined Input</name>
+  <id>speleo.input.sexytopo.sexy</id>
+  <input>
+    <extension>.sexy.json</extension>
+    <mimetype>application/x-sexytopo-sexy</mimetype>
+    <filetypename>SexyTopo Combined (*.sexy.json)</filetypename>
+  </input>
+  <script>
+    <command location="inx" interpreter="python">sexytopo2svg.py</command>
+  </script>
+</inkscape-extension>
